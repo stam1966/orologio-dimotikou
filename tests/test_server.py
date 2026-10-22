@@ -57,3 +57,17 @@ class Server(unittest.TestCase):
         s = server.summary(server.STATE['project']); self.assertEqual(s['unplaced'], 1)
 
 if __name__ == '__main__': unittest.main(verbosity=2)
+
+class Versions(unittest.TestCase):
+    def test_save_list_diff_report(self):
+        import versions
+        with tempfile.TemporaryDirectory() as d:
+            p = placed_fixture(); vid = versions.save(d, p, 'Σεπτέμβριος')
+            self.assertEqual([v['name'] for v in versions.listing(d)], ['Σεπτέμβριος'])
+            q = copy.deepcopy(p); e = next(x for x in q['events'] if x['place'] and x['lesson'] == 'la'); e['place'] = [4, 6]
+            diff = versions.diff(versions.load(d, vid)['project'], q)
+            self.assertEqual([r['id'] for r in diff], ['ta']); self.assertIn('→ Παρασκευή', diff[0]['changes'][0])
+            self.assertIn('Σεπτέμβριος', versions.changes_report(p, q, 'Σεπτέμβριος'))
+            self.assertEqual(versions.diff(p, p), [])
+            versions.delete(d, vid); self.assertEqual(versions.listing(d), [])
+            with self.assertRaises(ValueError): versions.load(d, '../../etc')

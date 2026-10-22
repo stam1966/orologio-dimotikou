@@ -4,7 +4,7 @@ from pathlib import Path
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 import base64
-import core, outputs, rules, updater
+import core, outputs, rules, updater, versions
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / 'data' / 'project.json'
@@ -195,6 +195,19 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send(200, json.dumps(core.slot_status(p, req['id']), ensure_ascii=False))
                 if action == '/api/export/xlsx':
                     return self.send(200, outputs.export_xlsx(p, req.get('options', {})), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', download='orologio.xlsx')
+                if action == '/api/versions/list':
+                    return self.send(200, json.dumps(versions.listing(ROOT), ensure_ascii=False))
+                if action == '/api/versions/save':
+                    vid = versions.save(ROOT, p, req.get('name', ''))
+                    return self.send(200, json.dumps({'id': vid}, ensure_ascii=False))
+                if action == '/api/versions/delete':
+                    versions.delete(ROOT, req['id']); return self.send(200, '{}')
+                if action == '/api/versions/compare':
+                    d = versions.load(ROOT, req['id'])
+                    return self.send(200, json.dumps({'name': d['name'], 'teachers': versions.diff(d['project'], p, 'teachers'), 'classes': versions.diff(d['project'], p, 'classes')}, ensure_ascii=False))
+                if action == '/api/versions/report':
+                    d = versions.load(ROOT, req['id'])
+                    return self.send(200, versions.changes_report(d['project'], p, d['name'], req.get('kind', 'teachers'), req.get('options')), 'text/html; charset=utf-8')
                 if action == '/api/update/backups':
                     return self.send(200, json.dumps({'current': core.VERSION, 'backups': updater.list_backups(ROOT)}, ensure_ascii=False))
                 if action == '/api/update/check':
@@ -232,6 +245,8 @@ class Handler(BaseHTTPRequestHandler):
                 elif action == '/api/move':
                     q = core.move_event(p, req['id'], req['place'], req.get('swap'))
                     commit(q, 'Ανταλλαγή' if req.get('swap') else ('Αφαίρεση θέσης' if req['place'] is None else 'Μετακίνηση'))
+                elif action == '/api/versions/restore':
+                    d = versions.load(ROOT, req['id']); commit(d['project'], 'Επαναφορά εκδοχής «' + d['name'] + '»')
                 elif action == '/api/lock':
                     q = copy.deepcopy(p); ids = set(req['ids']); n = 0
                     for e in q['events']:
