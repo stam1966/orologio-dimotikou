@@ -1,0 +1,6065 @@
+{
+ "schema": 1,
+ "version": "0.4.0-beta",
+ "title": "Ωρολόγιο Πρόγραμμα Διδασκαλίας",
+ "days": [
+  "Δευτέρα",
+  "Τρίτη",
+  "Τετάρτη",
+  "Πέμπτη",
+  "Παρασκευή"
+ ],
+ "periods": [
+  {
+   "id": "0",
+   "name": "0",
+   "start": "7:10",
+   "end": "7:55"
+  },
+  {
+   "id": "1",
+   "name": "1",
+   "start": "8:15",
+   "end": "9:00"
+  },
+  {
+   "id": "2",
+   "name": "2",
+   "start": "9:00",
+   "end": "9:40"
+  },
+  {
+   "id": "3",
+   "name": "3",
+   "start": "10:00",
+   "end": "10:45"
+  },
+  {
+   "id": "4",
+   "name": "4",
+   "start": "10:45",
+   "end": "11:30"
+  },
+  {
+   "id": "5",
+   "name": "5",
+   "start": "11:45",
+   "end": "12:25"
+  },
+  {
+   "id": "6",
+   "name": "6",
+   "start": "12:35",
+   "end": "13:15"
+  },
+  {
+   "id": "7",
+   "name": "7",
+   "start": "13:15",
+   "end": "14:00"
+  },
+  {
+   "id": "8",
+   "name": "8",
+   "start": "14:00",
+   "end": "15:00"
+  },
+  {
+   "id": "9",
+   "name": "9",
+   "start": "15:00",
+   "end": "16:00"
+  }
+ ],
+ "teachers": [
+  {
+   "id": "F38B2FFC80A4DF5A",
+   "name": "Αλεξίου Μαρία",
+   "short": "ΜΑ",
+   "color": "#00FF00"
+  },
+  {
+   "id": "F3F49249DC28FF90",
+   "name": "Βασιλείου Ευτυχία",
+   "short": "ΕΒ",
+   "color": "#FFCCFF"
+  },
+  {
+   "id": "E512148239292D22",
+   "name": "Γεωργίου Νίκος",
+   "short": "ΝΓ",
+   "color": "#FF0000"
+  },
+  {
+   "id": "6BAD6BE28E7AA6E9",
+   "name": "Δημητρίου Άννα",
+   "short": "ΆΔ",
+   "color": "#FF6666"
+  },
+  {
+   "id": "D7A7A3CC8C3D5F16",
+   "name": "Ευαγγέλου Σοφία",
+   "short": "ΣΕ",
+   "color": "#0000FF"
+  },
+  {
+   "id": "7DABE929C4A334BF",
+   "name": "Ζαφειρίου Κατερίνα",
+   "short": "ΚΖ",
+   "color": "#FFFF66"
+  },
+  {
+   "id": "70EB9A0A96263AE6",
+   "name": "Ηλιοπούλου Δήμητρα",
+   "short": "ΔΗ",
+   "color": "#9900CC"
+  },
+  {
+   "id": "14AA4E719D3C7DEC",
+   "name": "Θεοδώρου Γιώργος",
+   "short": "ΓΘ",
+   "color": "#006980"
+  },
+  {
+   "id": "1919E93AD11745AD",
+   "name": "Ιωάννου Παναγιώτης",
+   "short": "ΠΙ",
+   "color": "#66FFFF"
+  },
+  {
+   "id": "E4163207D0944996",
+   "name": "Καραγιάννη Χριστίνα",
+   "short": "ΧΚ",
+   "color": "#DDFF97"
+  },
+  {
+   "id": "5071950EADEC6F11",
+   "name": "Λαμπρόπουλος Κώστας",
+   "short": "ΚΛ",
+   "color": "#669900"
+  },
+  {
+   "id": "59001AC9406329BC",
+   "name": "Μιχαηλίδου Ειρήνη",
+   "short": "ΕΜ",
+   "color": "#6666FF"
+  },
+  {
+   "id": "5B4C8012EDE7BD0C",
+   "name": "Νικολάου Ιωάννα",
+   "short": "ΙΝ",
+   "color": "#993333"
+  },
+  {
+   "id": "BEF7E268FFE976AB",
+   "name": "Ξενάκη Αγγελική",
+   "short": "ΑΞ",
+   "color": "#66FF66"
+  },
+  {
+   "id": "B91DDDD91389B372",
+   "name": "Οικονόμου Πέτρος",
+   "short": "ΠΟ",
+   "color": "#CCFFCC"
+  },
+  {
+   "id": "89BE9C1C8EB5140F",
+   "name": "Παππά Θεοδώρα",
+   "short": "ΘΠ",
+   "color": "#FFCC66"
+  }
+ ],
+ "classes": [
+  {
+   "id": "24114258751B4C83",
+   "name": "Α Τάξη",
+   "short": "Α",
+   "teacher": "F38B2FFC80A4DF5A"
+  },
+  {
+   "id": "B766FF10B437BDB5",
+   "name": "Β Τάξη",
+   "short": "Β",
+   "teacher": "F3F49249DC28FF90"
+  },
+  {
+   "id": "D9090B8906555096",
+   "name": "Γ Τάξη",
+   "short": "Γ",
+   "teacher": "E512148239292D22"
+  },
+  {
+   "id": "7608D9425D111A9D",
+   "name": "Δ Τάξη",
+   "short": "Δ",
+   "teacher": "6BAD6BE28E7AA6E9"
+  },
+  {
+   "id": "E41686CD66160227",
+   "name": "Ε Τάξη",
+   "short": "Ε",
+   "teacher": "D7A7A3CC8C3D5F16"
+  },
+  {
+   "id": "DE0279E17F9AC098",
+   "name": "ΣΤ Τάξη",
+   "short": "Στ",
+   "teacher": "7DABE929C4A334BF"
+  },
+  {
+   "id": "CD73DE0081A0BA05",
+   "name": "ΟΛ1 - 15:00",
+   "short": "ΟΛ1"
+  },
+  {
+   "id": "E01C683E99A46DF0",
+   "name": "ΟΛ3 - 16:00",
+   "short": "ΟΛ3"
+  },
+  {
+   "id": "864FA3F3EAB06E9B",
+   "name": "ΟΛ2 - ΖΩΓΡ",
+   "short": "ΟΛ2"
+  },
+  {
+   "id": "90624FE36B82E6C9",
+   "name": "Πρωινή Ζώνη",
+   "short": "Πρωινή Ζώνη"
+  }
+ ],
+ "subjects": [
+  {
+   "id": "8350A73F7AAC319F",
+   "name": "ΘΡΗΣΚΕΥΤΙΚΑ",
+   "short": "ΘΡΗ"
+  },
+  {
+   "id": "93550840067F0CFC",
+   "name": "ΓΛΩΣΣΑ",
+   "short": "ΓΛΩ"
+  },
+  {
+   "id": "D1711CBD2106119E",
+   "name": "ΜΑΘΗΜΑΤΙΚΑ",
+   "short": "ΜΑΘ"
+  },
+  {
+   "id": "85F184E0B464C554",
+   "name": "ΙΣΤΟΡΙΑ",
+   "short": "ΙΣΤΟ"
+  },
+  {
+   "id": "B7A1774F1A42721E",
+   "name": "ΜΕΛΕΤΗ",
+   "short": "ΜΕΛ"
+  },
+  {
+   "id": "2475263C78549014",
+   "name": "ΓΕΩΓΡΑΦΙΑ",
+   "short": "ΓΕΩ"
+  },
+  {
+   "id": "D98145593A9AFA39",
+   "name": "ΦΥΣΙΚΑ",
+   "short": "ΦΥΣ"
+  },
+  {
+   "id": "B3618E1CA06D7A69",
+   "name": "ΚΟΙΝΩΝΙΚΗ ΑΓΩΓΗ",
+   "short": "ΚΠΑ"
+  },
+  {
+   "id": "B6EAFFF5782AFE6B",
+   "name": "ΕΙΚΑΣΤΙΚΑ",
+   "short": "ΕΙΚ"
+  },
+  {
+   "id": "FA97002CFCBAD167",
+   "name": "ΜΟΥΣΙΚΗ",
+   "short": "ΜΟΥ"
+  },
+  {
+   "id": "66EEBC578F4ECB4F",
+   "name": "ΘΕΑΤΡΙΚΗ ΑΓΩΓΗ",
+   "short": "ΘΑ"
+  },
+  {
+   "id": "8C53765F4EC0A954",
+   "name": "Φ ΑΓΩΓΗ",
+   "short": "ΦΑ"
+  },
+  {
+   "id": "B2C55523807C7E30",
+   "name": "ΑΓΓΛΙΚΑ",
+   "short": "ΑΓΓ"
+  },
+  {
+   "id": "66E61127E26B524A",
+   "name": "ΕΡΓΑΣΤΗΡΙΑ ΔΕΞΙΟΤΗΤΩΝ",
+   "short": "ΕΔ"
+  },
+  {
+   "id": "D4F398EE4B5C1A95",
+   "name": "ΓΑΛΛΙΚΑ",
+   "short": "ΓΑΛ"
+  },
+  {
+   "id": "265C28EA0879D955",
+   "name": "ΤΠΕ",
+   "short": "ΤΠΕ"
+  },
+  {
+   "id": "F5EE8C7298E6E5B7",
+   "name": "Ολοήμερο",
+   "short": "ΟΛ"
+  },
+  {
+   "id": "ED4D19B885DC0A68",
+   "name": "Πρωινή",
+   "short": "ΠΖ"
+  },
+  {
+   "id": "33288E16EBE80FA9",
+   "name": "ΥΠΟΣΤΉΡΙΞΗ",
+   "short": "ΥΠΟΣ"
+  },
+  {
+   "id": "7776C6557C4E4248",
+   "name": "Νηπιαγωγείο",
+   "short": "ΝΠ"
+  }
+ ],
+ "rooms": [],
+ "groups": [
+  {
+   "id": "7F45B096D3801B73",
+   "name": "Όλο το τμήμα",
+   "classid": "24114258751B4C83",
+   "studentids": "",
+   "entireclass": "1",
+   "divisiontag": "0",
+   "studentcount": ""
+  },
+  {
+   "id": "A9F5307C8ECE78B0",
+   "name": "Ομάδα 1",
+   "classid": "24114258751B4C83",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "4A41F8E4D4D6D278",
+   "name": "Ομάδα 2",
+   "classid": "24114258751B4C83",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "CFD8C364EAB42BD6",
+   "name": "Αγόρια",
+   "classid": "24114258751B4C83",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "B76DC0C3B07822DB",
+   "name": "Κορίτσια",
+   "classid": "24114258751B4C83",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "4242C22583E2665A",
+   "name": "Όλο το τμήμα",
+   "classid": "B766FF10B437BDB5",
+   "studentids": "",
+   "entireclass": "1",
+   "divisiontag": "0",
+   "studentcount": ""
+  },
+  {
+   "id": "2EDC49C1F71BD135",
+   "name": "Ομάδα 1",
+   "classid": "B766FF10B437BDB5",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "BA5C875CD7AA2208",
+   "name": "Ομάδα 2",
+   "classid": "B766FF10B437BDB5",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "A60741F31075A5B0",
+   "name": "Αγόρια",
+   "classid": "B766FF10B437BDB5",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "5EC0C2607F9880A6",
+   "name": "Κορίτσια",
+   "classid": "B766FF10B437BDB5",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "DB4C9492BF5F85E2",
+   "name": "Όλο το τμήμα",
+   "classid": "D9090B8906555096",
+   "studentids": "",
+   "entireclass": "1",
+   "divisiontag": "0",
+   "studentcount": ""
+  },
+  {
+   "id": "EA9E7AB5730B89DC",
+   "name": "Ομάδα 1",
+   "classid": "D9090B8906555096",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "7383D496000E05D0",
+   "name": "Ομάδα 2",
+   "classid": "D9090B8906555096",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "D61B5E08EEA33D4E",
+   "name": "Αγόρια",
+   "classid": "D9090B8906555096",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "32E4034CCB348CEA",
+   "name": "Κορίτσια",
+   "classid": "D9090B8906555096",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "0B6EC6F39EFEBFDA",
+   "name": "Όλο το τμήμα",
+   "classid": "7608D9425D111A9D",
+   "studentids": "",
+   "entireclass": "1",
+   "divisiontag": "0",
+   "studentcount": ""
+  },
+  {
+   "id": "44BECDCEF4D475EC",
+   "name": "Ομάδα 1",
+   "classid": "7608D9425D111A9D",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "5B74C718A2AA216A",
+   "name": "Ομάδα 2",
+   "classid": "7608D9425D111A9D",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "AA220078503DC86B",
+   "name": "Αγόρια",
+   "classid": "7608D9425D111A9D",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "ED1BA5C8C4FFC64E",
+   "name": "Κορίτσια",
+   "classid": "7608D9425D111A9D",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "B093E3B47DF2FC58",
+   "name": "Όλο το τμήμα",
+   "classid": "E41686CD66160227",
+   "studentids": "",
+   "entireclass": "1",
+   "divisiontag": "0",
+   "studentcount": ""
+  },
+  {
+   "id": "8BB9C91222867C53",
+   "name": "Ομάδα 1",
+   "classid": "E41686CD66160227",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "219763C59682E074",
+   "name": "Ομάδα 2",
+   "classid": "E41686CD66160227",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "B14AB8E9E0412118",
+   "name": "Αγόρια",
+   "classid": "E41686CD66160227",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "6AF38F6C159D6A38",
+   "name": "Κορίτσια",
+   "classid": "E41686CD66160227",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "22A60B44EF5FD31C",
+   "name": "Όλο το τμήμα",
+   "classid": "DE0279E17F9AC098",
+   "studentids": "",
+   "entireclass": "1",
+   "divisiontag": "0",
+   "studentcount": ""
+  },
+  {
+   "id": "96060250EA3E7F73",
+   "name": "Ομάδα 1",
+   "classid": "DE0279E17F9AC098",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "63F1BBBC697B65CB",
+   "name": "Ομάδα 2",
+   "classid": "DE0279E17F9AC098",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "CE9182088520BF0C",
+   "name": "Αγόρια",
+   "classid": "DE0279E17F9AC098",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "F57585CE039E257A",
+   "name": "Κορίτσια",
+   "classid": "DE0279E17F9AC098",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "12CC86E3E344F1C3",
+   "name": "Όλο το τμήμα",
+   "classid": "CD73DE0081A0BA05",
+   "studentids": "",
+   "entireclass": "1",
+   "divisiontag": "0",
+   "studentcount": ""
+  },
+  {
+   "id": "A5721C6A58D62944",
+   "name": "Ομάδα 1",
+   "classid": "CD73DE0081A0BA05",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "F1F02F49C50029AB",
+   "name": "Ομάδα 2",
+   "classid": "CD73DE0081A0BA05",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "79DCBC8182A8C712",
+   "name": "Αγόρια",
+   "classid": "CD73DE0081A0BA05",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "733C66764DBD6E02",
+   "name": "Κορίτσια",
+   "classid": "CD73DE0081A0BA05",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "7F60B9FA1F124A78",
+   "name": "Όλο το τμήμα",
+   "classid": "E01C683E99A46DF0",
+   "studentids": "",
+   "entireclass": "1",
+   "divisiontag": "0",
+   "studentcount": ""
+  },
+  {
+   "id": "9E5CF6E992559248",
+   "name": "Ομάδα 1",
+   "classid": "E01C683E99A46DF0",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "975CEF7A27655F91",
+   "name": "Ομάδα 2",
+   "classid": "E01C683E99A46DF0",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "9F93693F6F00E7C4",
+   "name": "Αγόρια",
+   "classid": "E01C683E99A46DF0",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "3BBB492B9924EB8B",
+   "name": "Κορίτσια",
+   "classid": "E01C683E99A46DF0",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "8C1F638711CB4EA7",
+   "name": "Όλο το τμήμα",
+   "classid": "864FA3F3EAB06E9B",
+   "studentids": "",
+   "entireclass": "1",
+   "divisiontag": "0",
+   "studentcount": ""
+  },
+  {
+   "id": "A5B0E526320BE3F8",
+   "name": "Ομάδα 1",
+   "classid": "864FA3F3EAB06E9B",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "A5F274190B94A014",
+   "name": "Ομάδα 2",
+   "classid": "864FA3F3EAB06E9B",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "0C56037FD6C769CB",
+   "name": "Αγόρια",
+   "classid": "864FA3F3EAB06E9B",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "A40EECB5C134A79B",
+   "name": "Κορίτσια",
+   "classid": "864FA3F3EAB06E9B",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "ADBAFED0B600860C",
+   "name": "Όλο το τμήμα",
+   "classid": "90624FE36B82E6C9",
+   "studentids": "",
+   "entireclass": "1",
+   "divisiontag": "0",
+   "studentcount": ""
+  },
+  {
+   "id": "A5497863210F4DE3",
+   "name": "Ομάδα 1",
+   "classid": "90624FE36B82E6C9",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "E1F66C3AC9108F89",
+   "name": "Ομάδα 2",
+   "classid": "90624FE36B82E6C9",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "1",
+   "studentcount": ""
+  },
+  {
+   "id": "2341BBBEF4E2EA68",
+   "name": "Αγόρια",
+   "classid": "90624FE36B82E6C9",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  },
+  {
+   "id": "2F9E09C9D828F123",
+   "name": "Κορίτσια",
+   "classid": "90624FE36B82E6C9",
+   "studentids": "",
+   "entireclass": "0",
+   "divisiontag": "2",
+   "studentcount": ""
+  }
+ ],
+ "lessons": [
+  {
+   "id": "887367376CE4048F",
+   "subject": "265C28EA0879D955",
+   "teachers": [
+    "5071950EADEC6F11"
+   ],
+   "classes": [
+    "B766FF10B437BDB5"
+   ],
+   "groups": [
+    "4242C22583E2665A"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "62186F4B1422FBEF",
+   "subject": "265C28EA0879D955",
+   "teachers": [
+    "5071950EADEC6F11"
+   ],
+   "classes": [
+    "D9090B8906555096"
+   ],
+   "groups": [
+    "DB4C9492BF5F85E2"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "2CB8CEFC5814B53F",
+   "subject": "265C28EA0879D955",
+   "teachers": [
+    "5071950EADEC6F11"
+   ],
+   "classes": [
+    "7608D9425D111A9D"
+   ],
+   "groups": [
+    "0B6EC6F39EFEBFDA"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "FFCE69737F62DF26",
+   "subject": "265C28EA0879D955",
+   "teachers": [
+    "5071950EADEC6F11"
+   ],
+   "classes": [
+    "DE0279E17F9AC098"
+   ],
+   "groups": [
+    "22A60B44EF5FD31C"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "49A4C2226A6DC402",
+   "subject": "265C28EA0879D955",
+   "teachers": [
+    "5071950EADEC6F11"
+   ],
+   "classes": [
+    "E41686CD66160227"
+   ],
+   "groups": [
+    "B093E3B47DF2FC58"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "84F325515366ECE2",
+   "subject": "8C53765F4EC0A954",
+   "teachers": [
+    "1919E93AD11745AD"
+   ],
+   "classes": [
+    "24114258751B4C83"
+   ],
+   "groups": [
+    "7F45B096D3801B73"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "86F9FA211EBF3DEB",
+   "subject": "8C53765F4EC0A954",
+   "teachers": [
+    "1919E93AD11745AD"
+   ],
+   "classes": [
+    "B766FF10B437BDB5"
+   ],
+   "groups": [
+    "4242C22583E2665A"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "4619E5DBCBF5514C",
+   "subject": "8C53765F4EC0A954",
+   "teachers": [
+    "1919E93AD11745AD"
+   ],
+   "classes": [
+    "D9090B8906555096"
+   ],
+   "groups": [
+    "DB4C9492BF5F85E2"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "36DE6548D90E013A",
+   "subject": "8C53765F4EC0A954",
+   "teachers": [
+    "1919E93AD11745AD"
+   ],
+   "classes": [
+    "7608D9425D111A9D"
+   ],
+   "groups": [
+    "0B6EC6F39EFEBFDA"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "17D6AF8FF423F8BE",
+   "subject": "8C53765F4EC0A954",
+   "teachers": [
+    "1919E93AD11745AD"
+   ],
+   "classes": [
+    "DE0279E17F9AC098"
+   ],
+   "groups": [
+    "22A60B44EF5FD31C"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "5497DB67A54B3B83",
+   "subject": "8C53765F4EC0A954",
+   "teachers": [
+    "1919E93AD11745AD"
+   ],
+   "classes": [
+    "E41686CD66160227"
+   ],
+   "groups": [
+    "B093E3B47DF2FC58"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "D563D56DC887417C",
+   "subject": "265C28EA0879D955",
+   "teachers": [
+    "5071950EADEC6F11"
+   ],
+   "classes": [
+    "24114258751B4C83"
+   ],
+   "groups": [
+    "7F45B096D3801B73"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "2EB52387AB9F4430",
+   "subject": "B6EAFFF5782AFE6B",
+   "teachers": [
+    "59001AC9406329BC"
+   ],
+   "classes": [
+    "24114258751B4C83"
+   ],
+   "groups": [
+    "7F45B096D3801B73"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "D8B6DD5B5A1967D0",
+   "subject": "B6EAFFF5782AFE6B",
+   "teachers": [
+    "59001AC9406329BC"
+   ],
+   "classes": [
+    "B766FF10B437BDB5"
+   ],
+   "groups": [
+    "4242C22583E2665A"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "AFE987C18FDF6614",
+   "subject": "B6EAFFF5782AFE6B",
+   "teachers": [
+    "59001AC9406329BC"
+   ],
+   "classes": [
+    "D9090B8906555096"
+   ],
+   "groups": [
+    "DB4C9492BF5F85E2"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "376F536489D33078",
+   "subject": "B6EAFFF5782AFE6B",
+   "teachers": [
+    "59001AC9406329BC"
+   ],
+   "classes": [
+    "7608D9425D111A9D"
+   ],
+   "groups": [
+    "0B6EC6F39EFEBFDA"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "47CD07F7B74C990A",
+   "subject": "B6EAFFF5782AFE6B",
+   "teachers": [
+    "59001AC9406329BC"
+   ],
+   "classes": [
+    "DE0279E17F9AC098"
+   ],
+   "groups": [
+    "22A60B44EF5FD31C"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "BB20E1D5916B2B37",
+   "subject": "B6EAFFF5782AFE6B",
+   "teachers": [
+    "59001AC9406329BC"
+   ],
+   "classes": [
+    "E41686CD66160227"
+   ],
+   "groups": [
+    "B093E3B47DF2FC58"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "9015B7C24B717794",
+   "subject": "FA97002CFCBAD167",
+   "teachers": [
+    "5B4C8012EDE7BD0C"
+   ],
+   "classes": [
+    "D9090B8906555096"
+   ],
+   "groups": [
+    "DB4C9492BF5F85E2"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "21F343908E449800",
+   "subject": "FA97002CFCBAD167",
+   "teachers": [
+    "5B4C8012EDE7BD0C"
+   ],
+   "classes": [
+    "7608D9425D111A9D"
+   ],
+   "groups": [
+    "0B6EC6F39EFEBFDA"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "18AFAF544382AD47",
+   "subject": "FA97002CFCBAD167",
+   "teachers": [
+    "5B4C8012EDE7BD0C"
+   ],
+   "classes": [
+    "DE0279E17F9AC098"
+   ],
+   "groups": [
+    "22A60B44EF5FD31C"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "1B2528692BD8AF21",
+   "subject": "FA97002CFCBAD167",
+   "teachers": [
+    "5B4C8012EDE7BD0C"
+   ],
+   "classes": [
+    "E41686CD66160227"
+   ],
+   "groups": [
+    "B093E3B47DF2FC58"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "5B336BC8C2553659",
+   "subject": "B2C55523807C7E30",
+   "teachers": [
+    "E4163207D0944996"
+   ],
+   "classes": [
+    "24114258751B4C83"
+   ],
+   "groups": [
+    "7F45B096D3801B73"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "A55C9C8E2F7C9CC7",
+   "subject": "B2C55523807C7E30",
+   "teachers": [
+    "E4163207D0944996"
+   ],
+   "classes": [
+    "B766FF10B437BDB5"
+   ],
+   "groups": [
+    "4242C22583E2665A"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "5044DF5C81B2499E",
+   "subject": "B2C55523807C7E30",
+   "teachers": [
+    "E4163207D0944996"
+   ],
+   "classes": [
+    "D9090B8906555096"
+   ],
+   "groups": [
+    "DB4C9492BF5F85E2"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "105CBC52D65F45B6",
+   "subject": "B2C55523807C7E30",
+   "teachers": [
+    "E4163207D0944996"
+   ],
+   "classes": [
+    "7608D9425D111A9D"
+   ],
+   "groups": [
+    "0B6EC6F39EFEBFDA"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "2950E9AE5089BE3B",
+   "subject": "B2C55523807C7E30",
+   "teachers": [
+    "E4163207D0944996"
+   ],
+   "classes": [
+    "DE0279E17F9AC098"
+   ],
+   "groups": [
+    "22A60B44EF5FD31C"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "038D04FB1018D7F5",
+   "subject": "B2C55523807C7E30",
+   "teachers": [
+    "E4163207D0944996"
+   ],
+   "classes": [
+    "E41686CD66160227"
+   ],
+   "groups": [
+    "B093E3B47DF2FC58"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "E7A82C20E5E6DF0C",
+   "subject": "2475263C78549014",
+   "teachers": [
+    "7DABE929C4A334BF"
+   ],
+   "classes": [
+    "DE0279E17F9AC098"
+   ],
+   "groups": [
+    "22A60B44EF5FD31C"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "F72699EC6A1E860D",
+   "subject": "D1711CBD2106119E",
+   "teachers": [
+    "7DABE929C4A334BF"
+   ],
+   "classes": [
+    "DE0279E17F9AC098"
+   ],
+   "groups": [
+    "22A60B44EF5FD31C"
+   ],
+   "room": "",
+   "hours": 4,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "3C37BB0118B0F10E",
+   "subject": "D98145593A9AFA39",
+   "teachers": [
+    "7DABE929C4A334BF"
+   ],
+   "classes": [
+    "DE0279E17F9AC098"
+   ],
+   "groups": [
+    "22A60B44EF5FD31C"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "1807DFAF1F7E4273",
+   "subject": "8350A73F7AAC319F",
+   "teachers": [
+    "7DABE929C4A334BF"
+   ],
+   "classes": [
+    "DE0279E17F9AC098"
+   ],
+   "groups": [
+    "22A60B44EF5FD31C"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "FCF2C86D93944318",
+   "subject": "D4F398EE4B5C1A95",
+   "teachers": [
+    "BEF7E268FFE976AB"
+   ],
+   "classes": [
+    "E41686CD66160227"
+   ],
+   "groups": [
+    "B093E3B47DF2FC58"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 2,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "50A22A1B59ADB533",
+   "subject": "93550840067F0CFC",
+   "teachers": [
+    "7DABE929C4A334BF"
+   ],
+   "classes": [
+    "DE0279E17F9AC098"
+   ],
+   "groups": [
+    "22A60B44EF5FD31C"
+   ],
+   "room": "",
+   "hours": 7,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "A02FB0079B751151",
+   "subject": "FA97002CFCBAD167",
+   "teachers": [
+    "5B4C8012EDE7BD0C"
+   ],
+   "classes": [
+    "24114258751B4C83"
+   ],
+   "groups": [
+    "7F45B096D3801B73"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "09BB14549D7A21CB",
+   "subject": "FA97002CFCBAD167",
+   "teachers": [
+    "5B4C8012EDE7BD0C"
+   ],
+   "classes": [
+    "B766FF10B437BDB5"
+   ],
+   "groups": [
+    "4242C22583E2665A"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "9B97D72A50E98D6D",
+   "subject": "D4F398EE4B5C1A95",
+   "teachers": [
+    "BEF7E268FFE976AB"
+   ],
+   "classes": [
+    "DE0279E17F9AC098"
+   ],
+   "groups": [
+    "22A60B44EF5FD31C"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 2,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "6D1675C1767187FD",
+   "subject": "66E61127E26B524A",
+   "teachers": [
+    "5B4C8012EDE7BD0C"
+   ],
+   "classes": [
+    "D9090B8906555096"
+   ],
+   "groups": [
+    "DB4C9492BF5F85E2"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "1E93A2FBE0DF084E",
+   "subject": "66EEBC578F4ECB4F",
+   "teachers": [
+    "B91DDDD91389B372"
+   ],
+   "classes": [
+    "24114258751B4C83"
+   ],
+   "groups": [
+    "7F45B096D3801B73"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "8052B13CDC7E351E",
+   "subject": "66EEBC578F4ECB4F",
+   "teachers": [
+    "B91DDDD91389B372"
+   ],
+   "classes": [
+    "B766FF10B437BDB5"
+   ],
+   "groups": [
+    "4242C22583E2665A"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "40676334EC79B3BE",
+   "subject": "66EEBC578F4ECB4F",
+   "teachers": [
+    "B91DDDD91389B372"
+   ],
+   "classes": [
+    "D9090B8906555096"
+   ],
+   "groups": [
+    "DB4C9492BF5F85E2"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "D11AD49DF272C2EF",
+   "subject": "66EEBC578F4ECB4F",
+   "teachers": [
+    "B91DDDD91389B372"
+   ],
+   "classes": [
+    "7608D9425D111A9D"
+   ],
+   "groups": [
+    "0B6EC6F39EFEBFDA"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "B7158E9CBC42513D",
+   "subject": "93550840067F0CFC",
+   "teachers": [
+    "F38B2FFC80A4DF5A"
+   ],
+   "classes": [
+    "24114258751B4C83"
+   ],
+   "groups": [
+    "7F45B096D3801B73"
+   ],
+   "room": "",
+   "hours": 9,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "480BDB8B060ECC8A",
+   "subject": "D1711CBD2106119E",
+   "teachers": [
+    "F38B2FFC80A4DF5A"
+   ],
+   "classes": [
+    "24114258751B4C83"
+   ],
+   "groups": [
+    "7F45B096D3801B73"
+   ],
+   "room": "",
+   "hours": 5,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "BA24F8B84A205268",
+   "subject": "B7A1774F1A42721E",
+   "teachers": [
+    "F38B2FFC80A4DF5A"
+   ],
+   "classes": [
+    "24114258751B4C83"
+   ],
+   "groups": [
+    "7F45B096D3801B73"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "EA75E258CCC284DA",
+   "subject": "66E61127E26B524A",
+   "teachers": [
+    "5B4C8012EDE7BD0C"
+   ],
+   "classes": [
+    "24114258751B4C83"
+   ],
+   "groups": [
+    "7F45B096D3801B73"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0,
+   "exempt_subject_limit": true
+  },
+  {
+   "id": "6AA8B0B5C494A9BC",
+   "subject": "66E61127E26B524A",
+   "teachers": [
+    "BEF7E268FFE976AB"
+   ],
+   "classes": [
+    "24114258751B4C83"
+   ],
+   "groups": [
+    "7F45B096D3801B73"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0,
+   "exempt_subject_limit": true
+  },
+  {
+   "id": "05306BB7E7286B1B",
+   "subject": "66E61127E26B524A",
+   "teachers": [
+    "E4163207D0944996"
+   ],
+   "classes": [
+    "24114258751B4C83"
+   ],
+   "groups": [
+    "7F45B096D3801B73"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0,
+   "exempt_subject_limit": true
+  },
+  {
+   "id": "328BF8AE57AD057D",
+   "subject": "93550840067F0CFC",
+   "teachers": [
+    "F3F49249DC28FF90"
+   ],
+   "classes": [
+    "B766FF10B437BDB5"
+   ],
+   "groups": [
+    "4242C22583E2665A"
+   ],
+   "room": "",
+   "hours": 9,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "FF44577CB8BFE77A",
+   "subject": "66E61127E26B524A",
+   "teachers": [
+    "5B4C8012EDE7BD0C"
+   ],
+   "classes": [
+    "B766FF10B437BDB5"
+   ],
+   "groups": [
+    "4242C22583E2665A"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "1F684C509E74D650",
+   "subject": "66E61127E26B524A",
+   "teachers": [
+    "BEF7E268FFE976AB"
+   ],
+   "classes": [
+    "B766FF10B437BDB5"
+   ],
+   "groups": [
+    "4242C22583E2665A"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "85C80EDE202CB15A",
+   "subject": "D1711CBD2106119E",
+   "teachers": [
+    "F3F49249DC28FF90"
+   ],
+   "classes": [
+    "B766FF10B437BDB5"
+   ],
+   "groups": [
+    "4242C22583E2665A"
+   ],
+   "room": "",
+   "hours": 5,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "F92AF541A5DC5896",
+   "subject": "B7A1774F1A42721E",
+   "teachers": [
+    "F3F49249DC28FF90"
+   ],
+   "classes": [
+    "B766FF10B437BDB5"
+   ],
+   "groups": [
+    "4242C22583E2665A"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "6CBDBB71075F0E1D",
+   "subject": "66E61127E26B524A",
+   "teachers": [
+    "5071950EADEC6F11"
+   ],
+   "classes": [
+    "B766FF10B437BDB5"
+   ],
+   "groups": [
+    "4242C22583E2665A"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "6A50F9FC5B20F1E6",
+   "subject": "93550840067F0CFC",
+   "teachers": [
+    "E512148239292D22"
+   ],
+   "classes": [
+    "D9090B8906555096"
+   ],
+   "groups": [
+    "DB4C9492BF5F85E2"
+   ],
+   "room": "",
+   "hours": 8,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "C6CF381A3D43281C",
+   "subject": "66E61127E26B524A",
+   "teachers": [
+    "E4163207D0944996"
+   ],
+   "classes": [
+    "D9090B8906555096"
+   ],
+   "groups": [
+    "DB4C9492BF5F85E2"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "C6605AFB38356E48",
+   "subject": "8350A73F7AAC319F",
+   "teachers": [
+    "E512148239292D22"
+   ],
+   "classes": [
+    "D9090B8906555096"
+   ],
+   "groups": [
+    "DB4C9492BF5F85E2"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "074658348AFD44AE",
+   "subject": "85F184E0B464C554",
+   "teachers": [
+    "E512148239292D22"
+   ],
+   "classes": [
+    "D9090B8906555096"
+   ],
+   "groups": [
+    "DB4C9492BF5F85E2"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "8A94A6EFEF463C53",
+   "subject": "D1711CBD2106119E",
+   "teachers": [
+    "E512148239292D22"
+   ],
+   "classes": [
+    "D9090B8906555096"
+   ],
+   "groups": [
+    "DB4C9492BF5F85E2"
+   ],
+   "room": "",
+   "hours": 4,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "E39F13D765988372",
+   "subject": "B7A1774F1A42721E",
+   "teachers": [
+    "E512148239292D22"
+   ],
+   "classes": [
+    "D9090B8906555096"
+   ],
+   "groups": [
+    "DB4C9492BF5F85E2"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "3A6EF8D325CE93FC",
+   "subject": "93550840067F0CFC",
+   "teachers": [
+    "6BAD6BE28E7AA6E9"
+   ],
+   "classes": [
+    "7608D9425D111A9D"
+   ],
+   "groups": [
+    "0B6EC6F39EFEBFDA"
+   ],
+   "room": "",
+   "hours": 8,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "8A88CE1B46DE6EEF",
+   "subject": "66E61127E26B524A",
+   "teachers": [
+    "5B4C8012EDE7BD0C"
+   ],
+   "classes": [
+    "7608D9425D111A9D"
+   ],
+   "groups": [
+    "0B6EC6F39EFEBFDA"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "F55EE054438973EC",
+   "subject": "66E61127E26B524A",
+   "teachers": [
+    "70EB9A0A96263AE6"
+   ],
+   "classes": [
+    "7608D9425D111A9D"
+   ],
+   "groups": [
+    "0B6EC6F39EFEBFDA"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "A07481BDF1B8EA7C",
+   "subject": "8350A73F7AAC319F",
+   "teachers": [
+    "6BAD6BE28E7AA6E9"
+   ],
+   "classes": [
+    "7608D9425D111A9D"
+   ],
+   "groups": [
+    "0B6EC6F39EFEBFDA"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "2DE6C061D6ECF6FD",
+   "subject": "85F184E0B464C554",
+   "teachers": [
+    "6BAD6BE28E7AA6E9"
+   ],
+   "classes": [
+    "7608D9425D111A9D"
+   ],
+   "groups": [
+    "0B6EC6F39EFEBFDA"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "DDBA7481A6745FCA",
+   "subject": "D1711CBD2106119E",
+   "teachers": [
+    "6BAD6BE28E7AA6E9"
+   ],
+   "classes": [
+    "7608D9425D111A9D"
+   ],
+   "groups": [
+    "0B6EC6F39EFEBFDA"
+   ],
+   "room": "",
+   "hours": 4,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "D1E29034839890CD",
+   "subject": "B7A1774F1A42721E",
+   "teachers": [
+    "6BAD6BE28E7AA6E9"
+   ],
+   "classes": [
+    "7608D9425D111A9D"
+   ],
+   "groups": [
+    "0B6EC6F39EFEBFDA"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "853C2409A20CB7AC",
+   "subject": "2475263C78549014",
+   "teachers": [
+    "D7A7A3CC8C3D5F16"
+   ],
+   "classes": [
+    "E41686CD66160227"
+   ],
+   "groups": [
+    "B093E3B47DF2FC58"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "0E66C6BE51478B93",
+   "subject": "93550840067F0CFC",
+   "teachers": [
+    "D7A7A3CC8C3D5F16"
+   ],
+   "classes": [
+    "E41686CD66160227"
+   ],
+   "groups": [
+    "B093E3B47DF2FC58"
+   ],
+   "room": "",
+   "hours": 7,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "A0BB4FCD02EBB8D8",
+   "subject": "8350A73F7AAC319F",
+   "teachers": [
+    "D7A7A3CC8C3D5F16"
+   ],
+   "classes": [
+    "E41686CD66160227"
+   ],
+   "groups": [
+    "B093E3B47DF2FC58"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "0EEC8BF97875A42B",
+   "subject": "85F184E0B464C554",
+   "teachers": [
+    "70EB9A0A96263AE6"
+   ],
+   "classes": [
+    "E41686CD66160227"
+   ],
+   "groups": [
+    "B093E3B47DF2FC58"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "8234EFDDADDC5401",
+   "subject": "B3618E1CA06D7A69",
+   "teachers": [
+    "70EB9A0A96263AE6"
+   ],
+   "classes": [
+    "E41686CD66160227"
+   ],
+   "groups": [
+    "B093E3B47DF2FC58"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "BEC4F31CED5EEB81",
+   "subject": "D1711CBD2106119E",
+   "teachers": [
+    "D7A7A3CC8C3D5F16"
+   ],
+   "classes": [
+    "E41686CD66160227"
+   ],
+   "groups": [
+    "B093E3B47DF2FC58"
+   ],
+   "room": "",
+   "hours": 4,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "B50F9E6C6629BC24",
+   "subject": "D98145593A9AFA39",
+   "teachers": [
+    "D7A7A3CC8C3D5F16"
+   ],
+   "classes": [
+    "E41686CD66160227"
+   ],
+   "groups": [
+    "B093E3B47DF2FC58"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "CA482B40F374BAC6",
+   "subject": "85F184E0B464C554",
+   "teachers": [
+    "70EB9A0A96263AE6"
+   ],
+   "classes": [
+    "DE0279E17F9AC098"
+   ],
+   "groups": [
+    "22A60B44EF5FD31C"
+   ],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "469855D2D43CC531",
+   "subject": "B3618E1CA06D7A69",
+   "teachers": [
+    "7DABE929C4A334BF"
+   ],
+   "classes": [
+    "DE0279E17F9AC098"
+   ],
+   "groups": [
+    "22A60B44EF5FD31C"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "5FEE13C8337362D7",
+   "subject": "66E61127E26B524A",
+   "teachers": [
+    "7DABE929C4A334BF"
+   ],
+   "classes": [
+    "DE0279E17F9AC098"
+   ],
+   "groups": [
+    "22A60B44EF5FD31C"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "7522AA7FA3132DD6",
+   "subject": "66E61127E26B524A",
+   "teachers": [
+    "D7A7A3CC8C3D5F16"
+   ],
+   "classes": [
+    "E41686CD66160227"
+   ],
+   "groups": [
+    "B093E3B47DF2FC58"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "E5A34078795C2B9B",
+   "subject": "F5EE8C7298E6E5B7",
+   "teachers": [
+    "14AA4E719D3C7DEC"
+   ],
+   "classes": [
+    "CD73DE0081A0BA05"
+   ],
+   "groups": [
+    "12CC86E3E344F1C3"
+   ],
+   "room": "",
+   "hours": 10,
+   "duration": 2,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "4FEBEC7094A0DF05",
+   "subject": "F5EE8C7298E6E5B7",
+   "teachers": [
+    "70EB9A0A96263AE6"
+   ],
+   "classes": [
+    "864FA3F3EAB06E9B"
+   ],
+   "groups": [
+    "8C1F638711CB4EA7"
+   ],
+   "room": "",
+   "hours": 15,
+   "duration": 3,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "69190876A0C5B20C",
+   "subject": "F5EE8C7298E6E5B7",
+   "teachers": [
+    "F38B2FFC80A4DF5A"
+   ],
+   "classes": [
+    "E01C683E99A46DF0"
+   ],
+   "groups": [
+    "7F60B9FA1F124A78"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 3,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "015C1D5CE4CFED0E",
+   "subject": "F5EE8C7298E6E5B7",
+   "teachers": [
+    "F3F49249DC28FF90"
+   ],
+   "classes": [
+    "E01C683E99A46DF0"
+   ],
+   "groups": [
+    "7F60B9FA1F124A78"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 3,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "F49B8C8DD0522FFF",
+   "subject": "F5EE8C7298E6E5B7",
+   "teachers": [
+    "E512148239292D22"
+   ],
+   "classes": [
+    "E01C683E99A46DF0"
+   ],
+   "groups": [
+    "7F60B9FA1F124A78"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 3,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "68881C56B3CD1E1C",
+   "subject": "F5EE8C7298E6E5B7",
+   "teachers": [
+    "D7A7A3CC8C3D5F16"
+   ],
+   "classes": [
+    "E01C683E99A46DF0"
+   ],
+   "groups": [
+    "7F60B9FA1F124A78"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 3,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "2C2DBA9DA39D2086",
+   "subject": "F5EE8C7298E6E5B7",
+   "teachers": [
+    "7DABE929C4A334BF"
+   ],
+   "classes": [
+    "E01C683E99A46DF0"
+   ],
+   "groups": [
+    "7F60B9FA1F124A78"
+   ],
+   "room": "",
+   "hours": 3,
+   "duration": 3,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "8BF6237B5F6F6B2C",
+   "subject": "ED4D19B885DC0A68",
+   "teachers": [
+    "F3F49249DC28FF90"
+   ],
+   "classes": [
+    "90624FE36B82E6C9"
+   ],
+   "groups": [
+    "ADBAFED0B600860C"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "B6F7B3D02351628D",
+   "subject": "ED4D19B885DC0A68",
+   "teachers": [
+    "6BAD6BE28E7AA6E9"
+   ],
+   "classes": [
+    "90624FE36B82E6C9"
+   ],
+   "groups": [
+    "ADBAFED0B600860C"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "E74C3167FFB218EA",
+   "subject": "ED4D19B885DC0A68",
+   "teachers": [
+    "F38B2FFC80A4DF5A"
+   ],
+   "classes": [
+    "90624FE36B82E6C9"
+   ],
+   "groups": [
+    "ADBAFED0B600860C"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "D98D40983795587B",
+   "subject": "ED4D19B885DC0A68",
+   "teachers": [
+    "D7A7A3CC8C3D5F16"
+   ],
+   "classes": [
+    "90624FE36B82E6C9"
+   ],
+   "groups": [
+    "ADBAFED0B600860C"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "4E8494FB951765DA",
+   "subject": "ED4D19B885DC0A68",
+   "teachers": [
+    "E4163207D0944996"
+   ],
+   "classes": [
+    "90624FE36B82E6C9"
+   ],
+   "groups": [
+    "ADBAFED0B600860C"
+   ],
+   "room": "",
+   "hours": 1,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "64ADBCEAF49E72CE",
+   "subject": "33288E16EBE80FA9",
+   "teachers": [
+    "6BAD6BE28E7AA6E9"
+   ],
+   "classes": [],
+   "groups": [],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "F8993660F6908F31",
+   "subject": "33288E16EBE80FA9",
+   "teachers": [
+    "14AA4E719D3C7DEC"
+   ],
+   "classes": [],
+   "groups": [],
+   "room": "",
+   "hours": 10,
+   "duration": 2,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "A969BD91A4E03F97",
+   "subject": "33288E16EBE80FA9",
+   "teachers": [
+    "14AA4E719D3C7DEC"
+   ],
+   "classes": [],
+   "groups": [],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  },
+  {
+   "id": "1ADC2207823E3122",
+   "subject": "7776C6557C4E4248",
+   "teachers": [
+    "E4163207D0944996"
+   ],
+   "classes": [],
+   "groups": [],
+   "room": "",
+   "hours": 2,
+   "duration": 1,
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "max_daily": 0
+  }
+ ],
+ "events": [
+  {
+   "id": "63A362B4BB8A1881",
+   "lesson": "887367376CE4048F",
+   "place": [
+    2,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "4F77ABB942EDFFA9",
+   "lesson": "62186F4B1422FBEF",
+   "place": [
+    0,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "A98A33D197BC9F31",
+   "lesson": "2CB8CEFC5814B53F",
+   "place": [
+    0,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "E61F1BF92986A329",
+   "lesson": "FFCE69737F62DF26",
+   "place": [
+    2,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "491BB1178A89CF79",
+   "lesson": "49A4C2226A6DC402",
+   "place": [
+    0,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "637C119AF906699E",
+   "lesson": "84F325515366ECE2",
+   "place": [
+    0,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "A13BB87BBF3B9167",
+   "lesson": "84F325515366ECE2",
+   "place": [
+    1,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "A5D50DD09B1F9D08",
+   "lesson": "84F325515366ECE2",
+   "place": [
+    4,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "5B0C691D6C32FB0D",
+   "lesson": "86F9FA211EBF3DEB",
+   "place": [
+    0,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "C6C715BFE6F1CF5F",
+   "lesson": "86F9FA211EBF3DEB",
+   "place": [
+    3,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "899147E0FF2EF417",
+   "lesson": "86F9FA211EBF3DEB",
+   "place": [
+    4,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "078E264984250D88",
+   "lesson": "4619E5DBCBF5514C",
+   "place": [
+    0,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "250E0C178A023907",
+   "lesson": "4619E5DBCBF5514C",
+   "place": [
+    3,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "1DDFE2B6E31F0B44",
+   "lesson": "4619E5DBCBF5514C",
+   "place": [
+    4,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "B4527974E1DFFFE1",
+   "lesson": "36DE6548D90E013A",
+   "place": [
+    1,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "D7879CE4008297E2",
+   "lesson": "36DE6548D90E013A",
+   "place": [
+    3,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "4D7A64045E35055F",
+   "lesson": "36DE6548D90E013A",
+   "place": [
+    4,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "997898F0277B5BE5",
+   "lesson": "17D6AF8FF423F8BE",
+   "place": [
+    0,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "1B3473342063E843",
+   "lesson": "17D6AF8FF423F8BE",
+   "place": [
+    4,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "1B7E243A7C0C7045",
+   "lesson": "5497DB67A54B3B83",
+   "place": [
+    0,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "12B8B80DBA040A94",
+   "lesson": "5497DB67A54B3B83",
+   "place": [
+    3,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "4D2ECB659DF0BDDE",
+   "lesson": "D563D56DC887417C",
+   "place": [
+    2,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "7971084F59095C12",
+   "lesson": "2EB52387AB9F4430",
+   "place": [
+    3,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "8E3B57101EF5D57C",
+   "lesson": "2EB52387AB9F4430",
+   "place": [
+    4,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "5BD247BAD421F543",
+   "lesson": "D8B6DD5B5A1967D0",
+   "place": [
+    3,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "EAED9E2974B8146A",
+   "lesson": "D8B6DD5B5A1967D0",
+   "place": [
+    4,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "11AC44BE1521F652",
+   "lesson": "AFE987C18FDF6614",
+   "place": [
+    4,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "CEF48CDA167E71DA",
+   "lesson": "376F536489D33078",
+   "place": [
+    3,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "43EAF6754FE0F36E",
+   "lesson": "47CD07F7B74C990A",
+   "place": [
+    3,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "2B186E1639DE46D0",
+   "lesson": "BB20E1D5916B2B37",
+   "place": [
+    3,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "8FC37287819B0C58",
+   "lesson": "9015B7C24B717794",
+   "place": [
+    1,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "E5EA919CE83811EE",
+   "lesson": "21F343908E449800",
+   "place": [
+    1,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "7E41FADEDB74D2F6",
+   "lesson": "18AFAF544382AD47",
+   "place": [
+    2,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "324CE2DD2D3F0BF3",
+   "lesson": "1B2528692BD8AF21",
+   "place": [
+    2,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "DD8C1B6F385D1C97",
+   "lesson": "5B336BC8C2553659",
+   "place": [
+    0,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "C2425FCE593A5937",
+   "lesson": "5B336BC8C2553659",
+   "place": [
+    3,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "D4E5205B68E217FF",
+   "lesson": "A55C9C8E2F7C9CC7",
+   "place": [
+    2,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "367F02FA61B25908",
+   "lesson": "A55C9C8E2F7C9CC7",
+   "place": [
+    3,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "910AB842BE372C51",
+   "lesson": "5044DF5C81B2499E",
+   "place": [
+    0,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "6E69634620A958F0",
+   "lesson": "5044DF5C81B2499E",
+   "place": [
+    1,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "1E2B2935D5ECE6D3",
+   "lesson": "5044DF5C81B2499E",
+   "place": [
+    4,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "DDE56D3AD757944C",
+   "lesson": "105CBC52D65F45B6",
+   "place": [
+    0,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "8B8CC88A253676A6",
+   "lesson": "105CBC52D65F45B6",
+   "place": [
+    2,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "54EEFC4B3BFA9E9C",
+   "lesson": "105CBC52D65F45B6",
+   "place": [
+    4,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "C5BD74D18FB15A3D",
+   "lesson": "2950E9AE5089BE3B",
+   "place": [
+    1,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "930B1EB64B20CF98",
+   "lesson": "2950E9AE5089BE3B",
+   "place": [
+    2,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "6642601466B7FB8C",
+   "lesson": "2950E9AE5089BE3B",
+   "place": [
+    4,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "54447A8FB76A1294",
+   "lesson": "038D04FB1018D7F5",
+   "place": [
+    0,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "185251BD563AF47E",
+   "lesson": "038D04FB1018D7F5",
+   "place": [
+    1,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "7EA3A365EC42C96B",
+   "lesson": "038D04FB1018D7F5",
+   "place": [
+    2,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "A20B6436D8EC586B",
+   "lesson": "E7A82C20E5E6DF0C",
+   "place": [
+    0,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "C3ADB9EFAAE9AEE3",
+   "lesson": "F72699EC6A1E860D",
+   "place": [
+    0,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "6CA7DC2E35BCDF3C",
+   "lesson": "F72699EC6A1E860D",
+   "place": [
+    1,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "0F5E378F5498130B",
+   "lesson": "F72699EC6A1E860D",
+   "place": [
+    2,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "2C47BA69B974A4A0",
+   "lesson": "F72699EC6A1E860D",
+   "place": [
+    3,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "B3A2159E8F1579F2",
+   "lesson": "3C37BB0118B0F10E",
+   "place": [
+    1,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "943628F75581EBC2",
+   "lesson": "3C37BB0118B0F10E",
+   "place": [
+    3,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "D53A5EBA6A24B2C3",
+   "lesson": "3C37BB0118B0F10E",
+   "place": [
+    4,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "D9F0D7F079D762C9",
+   "lesson": "1807DFAF1F7E4273",
+   "place": [
+    2,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "03024FA456B817FE",
+   "lesson": "50A22A1B59ADB533",
+   "place": [
+    0,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "A2E2997738497912",
+   "lesson": "50A22A1B59ADB533",
+   "place": [
+    0,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "F126C3ABDA159D43",
+   "lesson": "50A22A1B59ADB533",
+   "place": [
+    1,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "C79F0652048DC233",
+   "lesson": "50A22A1B59ADB533",
+   "place": [
+    3,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "83D335A67506E7D2",
+   "lesson": "50A22A1B59ADB533",
+   "place": [
+    3,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "5E933F99A152CFD1",
+   "lesson": "50A22A1B59ADB533",
+   "place": [
+    4,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "300A0066B14358CE",
+   "lesson": "50A22A1B59ADB533",
+   "place": [
+    4,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "FB8AC7F102EAA918",
+   "lesson": "A02FB0079B751151",
+   "place": [
+    2,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "F8E983D95479CBEC",
+   "lesson": "09BB14549D7A21CB",
+   "place": [
+    1,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "34D4B99C76A5920C",
+   "lesson": "6D1675C1767187FD",
+   "place": [
+    2,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "B49CB0612BB8159D",
+   "lesson": "1E93A2FBE0DF084E",
+   "place": [
+    1,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "6AC3124D914FE82D",
+   "lesson": "8052B13CDC7E351E",
+   "place": [
+    1,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "96CCAFFFAE5F364A",
+   "lesson": "40676334EC79B3BE",
+   "place": [
+    1,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "073EF4721BA98D07",
+   "lesson": "D11AD49DF272C2EF",
+   "place": [
+    1,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "0B62FB056B66B0D9",
+   "lesson": "B7158E9CBC42513D",
+   "place": [
+    0,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "836FE72ABBF7D98F",
+   "lesson": "B7158E9CBC42513D",
+   "place": [
+    0,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "F18832D1FD07B7CA",
+   "lesson": "B7158E9CBC42513D",
+   "place": [
+    1,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "A9BDBBEBA86B276B",
+   "lesson": "B7158E9CBC42513D",
+   "place": [
+    2,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "515C8A2758F00800",
+   "lesson": "B7158E9CBC42513D",
+   "place": [
+    2,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "7D02487E415E9732",
+   "lesson": "B7158E9CBC42513D",
+   "place": [
+    3,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "4006B2B4D6C6216C",
+   "lesson": "B7158E9CBC42513D",
+   "place": [
+    3,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "221BA4C47D70F3E1",
+   "lesson": "B7158E9CBC42513D",
+   "place": [
+    4,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "5DBE75B9CF176B34",
+   "lesson": "B7158E9CBC42513D",
+   "place": [
+    4,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "775371C6C1453DBC",
+   "lesson": "480BDB8B060ECC8A",
+   "place": [
+    0,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "8325AE95460CEE06",
+   "lesson": "480BDB8B060ECC8A",
+   "place": [
+    1,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "4DD75F6766618C34",
+   "lesson": "480BDB8B060ECC8A",
+   "place": [
+    2,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "D09FE2930DDF3E1D",
+   "lesson": "480BDB8B060ECC8A",
+   "place": [
+    3,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "B9D3FBD21086A15E",
+   "lesson": "480BDB8B060ECC8A",
+   "place": [
+    4,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "824B46C5A941C30C",
+   "lesson": "BA24F8B84A205268",
+   "place": [
+    0,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "DBA6F478C40E9498",
+   "lesson": "BA24F8B84A205268",
+   "place": [
+    2,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "9DCD0C967B8B7DA0",
+   "lesson": "BA24F8B84A205268",
+   "place": [
+    4,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "F975CC37827761FF",
+   "lesson": "EA75E258CCC284DA",
+   "place": [
+    1,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "7D3E7A21533996D9",
+   "lesson": "6AA8B0B5C494A9BC",
+   "place": [
+    1,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "5C2E282656F0A1E4",
+   "lesson": "05306BB7E7286B1B",
+   "place": [
+    3,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "8FE20A24FD25AF7C",
+   "lesson": "328BF8AE57AD057D",
+   "place": [
+    0,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "C263064F2CA20BA5",
+   "lesson": "328BF8AE57AD057D",
+   "place": [
+    0,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "F5E3260FF28D937A",
+   "lesson": "328BF8AE57AD057D",
+   "place": [
+    1,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "DE49078A854241C3",
+   "lesson": "328BF8AE57AD057D",
+   "place": [
+    1,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "ECEDDC6F1B3AAFEC",
+   "lesson": "328BF8AE57AD057D",
+   "place": [
+    2,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "076467E836FFFEDB",
+   "lesson": "328BF8AE57AD057D",
+   "place": [
+    3,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "6DD229A435ACF140",
+   "lesson": "328BF8AE57AD057D",
+   "place": [
+    3,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "20615B8586CDBAE5",
+   "lesson": "328BF8AE57AD057D",
+   "place": [
+    4,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "DC7EF9E3CAABA2C9",
+   "lesson": "328BF8AE57AD057D",
+   "place": [
+    4,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "B7653CCEDFB1DD4E",
+   "lesson": "FF44577CB8BFE77A",
+   "place": [
+    2,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "ADB199938F133EED",
+   "lesson": "1F684C509E74D650",
+   "place": [
+    1,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "5D1E70FF53650BE2",
+   "lesson": "85C80EDE202CB15A",
+   "place": [
+    0,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "885F376A645A3F72",
+   "lesson": "85C80EDE202CB15A",
+   "place": [
+    1,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "3065CF758A020C5C",
+   "lesson": "85C80EDE202CB15A",
+   "place": [
+    2,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "B46EF0858D2292DE",
+   "lesson": "85C80EDE202CB15A",
+   "place": [
+    3,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "24DBBEFDBA8ED768",
+   "lesson": "85C80EDE202CB15A",
+   "place": [
+    4,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "CC9563DCD0DE0FC4",
+   "lesson": "F92AF541A5DC5896",
+   "place": [
+    0,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "CD463D490FA2CCB6",
+   "lesson": "F92AF541A5DC5896",
+   "place": [
+    2,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "47C624D608D68E5B",
+   "lesson": "F92AF541A5DC5896",
+   "place": [
+    4,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "D1D503AEF0E39542",
+   "lesson": "6CBDBB71075F0E1D",
+   "place": [
+    0,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "F68DDDCB447EB77A",
+   "lesson": "6A50F9FC5B20F1E6",
+   "place": [
+    0,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "20C3E9D55B4D7862",
+   "lesson": "6A50F9FC5B20F1E6",
+   "place": [
+    0,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "B167344F2FC32FD3",
+   "lesson": "6A50F9FC5B20F1E6",
+   "place": [
+    1,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "AE0FA7182F85B878",
+   "lesson": "6A50F9FC5B20F1E6",
+   "place": [
+    1,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "9F6FC52BA4275452",
+   "lesson": "6A50F9FC5B20F1E6",
+   "place": [
+    2,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "F51AFD8C8BCB4528",
+   "lesson": "6A50F9FC5B20F1E6",
+   "place": [
+    2,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "83BB5916388F4C24",
+   "lesson": "6A50F9FC5B20F1E6",
+   "place": [
+    3,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "178C98E48AF1654B",
+   "lesson": "6A50F9FC5B20F1E6",
+   "place": [
+    3,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "6823C7A5BF450B3D",
+   "lesson": "C6CF381A3D43281C",
+   "place": [
+    4,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "25490C725312A6CD",
+   "lesson": "C6605AFB38356E48",
+   "place": [
+    3,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "7888CB200A4F54D5",
+   "lesson": "C6605AFB38356E48",
+   "place": [
+    4,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "5A5FEA38183B60E5",
+   "lesson": "074658348AFD44AE",
+   "place": [
+    0,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "B2CEDC0CB4637028",
+   "lesson": "074658348AFD44AE",
+   "place": [
+    2,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "542A617441D9ACBC",
+   "lesson": "8A94A6EFEF463C53",
+   "place": [
+    1,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "80D5DE4F29EF7AB1",
+   "lesson": "8A94A6EFEF463C53",
+   "place": [
+    2,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "170DC4B1D1032863",
+   "lesson": "8A94A6EFEF463C53",
+   "place": [
+    3,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "330E37776EE1BD26",
+   "lesson": "8A94A6EFEF463C53",
+   "place": [
+    4,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "3DBA17952BB0F862",
+   "lesson": "E39F13D765988372",
+   "place": [
+    2,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "7E9B56D2F7CA1132",
+   "lesson": "E39F13D765988372",
+   "place": [
+    3,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "892E3A2228945037",
+   "lesson": "3A6EF8D325CE93FC",
+   "place": [
+    0,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "B89AA45C6C066C64",
+   "lesson": "3A6EF8D325CE93FC",
+   "place": [
+    0,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "5CFA1862DB2DCFAD",
+   "lesson": "3A6EF8D325CE93FC",
+   "place": [
+    1,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "4F077111F7EB0FDA",
+   "lesson": "3A6EF8D325CE93FC",
+   "place": [
+    2,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "EF642B5F70C313A5",
+   "lesson": "3A6EF8D325CE93FC",
+   "place": [
+    2,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "7B57AF649B4AB5AA",
+   "lesson": "3A6EF8D325CE93FC",
+   "place": [
+    3,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "36079A2AE59D7568",
+   "lesson": "3A6EF8D325CE93FC",
+   "place": [
+    3,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "C18CAF101DA8886A",
+   "lesson": "3A6EF8D325CE93FC",
+   "place": [
+    4,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "ADD46507B6FD8E22",
+   "lesson": "8A88CE1B46DE6EEF",
+   "place": [
+    1,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "1D7A466A28770C03",
+   "lesson": "F55EE054438973EC",
+   "place": [
+    4,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "6EFF8CEFA41F7AAB",
+   "lesson": "A07481BDF1B8EA7C",
+   "place": [
+    2,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "F73F7C61F2B05206",
+   "lesson": "A07481BDF1B8EA7C",
+   "place": [
+    3,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "8C01DD1C07CEF7B1",
+   "lesson": "2DE6C061D6ECF6FD",
+   "place": [
+    0,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "E551700EA5EFF5D0",
+   "lesson": "2DE6C061D6ECF6FD",
+   "place": [
+    1,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "44CB95A7CA197161",
+   "lesson": "DDBA7481A6745FCA",
+   "place": [
+    0,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "65F71BD55D7F8476",
+   "lesson": "DDBA7481A6745FCA",
+   "place": [
+    2,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "75CFEF7F85616709",
+   "lesson": "DDBA7481A6745FCA",
+   "place": [
+    3,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "5AABBCEBD728F6F4",
+   "lesson": "DDBA7481A6745FCA",
+   "place": [
+    4,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "1B82AEF2235086B5",
+   "lesson": "D1E29034839890CD",
+   "place": [
+    2,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "38FBC0438F45022B",
+   "lesson": "D1E29034839890CD",
+   "place": [
+    4,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "609D6F0B74BD84F8",
+   "lesson": "853C2409A20CB7AC",
+   "place": [
+    3,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "0C59237F97D15506",
+   "lesson": "0E66C6BE51478B93",
+   "place": [
+    0,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "8F68DC4AAB8683D9",
+   "lesson": "0E66C6BE51478B93",
+   "place": [
+    1,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "F7A36672413E4826",
+   "lesson": "0E66C6BE51478B93",
+   "place": [
+    1,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "77F3813076035237",
+   "lesson": "0E66C6BE51478B93",
+   "place": [
+    2,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "CBE4480ED371A273",
+   "lesson": "0E66C6BE51478B93",
+   "place": [
+    2,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "F247B36987C27A5C",
+   "lesson": "0E66C6BE51478B93",
+   "place": [
+    4,
+    1
+   ],
+   "locked": false
+  },
+  {
+   "id": "4BF8550546AF8C03",
+   "lesson": "0E66C6BE51478B93",
+   "place": [
+    4,
+    2
+   ],
+   "locked": false
+  },
+  {
+   "id": "0AB834749717E79B",
+   "lesson": "A0BB4FCD02EBB8D8",
+   "place": [
+    3,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "73D2FD5BEC2CFC18",
+   "lesson": "0EEC8BF97875A42B",
+   "place": [
+    3,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "CC941D4262E03DD6",
+   "lesson": "0EEC8BF97875A42B",
+   "place": [
+    4,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "F59D39089331A9FB",
+   "lesson": "8234EFDDADDC5401",
+   "place": [
+    0,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "8A70BDBA7A878950",
+   "lesson": "BEC4F31CED5EEB81",
+   "place": [
+    0,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "51838415E5EEC87E",
+   "lesson": "BEC4F31CED5EEB81",
+   "place": [
+    2,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "644F7AE91AEB50C8",
+   "lesson": "BEC4F31CED5EEB81",
+   "place": [
+    3,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "DC48387188E6823D",
+   "lesson": "BEC4F31CED5EEB81",
+   "place": [
+    4,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "0BD313ACF8CC5CBE",
+   "lesson": "B50F9E6C6629BC24",
+   "place": [
+    1,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "C0A904A0123544BF",
+   "lesson": "B50F9E6C6629BC24",
+   "place": [
+    2,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "BB811C041EA300B9",
+   "lesson": "B50F9E6C6629BC24",
+   "place": [
+    4,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "55BCE35DE7B36DCB",
+   "lesson": "CA482B40F374BAC6",
+   "place": [
+    2,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "F54CD1A74E99B1D4",
+   "lesson": "CA482B40F374BAC6",
+   "place": [
+    3,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "B78AF267527F3B9A",
+   "lesson": "469855D2D43CC531",
+   "place": [
+    4,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "3E168259B0C1A87C",
+   "lesson": "5FEE13C8337362D7",
+   "place": [
+    0,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "DC76B81C839B3D57",
+   "lesson": "7522AA7FA3132DD6",
+   "place": [
+    4,
+    6
+   ],
+   "locked": false
+  },
+  {
+   "id": "0A919C736B3AE0EE",
+   "lesson": "E5A34078795C2B9B",
+   "place": [
+    0,
+    7
+   ],
+   "locked": false
+  },
+  {
+   "id": "2F2D612A987F0BC6",
+   "lesson": "E5A34078795C2B9B",
+   "place": [
+    1,
+    7
+   ],
+   "locked": false
+  },
+  {
+   "id": "1D1C91E3C4CF4357",
+   "lesson": "E5A34078795C2B9B",
+   "place": [
+    2,
+    7
+   ],
+   "locked": false
+  },
+  {
+   "id": "61B1C6F2972E6A6D",
+   "lesson": "E5A34078795C2B9B",
+   "place": [
+    3,
+    7
+   ],
+   "locked": false
+  },
+  {
+   "id": "7FBB836C042F7867",
+   "lesson": "E5A34078795C2B9B",
+   "place": [
+    4,
+    7
+   ],
+   "locked": false
+  },
+  {
+   "id": "BAF0F074627D12F9",
+   "lesson": "4FEBEC7094A0DF05",
+   "place": [
+    0,
+    7
+   ],
+   "locked": false
+  },
+  {
+   "id": "C8DBB03C7725D85C",
+   "lesson": "4FEBEC7094A0DF05",
+   "place": [
+    1,
+    7
+   ],
+   "locked": false
+  },
+  {
+   "id": "DC4F32A93DB48829",
+   "lesson": "4FEBEC7094A0DF05",
+   "place": [
+    2,
+    7
+   ],
+   "locked": false
+  },
+  {
+   "id": "C459318E446E48AF",
+   "lesson": "4FEBEC7094A0DF05",
+   "place": [
+    3,
+    7
+   ],
+   "locked": false
+  },
+  {
+   "id": "94917337BC3A3D5D",
+   "lesson": "4FEBEC7094A0DF05",
+   "place": [
+    4,
+    7
+   ],
+   "locked": false
+  },
+  {
+   "id": "DE98AE789A2AC845",
+   "lesson": "69190876A0C5B20C",
+   "place": [
+    1,
+    7
+   ],
+   "locked": false
+  },
+  {
+   "id": "87C6B361F4039D41",
+   "lesson": "015C1D5CE4CFED0E",
+   "place": [
+    3,
+    7
+   ],
+   "locked": false
+  },
+  {
+   "id": "CE4B8B075E55288F",
+   "lesson": "F49B8C8DD0522FFF",
+   "place": [
+    4,
+    7
+   ],
+   "locked": false
+  },
+  {
+   "id": "8DFE3A6513737A12",
+   "lesson": "68881C56B3CD1E1C",
+   "place": [
+    0,
+    7
+   ],
+   "locked": false
+  },
+  {
+   "id": "CEC8C56F67C851C7",
+   "lesson": "2C2DBA9DA39D2086",
+   "place": [
+    2,
+    7
+   ],
+   "locked": false
+  },
+  {
+   "id": "CE21626C1B0C6BB0",
+   "lesson": "8BF6237B5F6F6B2C",
+   "place": [
+    0,
+    0
+   ],
+   "locked": false
+  },
+  {
+   "id": "F9F73EFB66A27C00",
+   "lesson": "B6F7B3D02351628D",
+   "place": [
+    1,
+    0
+   ],
+   "locked": false
+  },
+  {
+   "id": "0D15BBA5325737A8",
+   "lesson": "E74C3167FFB218EA",
+   "place": [
+    2,
+    0
+   ],
+   "locked": false
+  },
+  {
+   "id": "2B4366B3CCE719C1",
+   "lesson": "D98D40983795587B",
+   "place": [
+    3,
+    0
+   ],
+   "locked": false
+  },
+  {
+   "id": "5FCE192EE983F1EC",
+   "lesson": "4E8494FB951765DA",
+   "place": [
+    4,
+    0
+   ],
+   "locked": false
+  },
+  {
+   "id": "EFCDA3CC2AE9DA1F",
+   "lesson": "64ADBCEAF49E72CE",
+   "place": [
+    0,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "B4E6A88C37F30B26",
+   "lesson": "64ADBCEAF49E72CE",
+   "place": [
+    3,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "B66EF9B5CD963F25",
+   "lesson": "F8993660F6908F31",
+   "place": [
+    0,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "72888C53E63E8667",
+   "lesson": "F8993660F6908F31",
+   "place": [
+    1,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "5B0D1E48091B59FE",
+   "lesson": "F8993660F6908F31",
+   "place": [
+    2,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "F6210952FA9495CA",
+   "lesson": "F8993660F6908F31",
+   "place": [
+    3,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "F3017F88D744F400",
+   "lesson": "F8993660F6908F31",
+   "place": [
+    4,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "08DFAE47EF193855",
+   "lesson": "A969BD91A4E03F97",
+   "place": [
+    0,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "DBF18A0FE6F18DC9",
+   "lesson": "A969BD91A4E03F97",
+   "place": [
+    1,
+    5
+   ],
+   "locked": false
+  },
+  {
+   "id": "A6B55717A682C1C3",
+   "lesson": "1ADC2207823E3122",
+   "place": [
+    1,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "4A939D450C092219",
+   "lesson": "1ADC2207823E3122",
+   "place": [
+    3,
+    4
+   ],
+   "locked": false
+  },
+  {
+   "id": "10C52DCFA6E0D161",
+   "lesson": "FCF2C86D93944318",
+   "place": [
+    1,
+    3
+   ],
+   "locked": false
+  },
+  {
+   "id": "497254CB01DE9900",
+   "lesson": "9B97D72A50E98D6D",
+   "place": [
+    1,
+    5
+   ],
+   "locked": false
+  }
+ ],
+ "teacher_rules": {
+  "F38B2FFC80A4DF5A": {
+   "max_daily": {
+    "v": 6,
+    "w": 0,
+    "on": true
+   }
+  },
+  "F3F49249DC28FF90": {
+   "max_daily": {
+    "v": 6,
+    "w": 0,
+    "on": true
+   }
+  },
+  "E512148239292D22": {
+   "max_daily": {
+    "v": 6,
+    "w": 0,
+    "on": true
+   }
+  },
+  "6BAD6BE28E7AA6E9": {
+   "max_daily": {
+    "v": 6,
+    "w": 0,
+    "on": true
+   }
+  },
+  "D7A7A3CC8C3D5F16": {
+   "max_daily": {
+    "v": 6,
+    "w": 0,
+    "on": true
+   }
+  },
+  "7DABE929C4A334BF": {
+   "max_daily": {
+    "v": 6,
+    "w": 0,
+    "on": true
+   }
+  },
+  "70EB9A0A96263AE6": {
+   "max_daily": {
+    "v": 8,
+    "w": 0,
+    "on": true
+   }
+  }
+ },
+ "class_rules": {
+  "24114258751B4C83": {
+   "allowed": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     2
+    ],
+    [
+     0,
+     3
+    ],
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     1,
+     4
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     1,
+     6
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     2,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     2,
+     4
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     2,
+     6
+    ],
+    [
+     3,
+     1
+    ],
+    [
+     3,
+     2
+    ],
+    [
+     3,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     3,
+     5
+    ],
+    [
+     3,
+     6
+    ],
+    [
+     4,
+     1
+    ],
+    [
+     4,
+     2
+    ],
+    [
+     4,
+     3
+    ],
+    [
+     4,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     4,
+     6
+    ]
+   ],
+   "compact": {
+    "v": true,
+    "w": 0,
+    "on": true
+   }
+  },
+  "B766FF10B437BDB5": {
+   "allowed": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     2
+    ],
+    [
+     0,
+     3
+    ],
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     1,
+     4
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     1,
+     6
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     2,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     2,
+     4
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     2,
+     6
+    ],
+    [
+     3,
+     1
+    ],
+    [
+     3,
+     2
+    ],
+    [
+     3,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     3,
+     5
+    ],
+    [
+     3,
+     6
+    ],
+    [
+     4,
+     1
+    ],
+    [
+     4,
+     2
+    ],
+    [
+     4,
+     3
+    ],
+    [
+     4,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     4,
+     6
+    ]
+   ],
+   "compact": {
+    "v": true,
+    "w": 0,
+    "on": true
+   }
+  },
+  "D9090B8906555096": {
+   "allowed": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     2
+    ],
+    [
+     0,
+     3
+    ],
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     1,
+     4
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     1,
+     6
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     2,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     2,
+     4
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     2,
+     6
+    ],
+    [
+     3,
+     1
+    ],
+    [
+     3,
+     2
+    ],
+    [
+     3,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     3,
+     5
+    ],
+    [
+     3,
+     6
+    ],
+    [
+     4,
+     1
+    ],
+    [
+     4,
+     2
+    ],
+    [
+     4,
+     3
+    ],
+    [
+     4,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     4,
+     6
+    ]
+   ],
+   "compact": {
+    "v": true,
+    "w": 0,
+    "on": true
+   }
+  },
+  "7608D9425D111A9D": {
+   "allowed": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     2
+    ],
+    [
+     0,
+     3
+    ],
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     1,
+     4
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     1,
+     6
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     2,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     2,
+     4
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     2,
+     6
+    ],
+    [
+     3,
+     1
+    ],
+    [
+     3,
+     2
+    ],
+    [
+     3,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     3,
+     5
+    ],
+    [
+     3,
+     6
+    ],
+    [
+     4,
+     1
+    ],
+    [
+     4,
+     2
+    ],
+    [
+     4,
+     3
+    ],
+    [
+     4,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     4,
+     6
+    ]
+   ],
+   "compact": {
+    "v": true,
+    "w": 0,
+    "on": true
+   }
+  },
+  "E41686CD66160227": {
+   "allowed": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     2
+    ],
+    [
+     0,
+     3
+    ],
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     1,
+     4
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     1,
+     6
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     2,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     2,
+     4
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     2,
+     6
+    ],
+    [
+     3,
+     1
+    ],
+    [
+     3,
+     2
+    ],
+    [
+     3,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     3,
+     5
+    ],
+    [
+     3,
+     6
+    ],
+    [
+     4,
+     1
+    ],
+    [
+     4,
+     2
+    ],
+    [
+     4,
+     3
+    ],
+    [
+     4,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     4,
+     6
+    ]
+   ],
+   "compact": {
+    "v": true,
+    "w": 0,
+    "on": true
+   }
+  },
+  "DE0279E17F9AC098": {
+   "allowed": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     2
+    ],
+    [
+     0,
+     3
+    ],
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     1,
+     3
+    ],
+    [
+     1,
+     4
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     1,
+     6
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     2,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     2,
+     4
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     2,
+     6
+    ],
+    [
+     3,
+     1
+    ],
+    [
+     3,
+     2
+    ],
+    [
+     3,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     3,
+     5
+    ],
+    [
+     3,
+     6
+    ],
+    [
+     4,
+     1
+    ],
+    [
+     4,
+     2
+    ],
+    [
+     4,
+     3
+    ],
+    [
+     4,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     4,
+     6
+    ]
+   ],
+   "compact": {
+    "v": true,
+    "w": 0,
+    "on": true
+   }
+  },
+  "CD73DE0081A0BA05": {
+   "allowed": [
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     1,
+     7
+    ],
+    [
+     1,
+     8
+    ],
+    [
+     2,
+     7
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     3,
+     7
+    ],
+    [
+     3,
+     8
+    ],
+    [
+     4,
+     7
+    ],
+    [
+     4,
+     8
+    ]
+   ]
+  },
+  "E01C683E99A46DF0": {
+   "allowed": [
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     0,
+     9
+    ],
+    [
+     1,
+     7
+    ],
+    [
+     1,
+     8
+    ],
+    [
+     1,
+     9
+    ],
+    [
+     2,
+     7
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     2,
+     9
+    ],
+    [
+     3,
+     7
+    ],
+    [
+     3,
+     8
+    ],
+    [
+     3,
+     9
+    ],
+    [
+     4,
+     7
+    ],
+    [
+     4,
+     8
+    ],
+    [
+     4,
+     9
+    ]
+   ]
+  },
+  "864FA3F3EAB06E9B": {
+   "allowed": [
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     0,
+     9
+    ],
+    [
+     1,
+     7
+    ],
+    [
+     1,
+     8
+    ],
+    [
+     1,
+     9
+    ],
+    [
+     2,
+     7
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     2,
+     9
+    ],
+    [
+     3,
+     7
+    ],
+    [
+     3,
+     8
+    ],
+    [
+     3,
+     9
+    ],
+    [
+     4,
+     7
+    ],
+    [
+     4,
+     8
+    ],
+    [
+     4,
+     9
+    ]
+   ]
+  },
+  "90624FE36B82E6C9": {
+   "allowed": [
+    [
+     0,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     2,
+     0
+    ],
+    [
+     3,
+     0
+    ],
+    [
+     4,
+     0
+    ]
+   ]
+  }
+ },
+ "school": "Δοκιμαστικό Δημοτικό Σχολείο",
+ "year": "2026 - 2027",
+ "subject_rules": {
+  "8350A73F7AAC319F": {
+   "max_per_day": {
+    "v": 1,
+    "w": 0,
+    "on": true
+   }
+  },
+  "93550840067F0CFC": {
+   "max_per_day": {
+    "v": 2,
+    "w": 0,
+    "on": true
+   }
+  },
+  "D1711CBD2106119E": {
+   "max_per_day": {
+    "v": 1,
+    "w": 0,
+    "on": true
+   }
+  },
+  "85F184E0B464C554": {
+   "max_per_day": {
+    "v": 1,
+    "w": 0,
+    "on": true
+   }
+  },
+  "B7A1774F1A42721E": {
+   "max_per_day": {
+    "v": 1,
+    "w": 0,
+    "on": true
+   }
+  },
+  "2475263C78549014": {
+   "max_per_day": {
+    "v": 1,
+    "w": 0,
+    "on": true
+   }
+  },
+  "D98145593A9AFA39": {
+   "max_per_day": {
+    "v": 1,
+    "w": 0,
+    "on": true
+   }
+  },
+  "B3618E1CA06D7A69": {
+   "max_per_day": {
+    "v": 1,
+    "w": 0,
+    "on": true
+   }
+  },
+  "B6EAFFF5782AFE6B": {
+   "max_per_day": {
+    "v": 1,
+    "w": 0,
+    "on": true
+   }
+  },
+  "FA97002CFCBAD167": {
+   "max_per_day": {
+    "v": 1,
+    "w": 0,
+    "on": true
+   }
+  },
+  "66EEBC578F4ECB4F": {
+   "max_per_day": {
+    "v": 1,
+    "w": 0,
+    "on": true
+   }
+  },
+  "8C53765F4EC0A954": {
+   "max_per_day": {
+    "v": 1,
+    "w": 0,
+    "on": true
+   }
+  },
+  "B2C55523807C7E30": {
+   "max_per_day": {
+    "v": 1,
+    "w": 0,
+    "on": true
+   }
+  },
+  "66E61127E26B524A": {
+   "max_per_day": {
+    "v": 1,
+    "w": 0,
+    "on": true
+   }
+  },
+  "D4F398EE4B5C1A95": {
+   "max_per_day": {
+    "v": 1,
+    "w": 0,
+    "on": true
+   }
+  },
+  "265C28EA0879D955": {
+   "max_per_day": {
+    "v": 1,
+    "w": 0,
+    "on": true
+   }
+  },
+  "ED4D19B885DC0A68": {
+   "day_end": {
+    "v": 5,
+    "w": 0,
+    "on": true
+   }
+  }
+ },
+ "global_rules": {
+  "min_gaps": {
+   "w": 1,
+   "on": true
+  }
+ }
+}

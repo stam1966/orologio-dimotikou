@@ -1,0 +1,82 @@
+# Έλεγχος σε πραγματικά Windows με τον πραγματικό OR-Tools σε κάθε αλλαγή.
+# Σε ετικέτα έκδοσης (v0.5.0 κ.λπ.): Setup.exe, πλήρες πακέτο και αρχείο ενημέρωσης στα Releases.
+name: Έλεγχος και πακέτα
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Κατασκευή runtime και πακέτων
+        run: python -X utf8 tools/build_package.py
+
+      - name: Έλεγχος εκκίνησης (preflight) με το runtime του πακέτου
+        working-directory: dist/Orologio_Dimotikou
+        run: .\runtime\python.exe -X utf8 src\preflight.py
+
+      - name: Αυτόματοι έλεγχοι με το runtime του πακέτου (πραγματικός OR-Tools)
+        working-directory: dist/Orologio_Dimotikou
+        run: .\runtime\python.exe -X utf8 -m unittest discover -s tests -v
+
+      - name: Έλεγχος λειτουργίας (δοκιμαστικό σχολείο, Edge PDF, υπηρεσία)
+        working-directory: dist/Orologio_Dimotikou
+        run: |
+          New-Item -ItemType Directory -Force tools | Out-Null
+          Copy-Item ..\..\tools\smoke.py tools\
+          .\runtime\python.exe -X utf8 tools\smoke.py
+          Remove-Item -Recurse -Force tools, data\app.log, data\app.url -ErrorAction SilentlyContinue
+
+      - name: Setup.exe (Inno Setup)
+        run: |
+          $v = (Get-Content dist/VERSION.txt).Split('-')[0]
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" }
+          & $iscc "/DAppVersion=$v" "/DSourceDir=..\dist\Orologio_Dimotikou" installer\orologio.iss
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Δοκιμαστική σιωπηλή εγκατάσταση
+        run: |
+          $setup = Get-ChildItem dist\Orologio_Dimotikou_Setup_*.exe | Select-Object -First 1
+          Start-Process $setup.FullName -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=' -Wait
+          $app = "$env:LOCALAPPDATA\Programs\OrologioDimotikou"
+          if (-not (Test-Path "$app\runtime\pythonw.exe")) { throw "Η εγκατάσταση δεν δημιούργησε την εφαρμογή" }
+          & "$app\runtime\python.exe" -X utf8 "$app\src\preflight.py"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: orologio-${{ github.sha }}
+          path: |
+            dist/Orologio_Dimotikou_Setup_*.exe
+            dist/Orologio_Enimerosi_*.zip
+          retention-days: 14
+
+      - name: Δημοσίευση έκδοσης
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Ωρολόγιο Δημοτικού ${{ github.ref_name }}
+          body_path: dist/RELEASE_NOTES.md
+          files: |
+            dist/Orologio_Dimotikou_Setup_*.exe
+            dist/Orologio_Dimotikou_*_Egkatastasi.zip
+            dist/Orologio_Enimerosi_*.zip
