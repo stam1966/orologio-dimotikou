@@ -75,6 +75,17 @@ jobs:
           & "$app\runtime\python.exe" -X utf8 "$app\src\preflight.py"
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
+      - name: Είναι νέα έκδοση;
+        id: ver
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = (Get-Content dist/VERSION.txt).Split('-')[0]
+          "tag=v$v" >> $env:GITHUB_OUTPUT
+          gh release view "v$v" -R ${{ github.repository }} *> $null
+          if ($LASTEXITCODE -eq 0) { "new=false" >> $env:GITHUB_OUTPUT; Write-Host "Η v$v υπάρχει ήδη." } else { "new=true" >> $env:GITHUB_OUTPUT; Write-Host "Νέα έκδοση v$v" }
+          exit 0
+
       - uses: actions/upload-artifact@v4
         with:
           name: orologio-${{ github.sha }}
@@ -84,11 +95,13 @@ jobs:
           retention-days: 14
 
       - name: Δημοσίευση έκδοσης
-        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.ver.outputs.new == 'true') || github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: Ωρολόγιο Δημοτικού ${{ github.ref_name }}
+          tag_name: ${{ steps.ver.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Ωρολόγιο Δημοτικού ${{ steps.ver.outputs.tag }}
+          make_latest: true
           body_path: dist/RELEASE_NOTES.md
           files: |
             dist/Orologio_Dimotikou_Setup_*.exe
