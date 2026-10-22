@@ -214,3 +214,17 @@ class AscExport(unittest.TestCase):
         self.assertEqual(key(back), key(q))
         self.assertEqual(back['teachers'][0]['color'], '#00FF00'); self.assertEqual(back['classes'][0]['teacher'], 'ta')
         self.assertEqual(next(l for l in back['lessons'] if l['id'] == 'sw')['days'], [3])
+
+class Curriculum(unittest.TestCase):
+    def test_grade_detection_and_mismatches(self):
+        p = base(4, 2)
+        p['classes'] = [dict(id='c1', name='Α Τάξη', short='Α'), dict(id='c2', name='ΣΤ2', short='ΣΤ2'), dict(id='c3', name='Ολοήμερο', short='ΟΛ')]
+        self.assertEqual([core.grade_of(c) for c in p['classes']], ['Α', 'ΣΤ', ''])
+        p['classes'][2]['grade'] = 'Β'; self.assertEqual(core.grade_of(p['classes'][2]), 'Β')
+        p['curriculum'] = {'Α': {'s1': 4}, 'ΣΤ': {'s2': 3}}
+        core.check_structure(p)
+        m = core.curriculum_check(p)
+        self.assertNotIn('c1', m)                       # Α: 4 ώρες Γλώσσα, όπως πρέπει
+        self.assertIn('2 αντί για 3', m['c2'][0])       # ΣΤ: 2 ώρες ΦΑ αντί 3
+        p['curriculum'] = {'Α': {'zz': 3}}
+        with self.assertRaises(ValueError): core.check_structure(p)

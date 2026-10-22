@@ -131,6 +131,14 @@ def check_structure(p):
             if mx and mn and mx['w']==0 and mn['w']==0 and mn['v']>mx['v']:raise ValueError('Ελάχιστο μεγαλύτερο από μέγιστο.')
             for k,v in rule.get('start_counts',{}).items():
                 if int(k) not in range(n) or type(v)!=int or not 0<=v<=5:raise ValueError('Μη έγκυρος αριθμός ημερών έναρξης.')
+    for c in p['classes']:
+        if c.get('grade') is not None and (type(c['grade'])!=str or len(c['grade'])>10):raise ValueError('Μη έγκυρη τάξη τμήματος.')
+    cur=p.get('curriculum',{})
+    if not isinstance(cur,dict):raise ValueError('Μη έγκυρο επίσημο ωρολόγιο.')
+    for gr,row in cur.items():
+        if type(gr)!=str or not isinstance(row,dict):raise ValueError('Μη έγκυρο επίσημο ωρολόγιο.')
+        for sid,h in row.items():
+            if sid not in ids['subjects'] or type(h)!=int or not 0<=h<=40:raise ValueError('Μη έγκυρη τιμή στο επίσημο ωρολόγιο.')
     g=p.get('global_rules',{}).get('min_gaps')
     if g is not None and (not isinstance(g,dict) or g.get('w',1) not in (1,2,3,4,5)):raise ValueError('Μη έγκυρος γενικός κανόνας κενών.')
     return p
@@ -199,6 +207,33 @@ def slot_status(p,event_id):
     if e['place']:
         k=f"{e['place'][0]},{e['place'][1]}";st[k]='cur';why[k]='Τρέχουσα θέση'
     return {'st':st,'why':why}
+
+GRADES=['Α','Β','Γ','Δ','Ε','ΣΤ']
+def grade_of(c):
+    """Τάξη τμήματος: ρητή ή από το όνομα (π.χ. «Α Τάξη», «Β1», «ΣΤ2»)."""
+    if c.get('grade'):return c['grade']
+    for txt in (c.get('short') or '',c['name']):
+        t=txt.upper().replace('Τ΄','Τ').strip()
+        for g in sorted(GRADES,key=len,reverse=True):
+            if t==g or (t.startswith(g) and (len(t)==len(g) or t[len(g)] in ' 0123456789΄\'-')):return g
+    return ''
+
+def curriculum_check(p):
+    """Αποκλίσεις ωρών ανά τμήμα από το επίσημο ωρολόγιο: {class_id: [κείμενα]}."""
+    cur=p.get('curriculum') or {};S=mapping(p,'subjects');out={}
+    for c in p['classes']:
+        g=grade_of(c);want=cur.get(g)
+        if not g or not want:continue
+        have={}
+        for l in p['lessons']:
+            if c['id'] in l['classes']:have[l['subject']]=have.get(l['subject'],0)+l['hours']
+        msgs=[]
+        for sid,h in want.items():
+            if have.get(sid,0)!=h:msgs.append(S[sid]['name']+': '+str(have.get(sid,0))+' αντί για '+str(h))
+        for sid,h in have.items():
+            if sid not in want and sid in S and h:msgs.append(S[sid]['name']+': '+str(h)+(' ώρα' if h==1 else ' ώρες')+', δεν υπάρχει στο επίσημο ωρολόγιο της '+g+'΄')
+        if msgs:out[c['id']]=msgs
+    return out
 
 def findings(p,complete=False):return R.evaluate(p,complete)
 def validation(p,complete=False):

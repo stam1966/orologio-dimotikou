@@ -56,7 +56,7 @@ def summary(p):
     unplaced = sum(1 for e in p['events'] if not e['place'])
     data = {'errors': [f['text'] for f in hard], 'warnings': [{'text': f['text'], 'penalty': f['penalty']} for f in soft],
             'gaps': rules.gap_total(p, False), 'unplaced': unplaced,
-            'score': rules.score(p) if not unplaced else None}
+            'score': rules.score(p) if not unplaced else None, 'curriculum': core.curriculum_check(p)}
     SUMMARY_CACHE.update(rev=key, data=data)
     return data
 
