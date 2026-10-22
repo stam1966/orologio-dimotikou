@@ -141,23 +141,64 @@ def resources(p,l):return R.resources(p,l)
 def candidates(p,l):return R.candidates(p,l)
 
 def slot_status(p,event_id):
-    """Για χειροκίνητη μετακίνηση: ok / maybe (θέση «υπό όρους») / busy (σύγκρουση) / no (απαγορευμένη)."""
-    ls=mapping(p,'lessons');e=next(x for x in p['events'] if x['id']==event_id);l=ls[e['lesson']];n=len(p['periods'])
-    dom=set(R.candidates(p,l));res=R.resources(p,l);occ=set()
+    """Για χειροκίνητη μετακίνηση. Επιστρέφει {'st':{"d,i":κατάσταση}, 'why':{"d,i":αιτιολογία}}.
+    Κατάσταση: ok / maybe (θέση «υπό όρους») / busy (σύγκρουση) / no (απαγορεύεται από κανόνα)."""
+    ls=mapping(p,'lessons');e=next(x for x in p['events'] if x['id']==event_id);l=ls[e['lesson']];n=len(p['periods']);dur=l['duration']
+    em={t:r for t,r in R.earliest_map(p).items() if r['w']==0}
+    res=R.resources(p,l);occ={}
+    tday={};subjday={};lessonday={};dayend_subj={}
+    S=mapping(p,'subjects');T=mapping(p,'teachers');C=mapping(p,'classes')
     for x in p['events']:
         if x['id']==event_id or not x['place']:continue
-        lx=ls[x['lesson']]
-        for j in range(x['place'][1],x['place'][1]+lx['duration']):
-            for r in R.resources(p,lx):occ.add((r,x['place'][0],j))
-    av=[R.avoid(p,'teachers',t)[0] for t in l['teachers']]+[R.avoid(p,'classes',c)[0] for c in l['classes']]+[R.avoid(p,'subjects',l['subject'])[0]]
-    out={}
+        lx=ls[x['lesson']];d0,i0=x['place']
+        for j in range(i0,i0+lx['duration']):
+            for r in R.resources(p,lx):occ[(r,d0,j)]=lx
+            for t in lx['teachers']:tday.setdefault((t,d0),set()).add(j)
+        if not lx.get('exempt_subject_limit'):
+            for c in lx['classes']:subjday[(lx['subject'],c,d0)]=subjday.get((lx['subject'],c,d0),0)+1
+        lessonday[(lx['id'],d0)]=lessonday.get((lx['id'],d0),0)+lx['duration']
+        for t in lx['teachers']:
+            r=R.rule(p,'subjects',lx['subject'],'day_end')
+            if r and r['w']==0:dayend_subj.setdefault((t,d0),[]).append((r['v'],lx['subject']))
+    av=[(R.avoid(p,'teachers',t)[0],T[t]['name']) for t in l['teachers']]+[(R.avoid(p,'classes',c)[0],C[c]['name']) for c in l['classes']]+[(R.avoid(p,'subjects',l['subject'])[0],S[l['subject']]['name'])]
+    lim=R.subject_limit(p,l['subject']);own_end=R.rule(p,'subjects',l['subject'],'day_end')
+    st={};why={}
+    def who(lx):
+        return S[lx['subject']]['name']+' ('+', '.join(C[c].get('short') or C[c]['name'] for c in lx['classes'])+(', ' if lx['classes'] else '')+', '.join(T[t]['name'] for t in lx['teachers'])+')'
     for d in range(5):
         for i in range(n):
-            if i>n-l['duration'] or (d,i) not in dom:out[f'{d},{i}']='no'
-            elif any((r,d,j) in occ for j in range(i,i+l['duration']) for r in res):out[f'{d},{i}']='busy'
-            elif any((d,j) in a for a in av for j in range(i,i+l['duration'])):out[f'{d},{i}']='maybe'
-            else:out[f'{d},{i}']='ok'
-    return out
+            k=f'{d},{i}';cover=range(i,i+dur)
+            if i>n-dur:st[k]='no';why[k]='Δεν χωράει: χρειάζονται '+str(dur)+' συνεχόμενες ώρες.';continue
+            keys=R.forbid_keys(p,l,d,i,em)
+            if keys:st[k]='no';why[k]='; '.join(R.describe(p,x) for x in keys);continue
+            clash=[]
+            for j in cover:
+                for r in res:
+                    if (r,d,j) in occ:
+                        lx=occ[(r,d,j)];sn=S[lx['subject']]['name']
+                        if r.startswith('t:'):txt=T[r[2:]]['name']+': διδάσκει ήδη '+sn+(' στο '+', '.join(C[c]['name'] for c in lx['classes']) if lx['classes'] else '')+' ('+p['periods'][j]['name']+'η ώρα)'
+                        elif r.startswith('c:'):txt=C[r.split(':')[1]]['name']+': έχει ήδη '+sn+' με '+', '.join(T[t]['name'] for t in lx['teachers'])+' ('+p['periods'][j]['name']+'η ώρα)'
+                        else:txt='Η αίθουσα είναι κατειλημμένη: '+who(lx)
+                        if txt not in clash:clash.append(txt)
+            if clash:st[k]='busy';why[k]='; '.join(clash);continue
+            rules=[]
+            if lim and lim['w']==0 and not l.get('exempt_subject_limit'):
+                for c in l['classes']:
+                    if subjday.get((l['subject'],c,d),0)+1>lim['v']:rules.append(S[l['subject']]['name']+': ήδη '+str(subjday.get((l['subject'],c,d),0))+' φορά/ές '+p['days'][d]+' στο '+C[c]['name']+' (μέγιστο '+str(lim['v'])+')')
+            if l.get('max_daily') and lessonday.get((l['id'],d),0)+dur>l['max_daily']:rules.append('Μέγιστες ώρες/ημέρα της ανάθεσης ('+str(l['max_daily'])+')')
+            for t in l['teachers']:
+                mx=R.rule(p,'teachers',t,'max_daily');used=tday.get((t,d),set())
+                if mx and mx['w']==0 and len(used|set(cover))>mx['v']:rules.append(T[t]['name']+': ξεπερνά τις '+str(mx['v'])+' ώρες την ημέρα')
+                for v,sid in dayend_subj.get((t,d),[]):
+                    if i+dur-1>v:rules.append(T[t]['name']+': έχει '+S[sid]['name']+' εκείνη την ημέρα και πρέπει να τελειώσει έως '+p['periods'][v]['end'])
+                if own_end and own_end['w']==0 and any(j>own_end['v'] for j in used):rules.append(T[t]['name']+': διδάσκει μετά τις '+p['periods'][own_end['v']]['end']+' εκείνη την ημέρα· με '+S[l['subject']]['name']+' πρέπει να τελειώνει νωρίτερα')
+            if rules:st[k]='no';why[k]='; '.join(rules);continue
+            soft=[nm for a,nm in av if any((d,j) in a for j in cover)]
+            if soft:st[k]='maybe';why[k]='Υπό όρους (επιτρέπεται, αλλά καλύτερα να αποφεύγεται) για: '+', '.join(soft)
+            else:st[k]='ok';why[k]='Ελεύθερη θέση'
+    if e['place']:
+        k=f"{e['place'][0]},{e['place'][1]}";st[k]='cur';why[k]='Τρέχουσα θέση'
+    return {'st':st,'why':why}
 
 def findings(p,complete=False):return R.evaluate(p,complete)
 def validation(p,complete=False):

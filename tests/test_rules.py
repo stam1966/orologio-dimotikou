@@ -185,3 +185,17 @@ class Outputs(unittest.TestCase):
         back = core.import_xml(outputs.export_xml(q))
         self.assertEqual(back, q)
         self.assertIn('Σχολείο', outputs.report(q, dict(kind='classes', mode='individual')))
+
+class WhyNot(unittest.TestCase):
+    def test_slot_reasons(self):
+        p = base(2, 1)
+        place = {'la0': [0, 1], 'la1': None, 'lb0': [0, 2]}
+        for e in p['events']: e['place'] = place[e['id']]
+        p['subject_rules']['s1'] = {'max_per_day': {'v': 1, 'w': 0}}
+        p['teacher_rules']['ta'] = {'allowed': [[d, i] for d in range(5) for i in range(P) if (d, i) != (2, 4)], 'avoid': [[3, 3]]}
+        r = core.slot_status(p, 'la1'); st, why = r['st'], r['why']
+        self.assertEqual(st['0,3'], 'no'); self.assertIn('μέγιστο 1', why['0,3'])          # 2η Γλώσσα τη Δευτέρα
+        self.assertEqual(st['2,4'], 'no'); self.assertIn('Διαθεσιμότητα', why['2,4'])
+        self.assertEqual(st['3,3'], 'maybe'); self.assertEqual(st['1,1'], 'ok')
+        p['lessons'][1]['teachers'] = ['ta']; r = core.slot_status(p, 'la1')
+        self.assertEqual(r['st']['0,2'], 'busy'); self.assertIn('διδάσκει ήδη', r['why']['0,2'])  # σύγκρουση εκπαιδευτικού προηγείται (λύνεται με ανταλλαγή)
