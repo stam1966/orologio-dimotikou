@@ -8,7 +8,8 @@ PALETTE = ['A8D5F5', 'F8C59E', 'B8DFA4', 'D0B9EE', 'F5AEBC', '9CDDD2', 'E8D58D',
 LABELS = {'teachers': 'Εκπαιδευτικοί', 'classes': 'Τμήματα', 'rooms': 'Αίθουσες', 'subjects': 'Μαθήματα'}
 SINGULAR = {'teachers': 'εκπαιδευτικού', 'classes': 'τμήματος', 'rooms': 'αίθουσας', 'subjects': 'μαθήματος'}
 MODES = {'individual': 'Ωρολόγιο για κάθε εγγραφή', 'overview': 'Συνολικό ωρολόγιο', 'poster': 'Αφίσα τοίχου (A3)',
-         'withtable': 'Ωρολόγιο με πίνακα αναθέσεων', 'assignments': 'Πίνακας μαθημάτων', 'distribution': 'Επισκόπηση κατανομής'}
+         'withtable': 'Ωρολόγιο με πίνακα αναθέσεων', 'assignments': 'Πίνακας μαθημάτων', 'distribution': 'Επισκόπηση κατανομής',
+         'fairness': 'Δικαιοσύνη κατανομής'}
 # Χρωματικό θέμα: κεφαλίδα, λωρίδα τίτλου, ημέρες, στήλη ωρών
 THEMES = {
     'color': dict(head='1F3A5F', head_fg='FFFFFF', band='3E7D6E', band_fg='FFFFFF', day='F2B04A', day_fg='1F2A36', per='4B4F8F', per_fg='FFFFFF', grid='3A3F47'),
@@ -169,6 +170,58 @@ def assignments_table(p, kind=None, id=None):
     return dict(type='table', heading='', name='Αναθέσεις', header=head, rows=rows, colors=colors)
 
 
+def main_day(p):
+    """Κύριο ωράριο: η συνηθέστερη πρώτη και τελευταία ώρα των τμημάτων."""
+    from collections import Counter
+    ls = by_id(p, 'lessons'); used = {}
+    for e in p['events']:
+        if e['place']:
+            l = ls[e['lesson']]
+            for c in l['classes']:
+                used.setdefault((c, e['place'][0]), set()).update(range(e['place'][1], e['place'][1] + l['duration']))
+    firsts = Counter(min(u) for u in used.values()); lasts = Counter(max(u) for u in used.values())
+    return (firsts.most_common(1)[0][0] if firsts else 0), (lasts.most_common(1)[0][0] if lasts else len(p['periods']) - 1)
+
+
+def fairness(p):
+    """Μετρήσεις ανά εκπαιδευτικό και ποιες ξεχωρίζουν (πάνω από μέσο όρο + 1 τυπική απόκλιση)."""
+    import statistics, rules
+    first, last = main_day(p)
+    head = ['Εκπαιδευτικός', 'Ώρες', 'Ημέρες', 'Κενά', 'Παρουσία', 'Πρώτη ώρα', 'Τελευταία ώρα', 'Μετά τη λήξη', 'Αργή Παρασκευή', 'Ημέρες με 1 ώρα', 'Ώρες ανά ημέρα']
+    rows = []; colors = []; data = []
+    for t in p['teachers']:
+        days = []
+        for d in range(5):
+            u = set()
+            for e, l in placed(p, 'teachers', t['id']):
+                if e['place'][0] == d:
+                    u.update(range(e['place'][1], e['place'][1] + l['duration']))
+            days.append(u)
+        if not any(days):
+            continue
+        hs = [len(u) for u in days]
+        m = dict(hours=sum(hs), days=sum(1 for h in hs if h), gaps=sum(max(u) - min(u) + 1 - len(u) for u in days if u),
+                 first=sum(1 for u in days if first in u), last=sum(1 for u in days if last in u),
+                 after=sum(1 for u in days for i in u if i > last), friday=1 if days[4] and max(days[4]) >= last else 0,
+                 ones=sum(1 for h in hs if h == 1))
+        m['presence'] = m['hours'] + m['gaps']
+        data.append((t, m, hs))
+    keys = ['hours', 'days', 'gaps', 'presence', 'first', 'last', 'after', 'friday', 'ones']
+    flag = {}
+    for k in ('gaps', 'last', 'after', 'ones'):
+        vals = [m[k] for _, m, _ in data]
+        if len(vals) > 2:
+            mu, sd = statistics.mean(vals), statistics.pstdev(vals)
+            flag[k] = mu + max(sd, 0.5)
+    flags = []
+    for t, m, hs in data:
+        rows.append([t['name']] + [str(m[k]) if k != 'friday' else ('ναι' if m[k] else '') for k in keys] + ['-'.join(map(str, hs))])
+        colors.append(teacher_color(p, t['id']))
+        flags.append([False] + [k in flag and m[k] > flag[k] for k in keys] + [False])
+    note = ('Πρώτη ώρα = ' + p['periods'][first]['name'] + 'η (' + p['periods'][first]['start'] + '), τελευταία ώρα = ' + p['periods'][last]['name'] + 'η (λήξη ' + p['periods'][last]['end'] + '): οι συνηθέστερες του κύριου ωραρίου. Με χρώμα: τιμές αισθητά πάνω από τον μέσο όρο.') if p['periods'] else ''
+    return dict(type='table', heading='', name='Δικαιοσύνη κατανομής', header=head, rows=rows, colors=colors, flags=flags, note=note)
+
+
 def distribution_table(p):
     import rules
     head = ['Εκπαιδευτικός'] + p['days'] + ['Ανάθεση', 'Τοποθετημένες', 'Κενά', 'Παρουσία']
@@ -199,6 +252,8 @@ def pages(p, opts):
         return [subjects_table(p), dict(assignments_table(p), heading='')]
     if mode == 'distribution':
         return [distribution_table(p)]
+    if mode == 'fairness':
+        return [fairness(p)]
     if mode in ('overview', 'poster'):
         return [matrix_page(p, kind, ents, opts, mode == 'poster')]
     out = []
@@ -258,9 +313,9 @@ def report(p, opts):
                 body_rows.append('<tr>' + nm + cells + '</tr>')
             content = '<table class="matrix' + (' poster' if pg['poster'] else '') + '">' + head + '<tbody>' + ''.join(body_rows) + '</tbody></table>'
         else:
-            cs = pg.get('colors')
-            content = '<table class="plain"><thead><tr>' + ''.join('<th>' + esc(h) + '</th>' for h in pg['header']) + '</tr></thead><tbody>' + ''.join(
-                '<tr>' + ''.join('<td' + ((' style="background:#' + cs[ri] + ';color:#' + fg_for(cs[ri]) + '"') if colors and cs and ci == 0 else '') + '>' + esc(v) + '</td>' for ci, v in enumerate(row)) + '</tr>' for ri, row in enumerate(pg['rows'])) + '</tbody></table>'
+            cs = pg.get('colors'); fl = pg.get('flags')
+            content = ('<p class="note">' + esc(pg['note']) + '</p>' if pg.get('note') else '') + '<table class="plain"><thead><tr>' + ''.join('<th>' + esc(h) + '</th>' for h in pg['header']) + '</tr></thead><tbody>' + ''.join(
+                '<tr>' + ''.join('<td' + ((' style="background:#' + cs[ri] + ';color:#' + fg_for(cs[ri]) + '"') if colors and cs and ci == 0 else (' class="hi"' if fl and fl[ri][ci] else '')) + '>' + esc(v) + '</td>' for ci, v in enumerate(row)) + '</tr>' for ri, row in enumerate(pg['rows'])) + '</tbody></table>'
         foot = '' if pg.get('attach') else '<div class="foot">Ωρολόγιο Δημοτικού · ' + stamp + '</div>'
         body.append('<section class="' + ('attach' if pg.get('attach') else '') + '">' + top + band + content + foot + '</section>')
     css = '''
@@ -278,7 +333,7 @@ def report(p, opts):
     .matrix.poster{font-size:1em}.matrix.poster td{height:3.2em}.matrix.poster td b{font-size:1.15em}.dsep{border-left:2.5px solid #%(grid)s!important}
     .sw{display:inline-block;width:.9em;height:.9em;border-radius:2px;margin-right:.35em;vertical-align:-.1em;border:1px solid #0003}
     .plain th{background:#%(per)s;color:#%(per_fg)s;padding:.4em}.plain th:first-child{width:18%%}.plain td{padding:.35em;white-space:pre-line}.plain td:first-child{text-align:left;font-weight:600}
-    .foot{text-align:right;font-size:.8em;color:#667;margin-top:.4em}h3{margin:.8em 0 .4em}
+    .hi{background:#FBE1DC!important;color:#8E2A1D;font-weight:700}.note{font-size:.9em;color:#555;margin:.3em 0 .6em}.foot{text-align:right;font-size:.8em;color:#667;margin-top:.4em}h3{margin:.8em 0 .4em}
     @page{size:%(paper)s %(orient)s;margin:8mm}
     @media print{body{background:#fff}.bar{display:none}section{margin:0;padding:0;width:auto;box-shadow:none}*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
     ''' % dict(f=font, w=('400mm' if paper == 'A3' else '287mm') if landscape else ('287mm' if paper == 'A3' else '200mm'), paper=paper, orient='landscape' if landscape else 'portrait', **th)
@@ -499,7 +554,7 @@ def xlsx_pages(x, p, pgs, opts):
             cs = pg.get('colors')
             for ri, row in enumerate(pg['rows'], 2):
                 for ci, v in enumerate(row, 1):
-                    fill = cs[ri - 2] if colors and cs and ci == 1 else None
+                    fill = cs[ri - 2] if colors and cs and ci == 1 else ('FBE1DC' if pg.get('flags') and pg['flags'][ri - 2][ci - 1] else None)
                     val = int(v) if isinstance(v, str) and v.isdigit() else v
                     sh['cells'][ri, ci] = (val, x.style(dict(size=10, bold=ci == 1, h='left' if ci == 1 else 'center', box=True, fill=fill, fg=fg_for(fill) if fill else '1F2A36')))
                 sh['heights'][ri] = 16 * max(1, max(str(v).count('\n') + 1 for v in row)) + 4
