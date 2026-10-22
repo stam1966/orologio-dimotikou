@@ -110,7 +110,10 @@ def points(root):
         m = STAMP.search(f.name)
         if not m:
             continue
-        t = datetime.strptime(m.group(1) + m.group(2), '%Y%m%d%H%M%S')
+        try:
+            t = datetime.strptime(m.group(1) + m.group(2), '%Y%m%d%H%M%S')
+        except ValueError:
+            continue
         out.append({'name': f.name, 'when': t.strftime('%d/%m/%Y %H:%M:%S'), 'day': t.strftime('%d/%m/%Y'), 'size': f.stat().st_size})
     return out
 

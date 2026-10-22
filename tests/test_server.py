@@ -87,7 +87,8 @@ class Backups(unittest.TestCase):
             with self.assertRaises(ValueError): backup.check_folder(str(root / 'δεν-υπάρχει'))
             for k in range(200):                                          # 200 αντίγραφα, 2 ανά ημέρα
                 day = 20260101 + k // 2 if k // 2 < 28 else 20260201 + (k // 2 - 28) % 28
-                (root / 'data' / 'backups' / ('project_%d_%06d_000000.json' % (day, k))).write_text('{}')
+                (root / 'data' / 'backups' / ('project_%d_%02d%02d00_000000.json' % (day, 8 + k % 10, k % 60))).write_text('{}')
+            (root / 'data' / 'backups' / 'project_20261399_999999_0.json').write_text('{}')  # μη έγκυρο όνομα: αγνοείται
             backup.prune(root, keep_recent=50, days_daily=100000)
             pts = backup.points(root)
             self.assertLess(len(pts), 200); self.assertGreaterEqual(len(pts), 50)
