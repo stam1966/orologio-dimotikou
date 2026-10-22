@@ -199,3 +199,18 @@ class WhyNot(unittest.TestCase):
         self.assertEqual(st['3,3'], 'maybe'); self.assertEqual(st['1,1'], 'ok')
         p['lessons'][1]['teachers'] = ['ta']; r = core.slot_status(p, 'la1')
         self.assertEqual(r['st']['0,2'], 'busy'); self.assertIn('διδάσκει ήδη', r['why']['0,2'])  # σύγκρουση εκπαιδευτικού προηγείται (λύνεται με ανταλλαγή)
+
+
+class AscExport(unittest.TestCase):
+    def test_roundtrip_through_asc_importer(self):
+        import asc
+        p = base(4, 2); add_lesson(p, 'sw', 's2', ['tb'], ['c1', 'c2'], 2, duration=2, days=[3])
+        p['teachers'][0]['color'] = '#00FF00'; p['classes'][0]['teacher'] = 'ta'
+        q = solved(self, p)
+        raw = asc.export_asc(q)
+        self.assertTrue(raw.startswith(b'<?xml version="1.0" encoding="windows-1253"?>'))
+        back = core.import_xml(raw)
+        key = lambda pr: sorted((e['lesson'], tuple(e['place'])) for e in pr['events'])
+        self.assertEqual(key(back), key(q))
+        self.assertEqual(back['teachers'][0]['color'], '#00FF00'); self.assertEqual(back['classes'][0]['teacher'], 'ta')
+        self.assertEqual(next(l for l in back['lessons'] if l['id'] == 'sw')['days'], [3])

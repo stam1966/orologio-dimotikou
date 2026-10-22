@@ -337,9 +337,9 @@ def report(p, opts):
     @page{size:%(paper)s %(orient)s;margin:8mm}
     @media print{body{background:#fff}.bar{display:none}section{margin:0;padding:0;width:auto;box-shadow:none}*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
     ''' % dict(f=font, w=('400mm' if paper == 'A3' else '287mm') if landscape else ('287mm' if paper == 'A3' else '200mm'), paper=paper, orient='landscape' if landscape else 'portrait', **th)
-    return ('<!doctype html><html lang="el"><meta charset="utf-8"><title>' + esc(MODES.get(opts.get('mode', 'individual'), 'Εκτύπωση')) + '</title><style>' + css + '</style>'
-            '<div class="bar"><button onclick="window.print()">Εκτύπωση / Αποθήκευση PDF</button></div>' + (''.join(body) or '<p>Δεν υπάρχουν εγγραφές.</p>') +
-            '<script>function fit(){var s=document.querySelector("section");if(!s)return;document.body.style.zoom="";var w=s.offsetWidth+40;document.body.style.zoom=innerWidth<w?(innerWidth/w):"";}addEventListener("resize",fit);fit();addEventListener("beforeprint",function(){document.body.style.zoom="";});addEventListener("afterprint",fit);</script></html>')
+    return ('<!doctype html><html lang="el"><meta charset="utf-8"><title>' + esc(MODES.get(opts.get('mode', 'individual'), 'Εκτύπωση')) + '</title><style>' + css + '</style>' +
+            ('' if opts.get('pdf') else '<div class="bar"><button onclick="window.print()">Εκτύπωση / Αποθήκευση PDF</button></div>') + (''.join(body) or '<p>Δεν υπάρχουν εγγραφές.</p>') +
+            ('' if opts.get('pdf') else '<script>function fit(){var s=document.querySelector("section");if(!s)return;document.body.style.zoom="";var w=s.offsetWidth+40;document.body.style.zoom=innerWidth<w?(innerWidth/w):"";}addEventListener("resize",fit);fit();addEventListener("beforeprint",function(){document.body.style.zoom="";});addEventListener("afterprint",fit);</script>') + '</html>')
 
 
 # ------------------------------------------------------------------ XLSX

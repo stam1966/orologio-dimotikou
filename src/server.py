@@ -146,6 +146,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, state_json())
             if path == '/api/export':
                 return self.send(200, json.dumps(STATE['project'], ensure_ascii=False, indent=2), download='timetable.json')
+            if path == '/api/export/asc':
+                import asc
+                return self.send(200, asc.export_asc(STATE['project']), 'application/xml; charset=windows-1253', download='orologio_gia_aSc.xml')
             if path == '/api/export/xml':
                 return self.send(200, outputs.export_xml(STATE['project']), 'application/xml; charset=utf-8', download='timetable.xml')
             if path == '/api/export/xlsx':
@@ -169,6 +172,15 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < length <= 15_000_000:
                 raise ValueError('Μη αποδεκτό μέγεθος αιτήματος.')
             req = json.loads(self.rfile.read(length)); action = u.path
+            if action == '/api/export/pdfs':  # μακρά εργασία: εκτός κλειδώματος, σε αντίγραφο
+                import pdfs
+                with LOCK:
+                    snap = copy.deepcopy(STATE['project'])
+                kind = req.get('kind', 'teachers')
+                if kind not in ('teachers', 'classes'):
+                    raise ValueError('Μη έγκυρη επιλογή.')
+                data, n = pdfs.make_zip(snap, kind, req.get('options', {}))
+                return self.send(200, data, 'application/zip', download=('orologia_ekpaideftikon.zip' if kind == 'teachers' else 'orologia_tmimaton.zip'))
             with LOCK:
                 p = STATE['project']
                 if action == '/api/ping':
