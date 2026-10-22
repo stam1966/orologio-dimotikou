@@ -139,6 +139,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == '/':
             LAST_SEEN[0] = time.time(); BYE[0] = 0.0
             return self.send(200, (ROOT / 'src' / 'index.html').read_text(encoding='utf-8').replace('__TOKEN__', TOKEN).replace('__VERSION__', core.VERSION), 'text/html; charset=utf-8')
+        if path == '/manual':
+            return self.send(200, (ROOT / 'src' / 'manual.html').read_bytes(), 'text/html; charset=utf-8')
         if not self.authorized():
             return self.send(403, '{}')
         with LOCK:
