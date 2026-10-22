@@ -11,7 +11,7 @@ DATA = ROOT / 'data' / 'project.json'
 LOG = ROOT / 'data' / 'app.log'
 TOKEN = secrets.token_urlsafe(32)
 LOCK = threading.RLock()
-STATE = {'project': None, 'revision': 0, 'job': {'running': False, 'message': ''}}
+STATE = {'project': None, 'revision': 0, 'job': {'running': False, 'message': ''}, 'update': None}
 UNDO, REDO = [], []          # (ετικέτα, έργο)
 HISTORY_MAX = 60
 CANCEL = threading.Event()
@@ -230,6 +230,12 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send(200, versions.changes_report(d['project'], p, d['name'], req.get('kind', 'teachers'), req.get('options')), 'text/html; charset=utf-8')
                 if action == '/api/update/backups':
                     return self.send(200, json.dumps({'current': core.VERSION, 'backups': updater.list_backups(ROOT)}, ensure_ascii=False))
+                if action == '/api/update/online':
+                    info = updater.check_online()
+                    newer = bool(info) and updater.vtuple(info['version']) > updater.vtuple(core.VERSION)
+                    STATE['update'] = info if newer else None
+                    s = backup.load_settings(ROOT); s['last_update_check'] = time.strftime('%Y-%m-%d'); backup.save_settings(ROOT, s)
+                    return self.send(200, json.dumps({'current': core.VERSION, 'latest': info, 'newer': newer}, ensure_ascii=False))
                 if action == '/api/update/check':
                     man, files = updater.read(base64.b64decode(req['data']))
                     return self.send(200, json.dumps({'current': core.VERSION, 'version': man['version'], 'notes': man.get('notes', ''),
@@ -238,7 +244,11 @@ class Handler(BaseHTTPRequestHandler):
                 if STATE['job']['running']:
                     raise ValueError('Περιμένετε να τελειώσει η παραγωγή ή πατήστε «Διακοπή».')
                 if action in ('/api/update/apply', '/api/update/rollback'):
-                    if action == '/api/update/apply':
+                    if action == '/api/update/apply' and req.get('online'):
+                        if not STATE['update']:
+                            raise ValueError('Δεν βρέθηκε νέα έκδοση· πατήστε πρώτα «Έλεγχος τώρα».')
+                        raw = updater.download(STATE['update']['url'])
+                    elif action == '/api/update/apply':
                         raw = base64.b64decode(req['data'])
                     else:
                         name = req['name']
@@ -265,6 +275,12 @@ class Handler(BaseHTTPRequestHandler):
                 elif action == '/api/move':
                     q = core.move_event(p, req['id'], req['place'], req.get('swap'))
                     commit(q, 'Ανταλλαγή' if req.get('swap') else ('Αφαίρεση θέσης' if req['place'] is None else 'Μετακίνηση'))
+                elif action == '/api/demo':
+                    if p['teachers'] or p['lessons']:
+                        versions.save(ROOT, p, 'Πριν από το δοκιμαστικό σχολείο (' + time.strftime('%d/%m/%Y %H:%M') + ')')
+                    q = core.check_structure(json.loads((ROOT / 'src' / 'demo_school.json').read_text(encoding='utf-8')))
+                    q['version'] = core.VERSION
+                    commit(q, 'Δοκιμαστικό σχολείο')
                 elif action == '/api/backup/restore':
                     name = req['name']
                     if not any(x['name'] == name for x in backup.points(ROOT)):
@@ -429,6 +445,16 @@ def main():
         except Exception as ex:
             log('prune error', repr(ex))
         while True:
+            try:
+                s = backup.load_settings(ROOT)
+                if s['check_updates'] and s['last_update_check'] != time.strftime('%Y-%m-%d'):
+                    info = updater.check_online()
+                    STATE['update'] = info if info and updater.vtuple(info['version']) > updater.vtuple(core.VERSION) else None
+                    s['last_update_check'] = time.strftime('%Y-%m-%d'); backup.save_settings(ROOT, s)
+                    if STATE['update']:
+                        log('new version available', STATE['update']['version'])
+            except Exception as ex:
+                log('update check failed', repr(ex)[:200])
             try:
                 path = backup.daily(ROOT, DATA)
                 if path:

@@ -20,9 +20,9 @@ jobs:
       run:
         shell: pwsh
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
@@ -35,23 +35,34 @@ jobs:
 
       - name: Αυτόματοι έλεγχοι με το runtime του πακέτου (πραγματικός OR-Tools)
         working-directory: dist/Orologio_Dimotikou
-        run: .\runtime\python.exe -X utf8 -m unittest discover -s tests -v
+        run: |
+          $out = .\runtime\python.exe -X utf8 -m unittest discover -s tests -v 2>&1 | Out-String
+          Write-Host $out
+          if ($LASTEXITCODE -ne 0) { Write-Host ("::error title=Τεστ::" + ((($out -split "`n") | Select-Object -Last 40) -join '%0A')); exit 1 }
 
       - name: Έλεγχος λειτουργίας (δοκιμαστικό σχολείο, Edge PDF, υπηρεσία)
         working-directory: dist/Orologio_Dimotikou
         run: |
           New-Item -ItemType Directory -Force tools | Out-Null
           Copy-Item ..\..\tools\smoke.py tools\
-          .\runtime\python.exe -X utf8 tools\smoke.py
+          $out = .\runtime\python.exe -X utf8 tools\smoke.py 2>&1 | Out-String
+          Write-Host $out
+          if ($LASTEXITCODE -ne 0) { Write-Host ("::error title=Έλεγχος λειτουργίας::" + ((($out -split "`n") | Select-Object -Last 30) -join '%0A')); exit 1 }
           Remove-Item -Recurse -Force tools, data\app.log, data\app.url -ErrorAction SilentlyContinue
 
       - name: Setup.exe (Inno Setup)
         run: |
           $v = (Get-Content dist/VERSION.txt).Split('-')[0]
+          try { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/Unofficial/Greek.isl' -OutFile installer\Greek.isl } catch { Write-Host "::warning::Greek.isl δεν κατέβηκε: $_" }
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" }
-          & $iscc "/DAppVersion=$v" "/DSourceDir=..\dist\Orologio_Dimotikou" installer\orologio.iss
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $out = & $iscc "/DAppVersion=$v" "/DSourceDir=..\dist\Orologio_Dimotikou" installer\orologio.iss 2>&1 | Out-String
+          Write-Host $out
+          if ($LASTEXITCODE -ne 0) {
+            $tail = ($out -split "`n" | Select-Object -Last 25) -join '%0A'
+            Write-Host "::error title=Inno Setup::$tail"
+            exit 1
+          }
 
       - name: Δοκιμαστική σιωπηλή εγκατάσταση
         run: |

@@ -37,7 +37,11 @@ CloseApplications=force
 RestartApplications=no
 
 [Languages]
-Name: "el"; MessagesFile: "compiler:Languages\Greek.isl"
+#ifexist AddBackslash(SourcePath) + "Greek.isl"
+Name: "el"; MessagesFile: "{#SourcePath}\Greek.isl"
+#else
+Name: "el"; MessagesFile: "compiler:Default.isl"
+#endif
 
 [Tasks]
 Name: "desktopicon"; Description: "Εικονίδιο στην επιφάνεια εργασίας"; GroupDescription: "Εικονίδια:"

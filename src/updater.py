@@ -11,6 +11,8 @@ import io, json, os, re, shutil, subprocess, sys, tempfile, time, zipfile, py_co
 from pathlib import Path
 
 APP_ID = 'orologio-dimotikou'
+REPO = 'stam1966/orologio-dimotikou'
+ALLOWED_HOSTS = ('github.com', 'api.github.com', 'objects.githubusercontent.com', 'release-assets.githubusercontent.com')
 MANIFEST = 'orologio-update.json'
 MAX_SIZE = 40_000_000
 REQUIRED = ('src/server.py', 'src/core.py', 'src/rules.py', 'src/outputs.py', 'src/index.html', 'src/updater.py')
@@ -173,3 +175,35 @@ def restart(root, port):
     else:
         kw['start_new_session'] = True
     subprocess.Popen(args, **kw)
+
+
+def _get(url, limit, accept='application/octet-stream'):
+    import urllib.request, urllib.parse
+    host = urllib.parse.urlparse(url).hostname or ''
+    if url.split(':', 1)[0] != 'https' or not any(host == h or host.endswith('.' + h) for h in ALLOWED_HOSTS):
+        raise ValueError('Μη αποδεκτή διεύθυνση ενημέρωσης.')
+    req = urllib.request.Request(url, headers={'User-Agent': 'Orologio-Dimotikou', 'Accept': accept})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        final = urllib.parse.urlparse(r.geturl()).hostname or ''
+        if not any(final == h or final.endswith('.' + h) for h in ALLOWED_HOSTS):
+            raise ValueError('Μη αποδεκτή ανακατεύθυνση ενημέρωσης.')
+        data = r.read(limit + 1)
+    if len(data) > limit:
+        raise ValueError('Πολύ μεγάλο αρχείο.')
+    return data
+
+
+def check_online():
+    """Η τελευταία δημοσιευμένη έκδοση στο GitHub: {'version','notes','url','page'} ή None."""
+    try:
+        info = json.loads(_get('https://api.github.com/repos/' + REPO + '/releases/latest', 2_000_000, 'application/vnd.github+json').decode('utf-8'))
+    except Exception as ex:
+        raise ValueError('Δεν ήταν δυνατός ο έλεγχος για νέα έκδοση (σύνδεση στο Internet;). ' + str(ex)[:120])
+    asset = next((a for a in info.get('assets', []) if a.get('name', '').startswith('Orologio_Enimerosi_') and a['name'].endswith('.zip')), None)
+    if not asset:
+        return None
+    return {'version': (info.get('tag_name') or '').lstrip('v'), 'notes': info.get('body') or '', 'url': asset['browser_download_url'], 'page': info.get('html_url', '')}
+
+
+def download(url):
+    return _get(url, MAX_SIZE)
