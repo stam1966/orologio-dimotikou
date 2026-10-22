@@ -4,7 +4,7 @@ from pathlib import Path
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 import base64
-import core, outputs, rules, updater, versions
+import core, outputs, rules, updater, versions, backup
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / 'data' / 'project.json'
@@ -67,7 +67,7 @@ def state_json():
         summ = summary(p)
     except Exception as ex:  # ένα λάθος στον έλεγχο δεν πρέπει να «κλειδώνει» τη διεπαφή
         summ = {'errors': ['Σφάλμα ελέγχου: ' + str(ex)], 'warnings': [], 'gaps': 0, 'unplaced': 0, 'score': None}
-    return json.dumps({**STATE, 'catalog': rules.CATALOG, 'strength': rules.STRENGTH, 'summary': summ,
+    return json.dumps({**STATE, 'settings': backup.load_settings(ROOT), 'catalog': rules.CATALOG, 'strength': rules.STRENGTH, 'summary': summ,
                        'history': {'undo': UNDO[-1][0] if UNDO else '', 'redo': REDO[-1][0] if REDO else ''}}, ensure_ascii=False)
 
 
@@ -195,6 +195,26 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send(200, json.dumps(core.slot_status(p, req['id']), ensure_ascii=False))
                 if action == '/api/export/xlsx':
                     return self.send(200, outputs.export_xlsx(p, req.get('options', {})), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', download='orologio.xlsx')
+                if action == '/api/settings':
+                    return self.send(200, json.dumps({'settings': backup.load_settings(ROOT), 'suggestions': backup.suggestions()}, ensure_ascii=False))
+                if action == '/api/settings/save':
+                    s = backup.load_settings(ROOT)
+                    if 'backup_dir' in req:
+                        s['backup_dir'] = backup.ensure_folder(req['backup_dir'].strip()) if req['backup_dir'].strip() else ''
+                        s['last_backup'] = ''
+                    for k in ('check_updates', 'tour_done'):
+                        if k in req:
+                            s[k] = bool(req[k])
+                    s = backup.save_settings(ROOT, s)
+                    path = backup.daily(ROOT, DATA) if 'backup_dir' in req and s['backup_dir'] else None
+                    return self.send(200, json.dumps({'settings': s, 'written': path}, ensure_ascii=False))
+                if action == '/api/backup/now':
+                    path = backup.daily(ROOT, DATA, force=True)
+                    if not path:
+                        raise ValueError('Ορίστε πρώτα φάκελο αντιγράφων.')
+                    return self.send(200, json.dumps({'written': path}, ensure_ascii=False))
+                if action == '/api/backup/points':
+                    return self.send(200, json.dumps(backup.points(ROOT), ensure_ascii=False))
                 if action == '/api/versions/list':
                     return self.send(200, json.dumps(versions.listing(ROOT), ensure_ascii=False))
                 if action == '/api/versions/save':
@@ -245,6 +265,12 @@ class Handler(BaseHTTPRequestHandler):
                 elif action == '/api/move':
                     q = core.move_event(p, req['id'], req['place'], req.get('swap'))
                     commit(q, 'Ανταλλαγή' if req.get('swap') else ('Αφαίρεση θέσης' if req['place'] is None else 'Μετακίνηση'))
+                elif action == '/api/backup/restore':
+                    name = req['name']
+                    if not any(x['name'] == name for x in backup.points(ROOT)):
+                        raise ValueError('Άγνωστο σημείο επαναφοράς.')
+                    q = core.load(ROOT / 'data' / 'backups' / name)
+                    commit(q, 'Επαναφορά από ' + name)
                 elif action == '/api/versions/restore':
                     d = versions.load(ROOT, req['id']); commit(d['project'], 'Επαναφορά εκδοχής «' + d['name'] + '»')
                 elif action == '/api/lock':
@@ -394,6 +420,23 @@ def main():
     if not restarted or server.server_port != int(arg('--port', 0) or 0):
         open_window(url)
     LAST_SEEN[0] = time.time()
+
+    def housekeeping():
+        try:
+            n = backup.prune(ROOT)
+            if n:
+                log('pruned backups', n)
+        except Exception as ex:
+            log('prune error', repr(ex))
+        while True:
+            try:
+                path = backup.daily(ROOT, DATA)
+                if path:
+                    log('daily backup', path)
+            except Exception as ex:
+                log('daily backup error', repr(ex))
+            time.sleep(3600)
+    threading.Thread(target=housekeeping, daemon=True).start()
     if '--stay' not in sys.argv and '--no-browser' not in sys.argv:
         threading.Thread(target=watchdog, args=(server,), daemon=True).start()
     try:

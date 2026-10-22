@@ -71,3 +71,25 @@ class Versions(unittest.TestCase):
             self.assertEqual(versions.diff(p, p), [])
             versions.delete(d, vid); self.assertEqual(versions.listing(d), [])
             with self.assertRaises(ValueError): versions.load(d, '../../etc')
+
+class Backups(unittest.TestCase):
+    def test_settings_daily_prune_points(self):
+        import backup, os, time
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d); (root / 'data' / 'backups').mkdir(parents=True)
+            proj = root / 'data' / 'project.json'; proj.write_text('{"x":1}', encoding='utf-8')
+            self.assertIsNone(backup.daily(root, proj))                   # χωρίς φάκελο: τίποτα
+            dest = root / 'usb'; dest.mkdir()
+            s = backup.load_settings(root); s['backup_dir'] = backup.ensure_folder(str(dest / 'Ωρολόγιο - αντίγραφα')); backup.save_settings(root, s)
+            path = backup.daily(root, proj); self.assertTrue(Path(path).exists())
+            self.assertIsNone(backup.daily(root, proj))                   # ήδη σήμερα
+            self.assertTrue(backup.daily(root, proj, force=True))
+            with self.assertRaises(ValueError): backup.check_folder(str(root / 'δεν-υπάρχει'))
+            for k in range(200):                                          # 200 αντίγραφα, 2 ανά ημέρα
+                day = 20260101 + k // 2 if k // 2 < 28 else 20260201 + (k // 2 - 28) % 28
+                (root / 'data' / 'backups' / ('project_%d_%06d_000000.json' % (day, k))).write_text('{}')
+            backup.prune(root, keep_recent=50, days_daily=100000)
+            pts = backup.points(root)
+            self.assertLess(len(pts), 200); self.assertGreaterEqual(len(pts), 50)
+            self.assertEqual(len({p['day'] for p in pts}), len({p['day'] for p in pts}))
+            self.assertRegex(pts[0]['when'], r'\d\d/\d\d/\d{4} \d\d:\d\d:\d\d')

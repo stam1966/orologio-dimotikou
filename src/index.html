@@ -207,6 +207,7 @@ function pageSchool(){let p=P(),s=state.summary,h=p.lessons.reduce((a,l)=>a+l.ho
  <div class="row" style="margin-top:8px"><button class="btn primary" id="saveperiods">Αποθήκευση ωραρίου</button>${p.lessons.length?'<span class="muted small">Προσθήκη ή διαγραφή ωρών γίνεται μόνο πριν από τις αναθέσεις· οι ώρες έναρξης και λήξης αλλάζουν πάντα.</span>':'<button class="btn" id="addperiod">＋ Ώρα</button>'}</div></div>
  <div class="section"><h2>Αρχεία</h2><p class="muted small">Εισαγωγή από aSc TimeTables (XML) ή αντιγράφου της εφαρμογής (JSON). Πριν από κάθε αντικατάσταση κρατιέται αυτόματα αντίγραφο στον φάκελο data\\backups.</p>
  <div class="row"><label class="btn">Εισαγωγή XML / JSON…<input id="upload" type="file" accept=".xml,.json" hidden></label><button class="btn" id="exportjson">Λήψη αντιγράφου (JSON)</button><button class="btn" id="newyear">Νέα σχολική χρονιά…</button><button class="btn danger" id="newproj">Νέο κενό έργο</button></div></div>
+ <div class="section"><h2>Ασφάλεια δεδομένων</h2><div id="safety"><p class="muted small">Φόρτωση…</p></div></div>
  <div class="section"><h2>Εφαρμογή</h2><div class="row"><span>Έκδοση <b>__VERSION__</b></span><label class="btn primary">Ενημέρωση από αρχείο…<input id="updfile" type="file" accept=".zip" hidden></label><span class="muted small">ή σύρετε το αρχείο ενημέρωσης (.zip) οπουδήποτε μέσα στο παράθυρο.</span></div>
  <p class="muted small">Τα δεδομένα σας δεν αγγίζονται. Πριν από κάθε ενημέρωση κρατιέται η τρέχουσα έκδοση και μπορείτε να επιστρέψετε σε αυτήν.</p><div id="backups"></div></div>`;
  $$('[data-goto2]').forEach(b=>b.onclick=()=>go(b.dataset.goto2));
@@ -215,7 +216,7 @@ function pageSchool(){let p=P(),s=state.summary,h=p.lessons.reduce((a,l)=>a+l.ho
  if($('#addperiod'))$('#addperiod').onclick=()=>{let q=clone(),last=q.periods[q.periods.length-1];q.periods.push({id:newId(),name:String(q.periods.length),start:last?last.end:'08:15',end:last?last.end:'09:00'});if(last){let [h,m]=last.end.split(':').map(Number),t=h*60+m+45;q.periods[q.periods.length-1].end=String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');}save(q,'Νέα ώρα');};
  $$('[data-pdel]').forEach(b=>b.onclick=()=>{let q=clone();q.periods.splice(+b.dataset.pdel,1);q.teacher_rules={};q.class_rules={};q.subject_rules={};save(q,'Διαγραφή ώρας');});
  $('#upload').onchange=async ev=>{let f=ev.target.files[0];if(!f)return;if(!await confirmBox('Να αντικατασταθεί το τρέχον έργο από το «'+esc(f.name)+'»; Το σημερινό κρατιέται ως αντίγραφο και μπορείτε να κάνετε και Αναίρεση.','Εισαγωγή'))return;await act('import',{kind:f.name.toLowerCase().endsWith('.xml')?'xml':'json',text:await f.text()},'Το αρχείο εισήχθη');};
- $('#newyear').onclick=newYearDialog;$('#updfile').onchange=ev=>{let f=ev.target.files[0];ev.target.value='';if(f)updateFrom(f);};loadBackups();
+ $('#newyear').onclick=newYearDialog;loadSafety();$('#updfile').onchange=ev=>{let f=ev.target.files[0];ev.target.value='';if(f)updateFrom(f);};loadBackups();
  $('#exportjson').onclick=async()=>{try{download(await(await api('export')).blob(),'orologio_'+new Date().toISOString().slice(0,10)+'.json');}catch(e){toast(e.message,true);}};
  $('#newproj').onclick=async()=>{if(!await confirmBox('Να ξεκινήσει νέο κενό έργο; Το σημερινό κρατιέται ως αντίγραφο και επανέρχεται με Αναίρεση.','Νέο έργο'))return;let q=clone();for(let k of ['teachers','subjects','classes','rooms','groups','lessons','events'])q[k]=[];q.teacher_rules={};q.class_rules={};q.subject_rules={};q.global_rules={min_gaps:{w:1,on:true}};save(q,'Νέο έργο');};}
 
@@ -480,6 +481,24 @@ function newYearDialog(){let p=P();
   return await save(q,'Νέα σχολική χρονιά','Ξεκίνησε η χρονιά '+q.year+'. Η προηγούμενη φυλάχτηκε στις Εκδοχές.');}});
  let sync=()=>{let c=$('#ny_classes').checked,t=$('#ny_teachers').checked;$('#ny_lessons').disabled=!(c&&t);if(!(c&&t))$('#ny_lessons').checked=false;$('#ny_places').disabled=!$('#ny_lessons').checked;if($('#ny_places').disabled)$('#ny_places').checked=false;};
  ['ny_classes','ny_teachers','ny_lessons'].forEach(i=>$('#'+i).onchange=sync);}
+
+
+/* ---------- αντίγραφα ασφαλείας ---------- */
+async function loadSafety(){let el=$('#safety');if(!el)return;let x;try{x=await(await api('settings',{})).json();}catch(e){el.textContent=e.message;return;}
+ let s=x.settings;
+ el.innerHTML=`<p class="muted small" style="margin-top:0">Κάθε αλλαγή αποθηκεύεται αμέσως και κρατιέται αντίγραφο της προηγούμενης κατάστασης. Για προστασία από βλάβη του υπολογιστή, ορίστε έναν φάκελο σε USB ή OneDrive· η εφαρμογή θα γράφει εκεί αντίγραφο μία φορά την ημέρα.</p>
+ <div class="row"><span>Φάκελος ημερήσιου αντιγράφου:</span><b>${s.backup_dir?esc(s.backup_dir):'<span class="err">δεν έχει οριστεί</span>'}</b>${s.last_backup?`<span class="muted small">τελευταίο: ${esc(s.last_backup.split('-').reverse().join('/'))}</span>`:''}</div>
+ <div class="row" style="margin-top:8px">${x.suggestions.map(g=>`<button class="btn small" data-bdir="${esc(g.path)}">${esc(g.label)}</button>`).join('')}<input id="bdir" placeholder="ή γράψτε φάκελο, π.χ. E:\\Αντίγραφα" style="width:300px" value="${esc(s.backup_dir||'')}"><button class="btn primary small" id="bset">Ορισμός</button>${s.backup_dir?'<button class="btn small" id="bnow">Αντίγραφο τώρα</button><button class="btn small" id="boff">Διακοπή</button>':''}</div>
+ <details style="margin-top:10px" id="bpoints"><summary><b>Σημεία επαναφοράς</b> <span class="muted small">(το πρόγραμμα όπως ήταν σε προηγούμενες στιγμές)</span></summary><div id="bplist" class="small muted">Φόρτωση…</div></details>`;
+ let setDir=async d=>{try{let r=await(await api('settings/save',{backup_dir:d})).json();toast(d?'Ορίστηκε ο φάκελος'+(r.written?' και γράφτηκε το πρώτο αντίγραφο':''):'Σταμάτησε το ημερήσιο αντίγραφο');loadSafety();}catch(e){toast(e.message,true);}};
+ $$('[data-bdir]').forEach(b=>b.onclick=()=>setDir(b.dataset.bdir));$('#bset').onclick=()=>setDir($('#bdir').value);
+ if($('#bnow'))$('#bnow').onclick=async()=>{try{let r=await(await api('backup/now',{})).json();toast('Γράφτηκε: '+r.written);loadSafety();}catch(e){toast(e.message,true);}};
+ if($('#boff'))$('#boff').onclick=()=>setDir('');
+ $('#bpoints').addEventListener('toggle',async()=>{if(!$('#bpoints').open)return;let pts=await(await api('backup/points',{})).json();
+  if(!pts.length){$('#bplist').textContent='Δεν υπάρχουν ακόμη σημεία επαναφοράς.';return;}
+  let days=[...new Set(pts.map(x=>x.day))];
+  $('#bplist').innerHTML=`<table class="tbl" style="width:auto;margin-top:6px">${days.slice(0,40).map(d=>{let list=pts.filter(x=>x.day===d);return `<tr><td><b>${esc(d)}</b></td><td>${list.slice(0,8).map(x=>`<button class="btn small" data-bpr="${esc(x.name)}" title="Επαναφορά στην κατάσταση της ${esc(x.when)}">${esc(x.when.split(' ')[1].slice(0,5))}</button>`).join(' ')}${list.length>8?` <span class="muted">+${list.length-8}</span>`:''}</td></tr>`;}).join('')}</table><p class="muted small">Η επαναφορά αναιρείται με Ctrl+Z.</p>`;
+  $$('[data-bpr]').forEach(b=>b.onclick=async()=>{if(!await confirmBox('Να επανέλθει το πρόγραμμα όπως ήταν στις <b>'+esc(b.title.replace('Επαναφορά στην κατάσταση της ',''))+'</b>; Η σημερινή κατάσταση κρατιέται και επανέρχεται με Αναίρεση.','Επαναφορά'))return;await act('backup/restore',{name:b.dataset.bpr},'Έγινε επαναφορά');});});}
 
 /* ---------- εκδοχές προγράμματος ---------- */
 async function versionsDialog(){let list=[];try{list=await(await api('versions/list',{})).json();}catch(e){toast(e.message,true);return;}
