@@ -541,6 +541,7 @@ function newYearDialog(){let p=P();
  <label class="row"><input type="checkbox" checked disabled> Ωράριο, μαθήματα, επίσημο ωρολόγιο, στοιχεία σχολείου</label>
  <label class="row"><input type="checkbox" id="ny_classes" checked> Τμήματα</label>
  <label class="row"><input type="checkbox" id="ny_teachers" checked> Εκπαιδευτικοί και οι κανόνες τους</label>
+ <label class="row" style="margin-left:24px"><input type="checkbox" id="ny_years" checked> Αύξηση των ετών υπηρεσίας κατά 1 <span class="muted small">(όσων έχουν δηλωμένα έτη· ενημερώνεται και το υποχρεωτικό ωράριο)</span></label>
  <label class="row"><input type="checkbox" id="ny_lessons" checked> Αναθέσεις (ποιος διδάσκει τι)</label>
  <label class="row"><input type="checkbox" id="ny_places"> Το πρόγραμμα (θέσεις των διδασκαλιών)</label></div>
  <p class="muted small">Συνήθως: κρατάτε τμήματα, εκπαιδευτικούς και αναθέσεις, διορθώνετε όσους άλλαξαν, και δημιουργείτε νέο πρόγραμμα.</p>`,{ok:'Έναρξη νέας χρονιάς',onOk:async()=>{
@@ -551,8 +552,9 @@ function newYearDialog(){let p=P();
   if(!keepT){q.teachers=[];q.teacher_rules={};q.classes.forEach(c=>delete c.teacher);}
   if(!keepC){q.classes=[];q.groups=[];q.class_rules={};}
   if(!keepP)q.events.forEach(e=>{e.place=null;e.locked=false;});
-  return await save(q,'Νέα σχολική χρονιά','Ξεκίνησε η χρονιά '+q.year+'. Η προηγούμενη φυλάχτηκε στις Εκδοχές.');}});
- let sync=()=>{let c=$('#ny_classes').checked,t=$('#ny_teachers').checked;$('#ny_lessons').disabled=!(c&&t);if(!(c&&t))$('#ny_lessons').checked=false;$('#ny_places').disabled=!$('#ny_lessons').checked;if($('#ny_places').disabled)$('#ny_places').checked=false;};
+  let ny=0;if(keepT&&$('#ny_years').checked)q.teachers.forEach(t=>{if(t.years!=null&&t.years<60){t.years++;ny++;}});
+  return await save(q,'Νέα σχολική χρονιά','Ξεκίνησε η χρονιά '+q.year+'. Η προηγούμενη φυλάχτηκε στις Εκδοχές.'+(ny?' Τα έτη υπηρεσίας '+ny+' εκπαιδευτικών αυξήθηκαν κατά 1· ελέγξτε το «Θεσμικό πλαίσιο».':''));}});
+ let sync=()=>{let c=$('#ny_classes').checked,t=$('#ny_teachers').checked;$('#ny_years').disabled=!t;if(!t)$('#ny_years').checked=false;$('#ny_lessons').disabled=!(c&&t);if(!(c&&t))$('#ny_lessons').checked=false;$('#ny_places').disabled=!$('#ny_lessons').checked;if($('#ny_places').disabled)$('#ny_places').checked=false;};
  ['ny_classes','ny_teachers','ny_lessons'].forEach(i=>$('#'+i).onchange=sync);}
 
 
