@@ -75,6 +75,11 @@ jobs:
           & "$app\runtime\python.exe" -X utf8 "$app\src\preflight.py"
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
+      - name: Αντίγραφο με σταθερό όνομα (για τον μόνιμο σύνδεσμο λήψης)
+        run: |
+          $setup = Get-ChildItem dist\Orologio_Dimotikou_Setup_*.exe | Select-Object -First 1
+          Copy-Item $setup.FullName dist\Orologio_Dimotikou_Setup.exe
+
       - name: Είναι νέα έκδοση;
         id: ver
         env:
@@ -105,5 +110,6 @@ jobs:
           body_path: dist/RELEASE_NOTES.md
           files: |
             dist/Orologio_Dimotikou_Setup_*.exe
+            dist/Orologio_Dimotikou_Setup.exe
             dist/Orologio_Dimotikou_*_Egkatastasi.zip
             dist/Orologio_Enimerosi_*.zip

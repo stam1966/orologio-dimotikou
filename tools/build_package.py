@@ -106,6 +106,8 @@ if __name__ == '__main__':
     DIST.mkdir(exist_ok=True)
     (DIST / 'VERSION.txt').write_text(v, encoding='utf-8')
     (DIST / 'RELEASE_NOTES.md').write_text(
-        '**Νέα εγκατάσταση:** κατεβάστε το `Orologio_Dimotikou_Setup_….exe` και ανοίξτε το.\n\n'
+        '**Νέα εγκατάσταση:** κατεβάστε το `Orologio_Dimotikou_Setup.exe` και ανοίξτε το.\n\n'
+        'Μόνιμος σύνδεσμος λήψης (πάντα η τελευταία έκδοση): '
+        'https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Orologio_Dimotikou_Setup.exe\n\n'
         '**Ενημέρωση υπάρχουσας εγκατάστασης:** μέσα στην εφαρμογή «Σχολείο & ωράριο → Ενημέρωση» '
         '(ή σύρετε το `Orologio_Enimerosi_….zip` στο παράθυρο).\n\n```\n' + notes(v) + '\n```\n', encoding='utf-8')

@@ -2,8 +2,9 @@
 Δοκιμαστική έκδοση · 22/10/2026 · Τα νέα κάθε έκδοσης: UPDATE_x.y.z.txt
 
 ΠΡΩΤΗ ΕΓΚΑΤΑΣΤΑΣΗ (Windows 10/11, 64-bit)
-Ο απλούστερος τρόπος: κατεβάστε το Orologio_Dimotikou_Setup_x.y.z.exe από
-https://github.com/stam1966/orologio-dimotikou/releases και ανοίξτε το.
+Ο απλούστερος τρόπος: κατεβάστε το Setup (πάντα η τελευταία έκδοση) από
+https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Orologio_Dimotikou_Setup.exe
+και ανοίξτε το.
 Εναλλακτικά, από το πλήρες πακέτο ZIP:
 1. Δεξί κλικ στο ZIP του πλήρους πακέτου → «Εξαγωγή όλων…» → «Εξαγωγή».
 2. Στον φάκελο που δημιουργείται, διπλό κλικ στο ΕΓΚΑΤΑΣΤΑΣΗ.cmd.

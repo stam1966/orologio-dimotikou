@@ -4,7 +4,7 @@
 
 ## Λήψη
 
-Από τις **[Εκδόσεις (Releases)](https://github.com/stam1966/orologio-dimotikou/releases/latest)** κατεβάστε το `Orologio_Dimotikou_Setup_….exe` και ανοίξτε το. Δεν χρειάζονται δικαιώματα διαχειριστή. Αν τα Windows δείξουν «Τα Windows προστάτευσαν τον υπολογιστή σας», πατήστε «Περισσότερες πληροφορίες» → «Εκτέλεση οπωσδήποτε».
+**[⬇ Λήψη της τελευταίας έκδοσης (Setup.exe)](https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Orologio_Dimotikou_Setup.exe)** και ανοίξτε το αρχείο. (Όλες οι εκδόσεις: [Releases](https://github.com/stam1966/orologio-dimotikou/releases).) Δεν χρειάζονται δικαιώματα διαχειριστή. Αν τα Windows δείξουν «Τα Windows προστάτευσαν τον υπολογιστή σας», πατήστε «Περισσότερες πληροφορίες» → «Εκτέλεση οπωσδήποτε».
 
 ## Τι κάνει
 
