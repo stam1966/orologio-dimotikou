@@ -228,3 +228,40 @@ class Curriculum(unittest.TestCase):
         self.assertIn('2 αντί για 3', m['c2'][0])       # ΣΤ: 2 ώρες ΦΑ αντί 3
         p['curriculum'] = {'Α': {'zz': 3}}
         with self.assertRaises(ValueError): core.check_structure(p)
+
+
+class Framework(unittest.TestCase):
+    def test_required_hours_and_check(self):
+        p = base(4, 2)
+        ta, tb = p['teachers']
+        self.assertIsNone(core.required_hours(p, ta))           # χωρίς έτη: άγνωστο
+        ta['years'] = 5; self.assertEqual(core.required_hours(p, ta), 24)
+        ta['years'] = 12; self.assertEqual(core.required_hours(p, ta), 23)
+        ta['years'] = 25; self.assertEqual(core.required_hours(p, ta), 21)
+        ta['role'] = 'deputy'; self.assertEqual(core.required_hours(p, ta), 19)
+        p['positions'] = 3; self.assertEqual(core.required_hours(p, ta), 23)   # ολιγοθέσιο 25 − 2
+        tb['role'] = 'director'; self.assertEqual(core.required_hours(p, tb), None)
+        p['positions'] = 12; self.assertEqual(core.required_hours(p, tb), 6)
+        tb['hours_override'] = 4; self.assertEqual(core.required_hours(p, tb), 4)
+        p['framework'] = {'teacher_hours': {'deputy_reduction': 3}}
+        self.assertEqual(core.required_hours(p, ta), 18)
+        core.check_structure(p)
+        c = core.teacher_hours_check(p)
+        self.assertEqual(c['tb'], {'required': 4, 'assigned': 2, 'text': c['tb']['text']})
+        self.assertIn('λείπουν 2', c['tb']['text'])
+        for bad in ({'years': -1}, {'role': 'x'}, {'hours_override': 99}):
+            q = copy.deepcopy(p); q['teachers'][0].update(bad)
+            with self.assertRaises(ValueError): core.check_structure(q)
+        q = copy.deepcopy(p); q['framework'] = {'teacher_hours': {'bands': [[10, 5, 20]]}}
+        with self.assertRaises(ValueError): core.check_structure(q)
+
+    def test_framework_print_and_excel(self):
+        import outputs, zipfile, io
+        p = base(4, 2); p['classes'][0]['grade'] = 'Α'; p['curriculum'] = {'Α': {'s1': 5}}
+        p['framework'] = {'curriculum_source': 'ΦΕΚ δοκιμής 123'}; p['teachers'][0]['years'] = 3
+        pages = outputs.pages(p, {'kind': 'teachers', 'mode': 'framework'})
+        self.assertEqual(len(pages), 4)
+        html = outputs.report(p, {'kind': 'teachers', 'mode': 'framework'})
+        self.assertIn('ΦΕΚ δοκιμής 123', html); self.assertIn('Υποχρεωτικ', html)
+        z = zipfile.ZipFile(io.BytesIO(outputs.export_xlsx(p, {'kind': 'teachers', 'mode': 'framework'})))
+        self.assertTrue(any(n.startswith('xl/worksheets/') for n in z.namelist()))

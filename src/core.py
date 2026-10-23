@@ -5,7 +5,7 @@ from pathlib import Path
 from collections import Counter, defaultdict
 import xml.etree.ElementTree as ET
 
-VERSION = '0.5.0-beta'
+VERSION = '0.6.0-beta'
 DAYS = ['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή']
 def uid(): return uuid.uuid4().hex[:16]
 def blank():
@@ -133,6 +133,20 @@ def check_structure(p):
                 if int(k) not in range(n) or type(v)!=int or not 0<=v<=5:raise ValueError('Μη έγκυρος αριθμός ημερών έναρξης.')
     for c in p['classes']:
         if c.get('grade') is not None and (type(c['grade'])!=str or len(c['grade'])>10):raise ValueError('Μη έγκυρη τάξη τμήματος.')
+    for t in p['teachers']:
+        if t.get('years') is not None and (type(t['years'])!=int or not 0<=t['years']<=60):raise ValueError('Μη έγκυρα έτη υπηρεσίας.')
+        if t.get('role','') not in ROLES:raise ValueError('Μη έγκυρος ρόλος εκπαιδευτικού.')
+        if t.get('hours_override') is not None and (type(t['hours_override'])!=int or not 0<=t['hours_override']<=40):raise ValueError('Μη έγκυρο ωράριο εκπαιδευτικού.')
+    if p.get('positions') is not None and (type(p['positions'])!=int or not 1<=p['positions']<=60):raise ValueError('Μη έγκυρη οργανικότητα σχολείου.')
+    fw=p.get('framework')
+    if fw is not None:
+        if not isinstance(fw,dict):raise ValueError('Μη έγκυρο θεσμικό πλαίσιο.')
+        th=fw.get('teacher_hours') or {}
+        for key in ('bands','director'):
+            for row in th.get(key,[]):
+                if not (isinstance(row,list) and len(row)==3 and all(type(x)==int and 0<=x<=99 for x in row) and row[0]<=row[1]):raise ValueError('Μη έγκυρη γραμμή ωραρίου εκπαιδευτικών.')
+        for key in ('small_school_max','small_school_hours','deputy_reduction'):
+            if key in th and (type(th[key])!=int or not 0<=th[key]<=40):raise ValueError('Μη έγκυρη τιμή ωραρίου εκπαιδευτικών.')
     cur=p.get('curriculum',{})
     if not isinstance(cur,dict):raise ValueError('Μη έγκυρο επίσημο ωρολόγιο.')
     for gr,row in cur.items():
@@ -217,6 +231,50 @@ def grade_of(c):
         for g in sorted(GRADES,key=len,reverse=True):
             if t==g or (t.startswith(g) and (len(t)==len(g) or t[len(g)] in ' 0123456789΄\'-')):return g
     return ''
+
+# ---------------------------------------------------------------- θεσμικό πλαίσιο
+TEACHER_HOURS_DEFAULT={
+    'source':'ν. 1566/1985, άρθρο 13, παρ. 7 (όπως ισχύει) — ελέγξτε το ισχύον ΦΕΚ',
+    'bands':[[0,10,24],[10,15,23],[15,20,22],[20,99,21]],   # [από έτη, έως έτη (χωρίς), ώρες]
+    'small_school_max':3,'small_school_hours':25,             # 1θέσια έως 3θέσια
+    'director':[[4,5,18],[6,9,10],[10,11,8],[12,99,6]],       # [από θέσεις, έως θέσεις, ώρες]
+    'deputy_reduction':2}
+ROLES={'':'Εκπαιδευτικός','director':'Διευθυντής/ντρια','deputy':'Υποδιευθυντής/ντρια'}
+
+def framework(p):
+    f=dict(p.get('framework') or {})
+    th={**TEACHER_HOURS_DEFAULT,**(f.get('teacher_hours') or {})}
+    return {'level':f.get('level','Δημοτικό'),'curriculum_source':f.get('curriculum_source',''),'teacher_hours':th}
+
+def required_hours(p,t):
+    """Υποχρεωτικό διδακτικό ωράριο εκπαιδευτικού ή None αν δεν αρκούν τα στοιχεία."""
+    if t.get('hours_override') is not None:return t['hours_override']
+    th=framework(p)['teacher_hours'];pos=p.get('positions')
+    role=t.get('role','')
+    if role=='director':
+        if not pos:return None
+        for a,b,h in th['director']:
+            if a<=pos<=b:return h
+        return None
+    if pos and pos<=th['small_school_max']:h=th['small_school_hours']
+    else:
+        y=t.get('years')
+        if y is None:return None
+        h=next((h for a,b,h in th['bands'] if a<=y<b),None)
+        if h is None:return None
+    if role=='deputy':h-=th['deputy_reduction']
+    return h
+
+def teacher_hours_check(p):
+    """{teacher_id: {'required','assigned','text'}} για όσους έχουν δηλωμένα στοιχεία."""
+    out={}
+    for t in p['teachers']:
+        req=required_hours(p,t)
+        if req is None:continue
+        got=sum(l['hours'] for l in p['lessons'] if t['id'] in l['teachers'])
+        txt='' if got==req else (str(got)+' ώρες ανάθεση αντί για '+str(req)+' υποχρεωτικές ('+('λείπουν '+str(req-got) if got<req else 'περισσεύουν '+str(got-req))+')')
+        out[t['id']]={'required':req,'assigned':got,'text':txt}
+    return out
 
 def curriculum_check(p):
     """Αποκλίσεις ωρών ανά τμήμα από το επίσημο ωρολόγιο: {class_id: [κείμενα]}."""

@@ -9,7 +9,7 @@ LABELS = {'teachers': 'Εκπαιδευτικοί', 'classes': 'Τμήματα',
 SINGULAR = {'teachers': 'εκπαιδευτικού', 'classes': 'τμήματος', 'rooms': 'αίθουσας', 'subjects': 'μαθήματος'}
 MODES = {'individual': 'Ωρολόγιο για κάθε εγγραφή', 'overview': 'Συνολικό ωρολόγιο', 'poster': 'Αφίσα τοίχου (A3)',
          'withtable': 'Ωρολόγιο με πίνακα αναθέσεων', 'assignments': 'Πίνακας μαθημάτων', 'distribution': 'Επισκόπηση κατανομής',
-         'fairness': 'Δικαιοσύνη κατανομής'}
+         'fairness': 'Δικαιοσύνη κατανομής', 'framework': 'Θεσμικό πλαίσιο (ώρες μαθημάτων, ωράριο εκπαιδευτικών)'}
 # Χρωματικό θέμα: κεφαλίδα, λωρίδα τίτλου, ημέρες, στήλη ωρών
 THEMES = {
     'color': dict(head='1F3A5F', head_fg='FFFFFF', band='3E7D6E', band_fg='FFFFFF', day='F2B04A', day_fg='1F2A36', per='4B4F8F', per_fg='FFFFFF', grid='3A3F47'),
@@ -222,6 +222,36 @@ def fairness(p):
     return dict(type='table', heading='', name='Δικαιοσύνη κατανομής', header=head, rows=rows, colors=colors, flags=flags, note=note)
 
 
+def framework_pages(p):
+    """Τα στοιχεία του θεσμικού πλαισίου σε πίνακες για εκτύπωση/Excel."""
+    fw = core.framework(p); th = fw['teacher_hours']; cur = p.get('curriculum') or {}
+    grades = [g for g in core.GRADES if g in cur] or [g for g in core.GRADES if any(core.grade_of(c) == g for c in p['classes'])]
+    subj = [s for s in p['subjects'] if any(cur.get(g, {}).get(s['id']) for g in grades)]
+    rows = [[s['name']] + [str(cur.get(g, {}).get(s['id'], '')) for g in grades] for s in subj]
+    rows.append(['Σύνολο'] + [str(sum(cur.get(g, {}).values())) for g in grades])
+    pages = [dict(type='table', heading='', name='Υποχρεωτικές ώρες μαθημάτων ανά τάξη — ' + fw['level'], header=['Μάθημα'] + [g + '΄' for g in grades],
+                  rows=rows if subj else [['Δεν έχουν καταχωριστεί ώρες. Ανοίξτε «Θεσμικό πλαίσιο».'] + [''] * len(grades)],
+                  note='Πηγή: ' + (fw['curriculum_source'] or '— (συμπληρώστε το ΦΕΚ στο «Θεσμικό πλαίσιο»)'))]
+    r2 = [['Εκπαιδευτικός με ' + (('έως ' + str(b) if a == 0 else str(a) + ' έως ' + str(b)) + ' έτη' if b < 99 else str(a) + '+ έτη') + ' υπηρεσίας', str(h)] for a, b, h in th['bands']]
+    r2.append(['Ολιγοθέσια (έως ' + str(th['small_school_max']) + 'θέσια), ανεξαρτήτως ετών', str(th['small_school_hours'])])
+    r2 += [['Διευθυντής/ντρια ' + str(a) + (('–' + str(b)) if b < 99 and b != a else ('+' if b >= 99 else '')) + 'θέσιου σχολείου', str(h)] for a, b, h in th['director']]
+    r2.append(['Υποδιευθυντής/ντρια: μείωση', '−' + str(th['deputy_reduction'])])
+    pages.append(dict(type='table', heading='', name='Υποχρεωτικό διδακτικό ωράριο εκπαιδευτικών', header=['Κατηγορία', 'Ώρες/εβδομάδα'], rows=r2, note='Πηγή: ' + th['source']))
+    chk = core.teacher_hours_check(p); r3 = []; colors = []; flags = []
+    for t in p['teachers']:
+        c = chk.get(t['id']); got = sum(l['hours'] for l in p['lessons'] if t['id'] in l['teachers'])
+        r3.append([t['name'], core.ROLES.get(t.get('role', ''), ''), '' if t.get('years') is None else str(t['years']),
+                   ('' if not c else str(c['required'])) + (' (ορίστηκε)' if t.get('hours_override') is not None else ''), str(got),
+                   '' if not c else ('✓' if not c['text'] else ('−' if got < c['required'] else '+') + str(abs(got - c['required'])))])
+        colors.append(teacher_color(p, t['id'])); flags.append([False] * 5 + [bool(c and c['text'])])
+    pages.append(dict(type='table', heading='', name='Ωράριο ανά εκπαιδευτικό', header=['Εκπαιδευτικός', 'Ρόλος', 'Έτη υπηρεσίας', 'Υποχρεωτικό', 'Ανάθεση', 'Διαφορά'],
+                      rows=r3, colors=colors, flags=flags, note='Οργανικότητα σχολείου: ' + (str(p['positions']) + 'θέσιο' if p.get('positions') else '— (συμπληρώστε στο «Σχολείο & ωράριο»)')))
+    mis = core.curriculum_check(p)
+    r4 = [[c['name'], m] for c in p['classes'] for m in mis.get(c['id'], [])]
+    pages.append(dict(type='table', heading='', name='Αποκλίσεις τμημάτων από το ωρολόγιο πρόγραμμα', header=['Τμήμα', 'Απόκλιση'], rows=r4 or [['—', 'Καμία απόκλιση']]))
+    return pages
+
+
 def distribution_table(p):
     import rules
     head = ['Εκπαιδευτικός'] + p['days'] + ['Ανάθεση', 'Τοποθετημένες', 'Κενά', 'Παρουσία']
@@ -254,6 +284,8 @@ def pages(p, opts):
         return [distribution_table(p)]
     if mode == 'fairness':
         return [fairness(p)]
+    if mode == 'framework':
+        return framework_pages(p)
     if mode in ('overview', 'poster'):
         return [matrix_page(p, kind, ents, opts, mode == 'poster')]
     out = []
@@ -314,7 +346,7 @@ def report(p, opts):
             content = '<table class="matrix' + (' poster' if pg['poster'] else '') + '">' + head + '<tbody>' + ''.join(body_rows) + '</tbody></table>'
         else:
             cs = pg.get('colors'); fl = pg.get('flags')
-            content = ('<p class="note">' + esc(pg['note']) + '</p>' if pg.get('note') else '') + '<table class="plain"><thead><tr>' + ''.join('<th>' + esc(h) + '</th>' for h in pg['header']) + '</tr></thead><tbody>' + ''.join(
+            content = ('<p class="note">' + esc(pg['note']) + '</p>' if pg.get('note') else '') + '<table class="plain' + (' few' if len(pg['header']) <= 3 else '') + '"><thead><tr>' + ''.join('<th>' + esc(h) + '</th>' for h in pg['header']) + '</tr></thead><tbody>' + ''.join(
                 '<tr>' + ''.join('<td' + ((' style="background:#' + cs[ri] + ';color:#' + fg_for(cs[ri]) + '"') if colors and cs and ci == 0 else (' class="hi"' if fl and fl[ri][ci] else '')) + '>' + esc(v) + '</td>' for ci, v in enumerate(row)) + '</tr>' for ri, row in enumerate(pg['rows'])) + '</tbody></table>'
         foot = '' if pg.get('attach') else '<div class="foot">Ωρολόγιο Δημοτικού · ' + stamp + '</div>'
         body.append('<section class="' + ('attach' if pg.get('attach') else '') + '">' + top + band + content + foot + '</section>')
@@ -332,7 +364,7 @@ def report(p, opts):
     .matrix td{padding:.1em 0;height:2.6em;font-size:.95em;line-height:1.15;white-space:nowrap;overflow:hidden;overflow-wrap:normal}.matrix td b{display:block}.matrix td i{display:block;font-style:normal;font-size:.85em;opacity:.85}
     .matrix.poster{font-size:1em}.matrix.poster td{height:3.2em}.matrix.poster td b{font-size:1.15em}.dsep{border-left:2.5px solid #%(grid)s!important}
     .sw{display:inline-block;width:.9em;height:.9em;border-radius:2px;margin-right:.35em;vertical-align:-.1em;border:1px solid #0003}
-    .plain th{background:#%(per)s;color:#%(per_fg)s;padding:.4em}.plain th:first-child{width:18%%}.plain td{padding:.35em;white-space:pre-line}.plain td:first-child{text-align:left;font-weight:600}
+    .plain th{background:#%(per)s;color:#%(per_fg)s;padding:.4em}.plain th:first-child{width:18%%}.plain.few{table-layout:auto;width:auto;min-width:55%%}.plain.few th:first-child{width:auto}.plain td{padding:.35em;white-space:pre-line}.plain td:first-child{text-align:left;font-weight:600}
     .hi{background:#FBE1DC!important;color:#8E2A1D;font-weight:700}.note{font-size:.9em;color:#555;margin:.3em 0 .6em}.foot{text-align:right;font-size:.8em;color:#667;margin-top:.4em}h3{margin:.8em 0 .4em}
     @page{size:%(paper)s %(orient)s;margin:8mm}
     @media print{body{background:#fff}.bar{display:none}section{margin:0;padding:0;width:auto;box-shadow:none}*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}

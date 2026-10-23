@@ -94,3 +94,18 @@ class Backups(unittest.TestCase):
             self.assertLess(len(pts), 200); self.assertGreaterEqual(len(pts), 50)
             self.assertEqual(len({p['day'] for p in pts}), len({p['day'] for p in pts}))
             self.assertRegex(pts[0]['when'], r'\d\d/\d\d/\d{4} \d\d:\d\d:\d\d')
+
+
+class FolderBrowse(unittest.TestCase):
+    def test_browse_and_mkdir(self):
+        import backup
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / 'Α').mkdir(); (Path(d) / '.κρυφός').mkdir()
+            x = backup.browse(d)
+            self.assertEqual([e['name'] for e in x['dirs']], ['Α']); self.assertTrue(x['writable'])
+            self.assertEqual(x['crumbs'][-1]['path'], str(Path(d)))
+            n = backup.make_dir(d, 'Ωρολόγιο - αντίγραφα'); self.assertTrue(Path(n).is_dir())
+            for bad in ('', '..', 'a/b', 'x:y'):
+                with self.assertRaises(ValueError): backup.make_dir(d, bad)
+            with self.assertRaises(ValueError): backup.browse(str(Path(d) / 'όχι'))
+        self.assertIn('places', backup.browse(''))

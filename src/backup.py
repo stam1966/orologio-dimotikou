@@ -140,3 +140,78 @@ def prune(root, keep_recent=150, days_daily=180):
         else:
             seen_days.add(day)
     return removed
+
+
+def _drives():
+    out = []
+    if sys.platform == 'win32':
+        try:
+            import ctypes
+            mask = ctypes.windll.kernel32.GetLogicalDrives()
+            kinds = {2: 'Αφαιρούμενος δίσκος (USB)', 3: 'Τοπικός δίσκος', 4: 'Δίσκος δικτύου', 5: 'CD/DVD'}
+            for i, letter in enumerate(string.ascii_uppercase):
+                if mask & (1 << i):
+                    root = letter + ':\\'
+                    t = ctypes.windll.kernel32.GetDriveTypeW(root)
+                    if t == 5:
+                        continue
+                    out.append({'label': letter + ': ' + kinds.get(t, 'Δίσκος'), 'path': root, 'usb': t == 2})
+        except Exception:
+            pass
+    else:
+        out.append({'label': '/', 'path': '/', 'usb': False})
+    return out
+
+
+def browse(path=''):
+    """Πλοήγηση φακέλων για την επιλογή φακέλου αντιγράφων.
+    Χωρίς διαδρομή: γνωστοί φάκελοι και δίσκοι. Με διαδρομή: οι υποφάκελοί της."""
+    if not path:
+        home = Path.home()
+        places = []
+        for label, p in (('Έγγραφα', home / 'Documents'), ('Επιφάνεια εργασίας', home / 'Desktop'),
+                         ('OneDrive', Path(os.environ['OneDrive']) if os.environ.get('OneDrive') else None),
+                         ('Λήψεις', home / 'Downloads'), ('Προσωπικός φάκελος', home)):
+            if p and p.is_dir():
+                places.append({'label': label, 'path': str(p)})
+        return {'path': '', 'parent': None, 'places': places, 'drives': _drives(), 'dirs': [], 'crumbs': [], 'writable': False}
+    p = Path(path).expanduser()
+    if not p.is_dir():
+        raise ValueError('Ο φάκελος δεν υπάρχει: ' + str(p))
+    dirs = []
+    try:
+        for c in p.iterdir():
+            try:
+                if c.is_dir() and not c.name.startswith(('.', '$')) and c.name not in ('System Volume Information', '__pycache__'):
+                    dirs.append(c.name)
+            except OSError:
+                continue
+    except PermissionError:
+        raise ValueError('Δεν επιτρέπεται η πρόσβαση στον φάκελο: ' + str(p))
+    dirs.sort(key=str.casefold)
+    parent = str(p.parent) if p.parent != p else ''
+    try:
+        check_folder(str(p)); writable = True
+    except ValueError:
+        writable = False
+    crumbs = [{'label': (q.name or str(q)).rstrip('\\/') or str(q), 'path': str(q)} for q in reversed([p, *p.parents])]
+    return {'path': str(p), 'parent': parent, 'places': [], 'drives': [], 'crumbs': crumbs,
+            'dirs': [{'name': d, 'path': str(p / d)} for d in dirs[:500]], 'writable': writable}
+
+
+BAD_NAME = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+
+
+def make_dir(parent, name):
+    name = (name or '').strip().rstrip('.')
+    if not name or BAD_NAME.search(name) or name in ('.', '..'):
+        raise ValueError('Μη έγκυρο όνομα φακέλου (δεν επιτρέπονται οι χαρακτήρες < > : " / \\ | ? *).')
+    p = Path(parent)
+    if not p.is_dir():
+        raise ValueError('Ο φάκελος δεν υπάρχει: ' + str(p))
+    q = p / name
+    try:
+        q.mkdir(exist_ok=True)
+    except OSError as ex:
+        raise ValueError('Δεν ήταν δυνατή η δημιουργία του φακέλου: ' + str(ex))
+    return str(q)

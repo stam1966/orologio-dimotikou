@@ -56,7 +56,7 @@ def summary(p):
     unplaced = sum(1 for e in p['events'] if not e['place'])
     data = {'errors': [f['text'] for f in hard], 'warnings': [{'text': f['text'], 'penalty': f['penalty']} for f in soft],
             'gaps': rules.gap_total(p, False), 'unplaced': unplaced,
-            'score': rules.score(p) if not unplaced else None, 'curriculum': core.curriculum_check(p)}
+            'score': rules.score(p) if not unplaced else None, 'curriculum': core.curriculum_check(p), 'teacher_hours': core.teacher_hours_check(p)}
     SUMMARY_CACHE.update(rev=key, data=data)
     return data
 
@@ -199,6 +199,10 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send(200, outputs.export_xlsx(p, req.get('options', {})), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', download='orologio.xlsx')
                 if action == '/api/settings':
                     return self.send(200, json.dumps({'settings': backup.load_settings(ROOT), 'suggestions': backup.suggestions()}, ensure_ascii=False))
+                if action == '/api/fs/list':
+                    return self.send(200, json.dumps(backup.browse(req.get('path', '')), ensure_ascii=False))
+                if action == '/api/fs/mkdir':
+                    return self.send(200, json.dumps({'path': backup.make_dir(req.get('parent', ''), req.get('name', ''))}, ensure_ascii=False))
                 if action == '/api/settings/save':
                     s = backup.load_settings(ROOT)
                     if 'backup_dir' in req:
