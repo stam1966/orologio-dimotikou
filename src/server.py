@@ -4,7 +4,7 @@ from pathlib import Path
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 import base64
-import core, outputs, rules, updater, versions, backup
+import core, outputs, rules, updater, versions, backup, xlimport
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / 'data' / 'project.json'
@@ -197,6 +197,12 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send(200, json.dumps(core.slot_status(p, req['id']), ensure_ascii=False))
                 if action == '/api/export/xlsx':
                     return self.send(200, outputs.export_xlsx(p, req.get('options', {})), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', download='orologio.xlsx')
+                if action == '/api/xlsx/template':
+                    return self.send(200, xlimport.template(None if req.get('empty') else p), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                     download='Protypo_Orologio.xlsx' if req.get('empty') else 'Stoixeia_Orologio.xlsx')
+                if action == '/api/xlsx/preview':
+                    q, rep = xlimport.apply(p, base64.b64decode(req['data']), req.get('mode', 'merge'))
+                    return self.send(200, json.dumps(rep, ensure_ascii=False))
                 if action == '/api/settings':
                     return self.send(200, json.dumps({'settings': backup.load_settings(ROOT), 'suggestions': backup.suggestions()}, ensure_ascii=False))
                 if action == '/api/fs/list':
@@ -276,6 +282,11 @@ class Handler(BaseHTTPRequestHandler):
                 if action == '/api/import':
                     q = core.import_xml(req['text']) if req['kind'] == 'xml' else core.check_structure(json.loads(req['text']))
                     commit(q, 'Εισαγωγή αρχείου')
+                elif action == '/api/xlsx/import':
+                    q, rep = xlimport.apply(p, base64.b64decode(req['data']), req.get('mode', 'merge'))
+                    if not rep['changed']:
+                        raise ValueError('Το αρχείο δεν φέρνει καμία αλλαγή.')
+                    commit(q, 'Εισαγωγή από Excel')
                 elif action == '/api/save':
                     q = req['project']; core.check_structure(q); commit(q, req.get('label') or 'Αλλαγή')
                 elif action == '/api/move':

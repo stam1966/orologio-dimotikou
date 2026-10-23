@@ -17,7 +17,7 @@ PY_VERSION = '3.12.10'
 EMBED_URL = 'https://www.python.org/ftp/python/%s/python-%s-embed-amd64.zip' % (PY_VERSION, PY_VERSION)
 APP = 'Orologio_Dimotikou'
 SRC_FILES = ['core.py', 'rules.py', 'outputs.py', 'server.py', 'updater.py', 'preflight.py', 'asc.py', 'pdfs.py', 'versions.py',
-             'backup.py', 'index.html', 'manual.html', 'app.ico', 'demo_school.json']
+             'backup.py', 'xlimport.py', 'index.html', 'manual.html', 'app.ico', 'demo_school.json']
 TOP_FILES = ['START.cmd', 'START_KONSOLA.cmd', 'SYNTOMEFSI.cmd', 'CHECK.cmd', 'ΕΓΚΑΤΑΣΤΑΣΗ.cmd', 'ΑΠΕΓΚΑΤΑΣΤΑΣΗ.cmd', 'README_EL.txt', 'CHANGELOG.txt']
 
 

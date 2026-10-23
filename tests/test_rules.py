@@ -265,3 +265,77 @@ class Framework(unittest.TestCase):
         self.assertIn('ΦΕΚ δοκιμής 123', html); self.assertIn('Υποχρεωτικ', html)
         z = zipfile.ZipFile(io.BytesIO(outputs.export_xlsx(p, {'kind': 'teachers', 'mode': 'framework'})))
         self.assertTrue(any(n.startswith('xl/worksheets/') for n in z.namelist()))
+
+
+def _xlsx_shared(sheets):
+    """Ελάχιστο .xlsx με sharedStrings (όπως τα γράφει το Excel)."""
+    import zipfile, io
+    from xml.sax.saxutils import escape
+    strings = []; sid = lambda s: strings.index(s) if s in strings else (strings.append(s) or len(strings) - 1)
+    b = io.BytesIO(); z = zipfile.ZipFile(b, 'w')
+    wb = ''.join('<sheet name="%s" sheetId="%d" r:id="rId%d"/>' % (escape(n), i, i) for i, n in enumerate(sheets, 1))
+    z.writestr('xl/workbook.xml', '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>%s</sheets></workbook>' % wb)
+    z.writestr('xl/_rels/workbook.xml.rels', '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">%s</Relationships>' % ''.join(
+        '<Relationship Id="rId%d" Type="x" Target="worksheets/sheet%d.xml"/>' % (i, i) for i in range(1, len(sheets) + 1)))
+    for i, rows in enumerate(sheets.values(), 1):
+        xml = ''
+        for r, row in enumerate(rows, 1):
+            cells = ''
+            for c, v in enumerate(row):
+                ref = chr(65 + c) + str(r)
+                if isinstance(v, (int, float)): cells += '<c r="%s"><v>%s</v></c>' % (ref, v)
+                elif v: cells += '<c r="%s" t="s"><v>%d</v></c>' % (ref, sid(v))
+            xml += '<row r="%d">%s</row>' % (r, cells)
+        z.writestr('xl/worksheets/sheet%d.xml' % i, '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>%s</sheetData></worksheet>' % xml)
+    z.writestr('xl/sharedStrings.xml', '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">%s</sst>' % ''.join('<si><t>%s</t></si>' % escape(s) for s in strings))
+    z.close(); return b.getvalue()
+
+
+class ExcelImport(unittest.TestCase):
+    def test_user_file_merge(self):
+        import xlimport
+        raw = _xlsx_shared({
+            'ΕΚΠΑΙΔΕΥΤΙΚΟΙ': [['Λίστα'], ['ΟΝΟΜΑΤΕΠΩΝΥΜΟ', 'ΡΟΛΟΣ', 'ΕΤΗ'], ['Άλφα', 'Διευθύντρια', 22], ['Γάμμα', '', 'x']],
+            'Τμήματα': [['Τμήμα', 'Τάξη', 'Υπεύθυνος'], ['A1', '1', 'Ζήτα']],
+            'Μαθήματα': [['Μάθημα', 'Α΄'], ['Γλώσσα', 9]],
+            'Αναθέσεις': [['Τμήμα', 'Μάθημα', 'Εκπαιδευτικός', 'Ώρες', 'Μορφή', 'Ημέρες'],
+                          ['Α1', 'ΓΛΩΣΣΑ', 'αλφα', 9, 1, ''], ['Α1, Τμ1', 'Ιστορία', 'Άλφα', 4, 2, 'Δευ, Τετ'], ['Α1', 'Γλώσσα', 'Άλφα', 3, 2, '']]})
+        p = base(4, 2)
+        q, rep = xlimport.apply(p, raw, 'merge')
+        self.assertTrue(rep['changed'])
+        t = {x['name']: x for x in q['teachers']}
+        self.assertEqual((t['Άλφα'].get('role'), t['Άλφα'].get('years')), ('director', 22))
+        self.assertIn('Ζήτα', t)                                            # υπεύθυνος που δεν υπήρχε: δημιουργείται
+        self.assertEqual({(s['sheet'], s['row']) for s in rep['skipped']}, {('Εκπαιδευτικοί', 4), ('Αναθέσεις', 4)})
+        a1 = next(c for c in q['classes'] if c['name'] == 'A1'); self.assertEqual(a1['grade'], 'Α'); self.assertEqual(a1['teacher'], t['Ζήτα']['id'])
+        new = [l for l in q['lessons'] if l['id'] not in {x['id'] for x in p['lessons']}]
+        self.assertEqual(sorted((l['hours'], l['duration'], len(l['classes'])) for l in new), [(4, 2, 2), (9, 1, 1)])
+        self.assertTrue(any('Ιστορία' in n for n in rep['notes']))
+        self.assertEqual(len(p['lessons']), 2)                              # το αρχικό δεν αλλάζει
+        self.assertEqual(len(q['lessons']) + 0, 4); self.assertEqual(len(p['teachers']), 2)
+
+    def test_roundtrip_and_replace(self):
+        import xlimport
+        p = base(4, 2); p['events'][0]['place'] = [0, 0]
+        p['classes'][0]['grade'] = 'Α'; p['curriculum'] = {'Α': {'s1': 4}}; p['teachers'][0]['years'] = 7
+        raw = xlimport.template(p)
+        for mode in ('merge', 'replace'):
+            q, rep = xlimport.apply(p, raw, mode)
+            self.assertFalse(rep['changed'], (mode, rep)); self.assertEqual(rep['skipped'], [])
+        # ο Βήτα φεύγει από τη λίστα αλλά έχει ανάθεση: κρατιέται με σημείωση· η ανάθεση με αλλαγμένες ώρες ξαναμπαίνει σε εκκρεμότητες
+        tbl = xlimport.tables(raw)
+        rows = {'Εκπαιδευτικοί': [['Ονοματεπώνυμο'], ['Άλφα'], ['Νέος']],
+                'Αναθέσεις': [['Τμήμα', 'Μάθημα', 'Εκπαιδευτικός', 'Ώρες'], ['Τμ1', 'Γλώσσα', 'Άλφα', 5], ['Τμ2', 'Φυσική Αγωγή', 'Βήτα', 2]]}
+        q, rep = xlimport.apply(p, _xlsx_shared(rows), 'replace')
+        self.assertEqual(sorted(x['name'] for x in q['teachers']), ['Άλφα', 'Βήτα', 'Νέος'])
+        self.assertTrue(any('Βήτα' in n for n in rep['notes']))
+        la = next(l for l in q['lessons'] if l['id'] == 'la'); self.assertEqual(la['hours'], 5)
+        self.assertTrue(all(e['place'] is None for e in q['events'] if e['lesson'] == 'la'))
+        rows['Αναθέσεις'].pop()                                             # χωρίς την ανάθεση του Βήτα: αφαιρείται και αυτός
+        q, rep = xlimport.apply(p, _xlsx_shared(rows), 'replace')
+        self.assertEqual(sorted(x['name'] for x in q['teachers']), ['Άλφα', 'Νέος']); self.assertEqual(rep['removed'], {'lessons': 1, 'teachers': 1})
+
+    def test_bad_files(self):
+        import xlimport
+        for raw in (b'not a zip', b'\xd0\xcf\x11\xe0' + b'0' * 50, _xlsx_shared({'Φύλλο1': [['α']]})):
+            with self.assertRaises(ValueError): xlimport.apply(base(), raw)
