@@ -4,7 +4,9 @@
 :root{--ink:#1E2A32;--muted:#5E6B73;--faint:#8A959B;--paper:#EEF1EE;--surface:#FFFFFF;--line:#D6DDD8;--line2:#E6EBE7;--slate:#24433C;--slate2:#2E5349;--chalk:#E7EEE9;--pencil:#F2C230;--pencil-soft:#FDF3CF;--danger:#B83A2B;--danger-soft:#FBE9E6;--ok:#2F7D46;--ok-soft:#E3F2E7;--warn:#9A6B00;--focus:#1F6FD1;
  --font:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif}
 *{box-sizing:border-box}html,body{height:100%}body{margin:0;font:13px/1.45 var(--font);color:var(--ink);background:var(--paper);font-variant-numeric:tabular-nums;overflow:hidden}
-button,input,select,textarea{font:inherit;color:inherit}:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+button,input,select,textarea{font:inherit;color:inherit}
+/* Ενιαία εμφάνιση κειμένου: στα Windows το Chromium άλλοτε ζωγραφίζει γράμματα με ClearType (φαίνονται πιο έντονα) και άλλοτε με γκρι εξομάλυνση, ανάλογα με τη θέση του πεδίου. Η ελάχιστη διαφάνεια επιβάλλει την ίδια εξομάλυνση σε όλα τα πεδία και κουμπιά. */
+input,select,textarea,.btn{opacity:.999;font-weight:400;font-variant-numeric:tabular-nums}:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
 .app{display:grid;grid-template-columns:216px 1fr;height:100vh}
 .app.narrow{grid-template-columns:52px 1fr}.app.narrow .brand{padding:14px 8px}.app.narrow .brand b,.app.narrow .brand span,.app.narrow .steps button>span:nth-child(2),.app.narrow .steps .badge,.app.narrow .sidefoot span{display:none}
 .app.narrow .steps{padding:0 4px}.app.narrow .steps button{grid-template-columns:1fr;justify-items:center;padding:9px 0;position:relative}.app.narrow .steps .badge.bad{display:block;position:absolute;top:2px;right:2px;padding:0 4px;font-size:10px}.app.narrow .sidefoot{padding:10px 4px;justify-content:center}.app.narrow .sidefoot button{padding:4px 5px;font-size:11px}
