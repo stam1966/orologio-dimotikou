@@ -1,0 +1,8 @@
+ΩΡΟΛΟΓΙΟ ΔΗΜΟΤΙΚΟΥ — 0.7.2 beta
+
+• Μόνιμος σύνδεσμος για το αρχείο ενημέρωσης (για υπολογιστές χωρίς Internet),
+  που οδηγεί πάντα στην τελευταία έκδοση:
+  https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Orologio_Enimerosi.zip
+  (όπως και ο σύνδεσμος του Orologio_Dimotikou_Setup.exe).
+
+Τα δεδομένα σας δεν αλλάζουν με την ενημέρωση.

@@ -4,7 +4,7 @@
 
 ## Λήψη
 
-**[⬇ Λήψη της τελευταίας έκδοσης (Setup.exe)](https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Orologio_Dimotikou_Setup.exe)** και ανοίξτε το αρχείο. (Όλες οι εκδόσεις: [Releases](https://github.com/stam1966/orologio-dimotikou/releases).) Δεν χρειάζονται δικαιώματα διαχειριστή. Αν τα Windows δείξουν «Τα Windows προστάτευσαν τον υπολογιστή σας», πατήστε «Περισσότερες πληροφορίες» → «Εκτέλεση οπωσδήποτε».
+**[⬇ Λήψη της τελευταίας έκδοσης (Setup.exe)](https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Orologio_Dimotikou_Setup.exe)** και ανοίξτε το αρχείο. (Όλες οι εκδόσεις: [Releases](https://github.com/stam1966/orologio-dimotikou/releases).) Αρχείο ενημέρωσης για υπολογιστή χωρίς Internet (πάντα η τελευταία έκδοση): [Orologio_Enimerosi.zip](https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Orologio_Enimerosi.zip). Δεν χρειάζονται δικαιώματα διαχειριστή. Αν τα Windows δείξουν «Τα Windows προστάτευσαν τον υπολογιστή σας», πατήστε «Περισσότερες πληροφορίες» → «Εκτέλεση οπωσδήποτε».
 
 ## Τι κάνει
 

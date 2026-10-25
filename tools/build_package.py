@@ -110,4 +110,6 @@ if __name__ == '__main__':
         'Μόνιμος σύνδεσμος λήψης (πάντα η τελευταία έκδοση): '
         'https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Orologio_Dimotikou_Setup.exe\n\n'
         '**Ενημέρωση υπάρχουσας εγκατάστασης:** μέσα στην εφαρμογή «Σχολείο & ωράριο → Ενημέρωση» '
-        '(ή σύρετε το `Orologio_Enimerosi_….zip` στο παράθυρο).\n\n```\n' + notes(v) + '\n```\n', encoding='utf-8')
+        '(ή σύρετε το `Orologio_Enimerosi_….zip` στο παράθυρο).\n\n'
+        'Μόνιμος σύνδεσμος αρχείου ενημέρωσης (πάντα η τελευταία έκδοση): '
+        'https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Orologio_Enimerosi.zip\n\n```\n' + notes(v) + '\n```\n', encoding='utf-8')
