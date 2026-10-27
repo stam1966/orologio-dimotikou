@@ -339,3 +339,41 @@ class ExcelImport(unittest.TestCase):
         import xlimport
         for raw in (b'not a zip', b'\xd0\xcf\x11\xe0' + b'0' * 50, _xlsx_shared({'Φύλλο1': [['α']]})):
             with self.assertRaises(ValueError): xlimport.apply(base(), raw)
+
+
+class Links(unittest.TestCase):
+    def project(self):
+        p = base(4, 2)
+        p['groups'] = [dict(id='g1', name='Ομάδα 1', classid='c1', entireclass='0', divisiontag='1', studentids='', studentcount=''),
+                       dict(id='g2', name='Ομάδα 2', classid='c1', entireclass='0', divisiontag='1', studentids='', studentcount='')]
+        p['teachers'].append(dict(id='tc', name='Γάμμα', short='Γ'))
+        add_lesson(p, 'lx', 's2', ['tb'], ['c1'], 3); p['lessons'][-1]['groups'] = ['g1']
+        add_lesson(p, 'ly', 's2', ['tc'], ['c1'], 3); p['lessons'][-1]['groups'] = ['g2']
+        p['links'] = [dict(id='k1', lessons=['lx', 'ly', 'zz'], note='ΚΑΝ ∥ ΤΕ')]
+        return core.check_structure(p)
+
+    def test_solver_keeps_linked_lessons_together(self):
+        p = self.project()
+        self.assertEqual(p['links'][0]['lessons'], ['lx', 'ly'])          # άγνωστη ανάθεση αφαιρείται
+        q = solved(self, p)
+        slots = lambda lid: sorted(tuple(e['place']) for e in q['events'] if e['lesson'] == lid)
+        self.assertEqual(slots('lx'), slots('ly'))
+        self.assertFalse([f for f in R.evaluate(q, True) if f['hard']])
+        # χειροκίνητη μετακίνηση: η ταυτόχρονη διδασκαλία της άλλης ομάδας πάει μαζί
+        e = next(e for e in q['events'] if e['lesson'] == 'lx')
+        taken = {tuple(x['place']) for x in q['events']}
+        free = next(c for c in R.candidates(q, R.mapping(q, 'lessons')['lx']) if c not in taken)
+        r = core.move_event(q, e['id'], list(free))
+        at = lambda lid: sorted(tuple(x['place']) for x in r['events'] if x['lesson'] == lid)
+        self.assertEqual(at('lx'), at('ly')); self.assertIn(free, at('ly'))
+        with self.assertRaises(ValueError):
+            other = next(x for x in q['events'] if x['lesson'] == 'la')
+            core.move_event(q, e['id'], None, other['id'])
+
+    def test_checker_reports_mismatch(self):
+        p = self.project()
+        for e in p['events']:
+            if e['lesson'] == 'lx':
+                e['place'] = [0, 0]; break
+        self.assertTrue(any(f['key'] == ('link', 'k1') for f in R.evaluate(p)))
+        self.assertIn('Ταυτόχρονα', R.describe(p, ('link', 'k1')))

@@ -121,7 +121,9 @@ def name_of(p, k, i):
 
 def lesson_label(p, l):
     s = name_of(p, 'subjects', l['subject'])
-    parts = [s, ', '.join(name_of(p, 'classes', c) for c in l['classes']) or 'χωρίς τμήμα',
+    gr = {g['id']: g for g in p.get('groups', [])}
+    gn = sorted({gr[g]['name'] for g in l.get('groups', []) if g in gr and gr[g].get('entireclass') != '1'})
+    parts = [s, (', '.join(name_of(p, 'classes', c) for c in l['classes']) or 'χωρίς τμήμα') + (' (' + ', '.join(gn) + ')' if gn else ''),
              ', '.join(name_of(p, 'teachers', t) for t in l['teachers'])]
     return ' – '.join(parts)
 
@@ -187,6 +189,27 @@ def resources(p, l):
     return out
 
 
+def link_sides(p, link):
+    """Οι «πλευρές» ενός δεσίματος: αναθέσεις με τις ίδιες ομάδες είναι η ίδια πλευρά.
+    Κάθε πλευρά πρέπει να έχει μάθημα ακριβώς τις ίδιες ώρες με τις άλλες."""
+    ls = mapping(p, 'lessons'); sides = {}
+    for lid in link['lessons']:
+        l = ls.get(lid)
+        if l:
+            sides.setdefault(frozenset(l['groups']) or ('L', lid), []).append(lid)
+    out = list(sides.values())
+    if len(out) < 2:
+        out = [[lid] for lid in link['lessons'] if lid in ls]
+    return out
+
+
+def link_label(p, link):
+    if link.get('note'):
+        return link['note']
+    ls = mapping(p, 'lessons')
+    return ' ∥ '.join(lesson_label(p, ls[x]) for x in link['lessons'] if x in ls)
+
+
 def teacher_hours(p):
     h = Counter()
     for l in p['lessons']:
@@ -239,6 +262,9 @@ def describe(p, key):
         return name_of(p, kind, eid) + ': ' + LABEL[kind][rk] + val
     if tag == 'collision':
         return 'Σύγκρουση εκπαιδευτικού/τμήματος'
+    if tag == 'link':
+        k = next((x for x in p.get('links', []) if x['id'] == key[1]), None)
+        return 'Ταυτόχρονα μαθήματα: ' + (link_label(p, k) if k else key[1])
     return str(key)
 
 
@@ -387,6 +413,24 @@ def evaluate(p, complete=False):
                         add(('rule', 'subjects', s['id'], 'day_end'), r, late,
                             t['name'] + ': έχει ' + s['name'] + ' ' + p['days'][d] + ' αλλά διδάσκει μετά τις ' + p['periods'][r['v']]['end'])
 
+    # Ταυτόχρονα μαθήματα: σε κάθε ώρα όλες οι πλευρές του δεσίματος ίδιες
+    for k in p.get('links', []):
+        sides = link_sides(p, k)
+        if len(sides) < 2:
+            continue
+        occs = []
+        for side in sides:
+            c = Counter()
+            for e in p['events']:
+                if e['lesson'] in side and e['place']:
+                    for j in range(e['place'][1], e['place'][1] + ls[e['lesson']]['duration']):
+                        c[e['place'][0], j] += 1
+            occs.append(c)
+        bad = sorted({s for c in occs for s in c if any(o[s] != occs[0][s] for o in occs)})
+        if bad:
+            add(('link', k['id']), None, len(bad), 'Τα ταυτόχρονα μαθήματα δεν συμπίπτουν: ' + link_label(p, k) + ' · ' +
+                ', '.join(p['days'][d] + ' ' + p['periods'][j]['name'] + 'η' for d, j in bad[:4]) + (' …' if len(bad) > 4 else ''))
+
     # Συγχώνευση ευρημάτων ίδιου κλειδιού (π.χ. ίδιο μάθημα σε πολλές ημέρες)
     merged = {}
     for f in found:
@@ -517,6 +561,26 @@ def build(p, cp_model, diag=False):
     for vs in occupancy.values():
         if len(vs) > 1:
             model.AddAtMostOne(vs)
+    # ---- ταυτόχρονα μαθήματα (δεσίματα): κάθε πλευρά έχει μάθημα ακριβώς τις ίδιες ώρες
+    if p.get('links'):
+        evl = defaultdict(list)
+        for e in p['events']:
+            evl[e['lesson']].append(e['id'])
+        for k in p['links']:
+            sides = link_sides(p, k)
+            if len(sides) < 2:
+                continue
+            for d in range(5):
+                for j in range(n):
+                    exprs = []
+                    for side in sides:
+                        vs = [v for lid in side for eid in evl[lid] for dd, i, v in choices.get(eid, [])
+                              if dd == d and i <= j < i + ls[lid]['duration']]
+                        exprs.append(vs)
+                    if not any(exprs):
+                        continue
+                    for vs in exprs[1:]:
+                        hard(('link', k['id']), model.Add(sum(exprs[0]) - sum(vs) == 0))
     for l in ls.values():
         if l.get('max_daily'):
             for d in range(5):

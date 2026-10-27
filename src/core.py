@@ -5,7 +5,7 @@ from pathlib import Path
 from collections import Counter, defaultdict
 import xml.etree.ElementTree as ET
 
-VERSION = '0.7.3-beta'
+VERSION = '0.8.0-beta'
 DAYS = ['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή']
 def uid(): return uuid.uuid4().hex[:16]
 def blank():
@@ -153,6 +153,17 @@ def check_structure(p):
         if type(gr)!=str or not isinstance(row,dict):raise ValueError('Μη έγκυρο επίσημο ωρολόγιο.')
         for sid,h in row.items():
             if sid not in ids['subjects'] or type(h)!=int or not 0<=h<=40:raise ValueError('Μη έγκυρη τιμή στο επίσημο ωρολόγιο.')
+    lk=p.get('links')
+    if lk is not None:
+        if not isinstance(lk,list):raise ValueError('Μη έγκυρα ταυτόχρονα μαθήματα.')
+        lids=set(ids['lessons']);clean=[];seen=set()
+        for k in lk:
+            if not isinstance(k,dict) or not isinstance(k.get('lessons'),list):raise ValueError('Μη έγκυρα ταυτόχρονα μαθήματα.')
+            les=[x for x in dict.fromkeys(k['lessons']) if isinstance(x,str) and x in lids]
+            kid=str(k.get('id') or uid())
+            if len(les)>=2 and kid not in seen:
+                seen.add(kid);clean.append(dict(id=kid,lessons=les,note=str(k.get('note',''))[:200]))
+        p['links']=clean
     g=p.get('global_rules',{}).get('min_gaps')
     if g is not None and (not isinstance(g,dict) or g.get('w',1) not in (1,2,3,4,5)):raise ValueError('Μη έγκυρος γενικός κανόνας κενών.')
     return p
@@ -333,12 +344,26 @@ def move_event(project, event_id, place, swap_id=None):
     p=copy.deepcopy(project)
     e=next(e for e in p['events'] if e['id']==event_id)
     if e['locked']:raise ValueError('Η διδασκαλία είναι κλειδωμένη.')
+    linked={lid for k in p.get('links',[]) for lid in k['lessons']}
     if swap_id:
         other=next(x for x in p['events'] if x['id']==swap_id)
+        if e['lesson'] in linked or other['lesson'] in linked:raise ValueError('Τα ταυτόχρονα μαθήματα δεν ανταλλάσσονται· μετακινήστε τα σε ελεύθερη θέση και θα πάνε μαζί.')
         if other is e or not e['place'] or not other['place']:raise ValueError('Μη έγκυρη ανταλλαγή.')
         if other['locked']:raise ValueError('Η δεύτερη διδασκαλία είναι κλειδωμένη.')
         e['place'],other['place']=other['place'],e['place']
-    else:e['place']=place
+    else:
+        old=e['place'];e['place']=place
+        if e['lesson'] in linked and old:
+            # Οι διδασκαλίες των άλλων πλευρών του δεσίματος στην ίδια θέση μετακινούνται μαζί
+            ls=mapping(p,'lessons');dur=ls[e['lesson']]['duration']
+            for k in p['links']:
+                if e['lesson'] not in k['lessons']:continue
+                for side in R.link_sides(p,k):
+                    if e['lesson'] in side:continue
+                    mate=next((x for x in p['events'] if x['lesson'] in side and x['place']==old and ls[x['lesson']]['duration']==dur and x is not e),None)
+                    if mate:
+                        if mate['locked']:raise ValueError('Η ταυτόχρονη διδασκαλία είναι κλειδωμένη.')
+                        mate['place']=place
     check_structure(p)
     # Απορρίπτεται μόνο ό,τι ΧΕΙΡΟΤΕΡΕΥΕΙ υποχρεωτικό κανόνα· υπάρχουσες εκκρεμότητες δεν μπλοκάρουν.
     before={f['key']:f['amount'] for f in R.evaluate(project) if f['hard']}

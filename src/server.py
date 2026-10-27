@@ -4,7 +4,7 @@ from pathlib import Path
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 import base64
-import core, outputs, rules, updater, versions, backup, xlimport
+import core, outputs, rules, updater, versions, backup, xlimport, rozimport, gymimport
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / 'data' / 'project.json'
@@ -35,6 +35,30 @@ def log(*a):
 
 def boot():
     STATE['project'] = core.load(DATA) if DATA.exists() else core.blank()
+
+
+def parse_import(req):
+    """Ανάγνωση αρχείου προς εισαγωγή: XML aSc ή εφαρμογής, .roz aSc, JSON εφαρμογής ή «Δεδομένα Προγράμματος»."""
+    kind = req.get('kind')
+    if kind == 'roz':
+        return rozimport.parse(base64.b64decode(req['data']))
+    if kind == 'xml':
+        q = core.import_xml(req['text']); what = 'XML aSc' if q.get('title') == 'Πρόγραμμα από XML' else 'XML της εφαρμογής'
+    elif kind == 'json':
+        try:
+            d = json.loads(req['text'])
+        except ValueError:
+            raise ValueError('Το αρχείο JSON δεν διαβάζεται.')
+        if gymimport.is_gym_json(d):
+            return gymimport.parse(d)
+        if not isinstance(d, dict) or d.get('schema') != 1:
+            raise ValueError('Το JSON δεν αναγνωρίζεται (ούτε αντίγραφο της εφαρμογής ούτε «Δεδομένα Προγράμματος»).')
+        q = core.check_structure(d); what = 'αντίγραφο της εφαρμογής'
+    else:
+        raise ValueError('Άγνωστος τύπος αρχείου.')
+    return q, dict(kind=kind, counts=dict(periods=len(q['periods']), teachers=len(q['teachers']), classes=len(q['classes']), subjects=len(q['subjects']),
+                                          lessons=len(q['lessons']), events=len(q['events']), placed=sum(1 for e in q['events'] if e['place'])),
+                   notes=['Μορφή: ' + what + '.'])
 
 
 def commit(p, label='Αλλαγή', history=True):
@@ -197,6 +221,9 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send(200, json.dumps(core.slot_status(p, req['id']), ensure_ascii=False))
                 if action == '/api/export/xlsx':
                     return self.send(200, outputs.export_xlsx(p, req.get('options', {})), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', download='orologio.xlsx')
+                if action == '/api/import/preview':
+                    q, rep = parse_import(req)
+                    return self.send(200, json.dumps(rep, ensure_ascii=False))
                 if action == '/api/xlsx/template':
                     return self.send(200, xlimport.template(None if req.get('empty') else p), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                                      download='Protypo_Orologio.xlsx' if req.get('empty') else 'Stoixeia_Orologio.xlsx')
@@ -280,7 +307,10 @@ class Handler(BaseHTTPRequestHandler):
                 if req.get('revision') != STATE['revision']:
                     raise ValueError('Τα δεδομένα άλλαξαν σε άλλο παράθυρο. Η σελίδα θα ανανεωθεί.')
                 if action == '/api/import':
-                    q = core.import_xml(req['text']) if req['kind'] == 'xml' else core.check_structure(json.loads(req['text']))
+                    q, rep = parse_import(req)
+                    if p['teachers'] or p['lessons']:
+                        versions.save(ROOT, p, 'Πριν από την εισαγωγή (' + time.strftime('%d/%m/%Y %H:%M') + ')')
+                    q['version'] = core.VERSION
                     commit(q, 'Εισαγωγή αρχείου')
                 elif action == '/api/xlsx/import':
                     q, rep = xlimport.apply(p, base64.b64decode(req['data']), req.get('mode', 'merge'))
@@ -316,6 +346,16 @@ class Handler(BaseHTTPRequestHandler):
                     commit(q, 'Κλείδωμα' if req['locked'] else 'Ξεκλείδωμα')
                 elif action == '/api/unplace':
                     q = copy.deepcopy(p); ids = set(req['ids'])
+                    # ταυτόχρονα μαθήματα: φεύγουν μαζί οι διδασκαλίες των άλλων πλευρών στην ίδια θέση
+                    for k in q.get('links', []):
+                        sides = rules.link_sides(q, k)
+                        for e in [x for x in q['events'] if x['id'] in ids and x['place'] and x['lesson'] in k['lessons']]:
+                            for side in sides:
+                                if e['lesson'] in side:
+                                    continue
+                                mate = next((x for x in q['events'] if x['lesson'] in side and x['place'] == e['place'] and x['id'] not in ids), None)
+                                if mate:
+                                    ids.add(mate['id'])
                     for e in q['events']:
                         if e['id'] in ids and not e['locked']:
                             e['place'] = None
