@@ -5,7 +5,7 @@ from pathlib import Path
 from collections import Counter, defaultdict
 import xml.etree.ElementTree as ET
 
-VERSION = '0.10.0-beta'
+VERSION = '0.11.0-beta'
 DAYS = ['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή']
 def uid(): return uuid.uuid4().hex[:16]
 def blank():
@@ -153,6 +153,9 @@ def check_structure(p):
             if key in th and (type(th[key])!=int or not 0<=th[key]<=40):raise ValueError('Μη έγκυρη τιμή ωραρίου εκπαιδευτικών.')
     cur=p.get('curriculum',{})
     if not isinstance(cur,dict):raise ValueError('Μη έγκυρο επίσημο ωρολόγιο.')
+    if fw is not None and fw.get('optional') is not None:
+        op=fw['optional']
+        if not isinstance(op,dict) or any(type(g)!=str or not isinstance(l,list) or any(x not in ids['subjects'] for x in l) for g,l in op.items()):raise ValueError('Μη έγκυρα προαιρετικά μαθήματα θεσμικού πλαισίου.')
     for gr,row in cur.items():
         if type(gr)!=str or not isinstance(row,dict):raise ValueError('Μη έγκυρο επίσημο ωρολόγιο.')
         for sid,h in row.items():
@@ -278,7 +281,7 @@ def hours_defaults(lv):
 def framework(p):
     f=dict(p.get('framework') or {})
     th={**hours_defaults(level(p)),**(f.get('teacher_hours') or {})}
-    return {'level':level(p),'curriculum_source':f.get('curriculum_source',''),'teacher_hours':th}
+    return {'level':level(p),'curriculum_source':f.get('curriculum_source',''),'teacher_hours':th,'optional':f.get('optional') or {}}
 
 def required_hours(p,t):
     """Υποχρεωτικό διδακτικό ωράριο εκπαιδευτικού ή None αν δεν αρκούν τα στοιχεία."""
@@ -312,7 +315,7 @@ def teacher_hours_check(p):
 
 def curriculum_check(p):
     """Αποκλίσεις ωρών ανά τμήμα από το επίσημο ωρολόγιο: {class_id: [κείμενα]}."""
-    cur=p.get('curriculum') or {};S=mapping(p,'subjects');out={}
+    cur=p.get('curriculum') or {};S=mapping(p,'subjects');out={};opt=framework(p)['optional']
     for c in p['classes']:
         g=grade_of(c);want=cur.get(g)
         if not g or not want:continue
@@ -321,6 +324,7 @@ def curriculum_check(p):
             if c['id'] in l['classes']:have[l['subject']]=have.get(l['subject'],0)+l['hours']
         msgs=[]
         for sid,h in want.items():
+            if sid in S and not have.get(sid) and sid in opt.get(g,[]):continue
             if have.get(sid,0)!=h:msgs.append(S[sid]['name']+': '+str(have.get(sid,0))+' αντί για '+str(h))
         for sid,h in have.items():
             if sid not in want and sid in S and h:msgs.append(S[sid]['name']+': '+str(h)+(' ώρα' if h==1 else ' ώρες')+', δεν υπάρχει στο επίσημο ωρολόγιο της '+g+'΄')
