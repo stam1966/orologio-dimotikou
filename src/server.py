@@ -13,6 +13,7 @@ TOKEN = secrets.token_urlsafe(32)
 LOCK = threading.RLock()
 STATE = {'project': None, 'revision': 0, 'job': {'running': False, 'message': ''}, 'update': None}
 UNDO, REDO = [], []          # (ετικέτα, έργο)
+AI = {'history': [], 'proposals': {}, 'busy': False}  # συνομιλία βοηθού (μόνο στη μνήμη)
 HISTORY_MAX = 60
 CANCEL = threading.Event()
 SUMMARY_CACHE = {}
@@ -207,8 +208,58 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError('Μη έγκυρη επιλογή.')
                 data, n = pdfs.make_zip(snap, kind, req.get('options', {}))
                 return self.send(200, data, 'application/zip', download=('orologia_ekpaideftikon.zip' if kind == 'teachers' else 'orologia_tmimaton.zip'))
+            if action == '/api/ai/chat':  # μακρά εργασία: εκτός κλειδώματος, σε αντίγραφο
+                import assistant
+                msg = str(req.get('message', '')).strip()[:4000]
+                if not msg:
+                    raise ValueError('Γράψτε τι θέλετε να αλλάξει.')
+                with LOCK:
+                    if AI['busy']:
+                        raise ValueError('Ο βοηθός απαντά ήδη σε προηγούμενο μήνυμα.')
+                    AI['busy'] = True; snap = copy.deepcopy(STATE['project']); rev = STATE['revision']; hist = list(AI['history'][-12:])
+                try:
+                    cfg = assistant.load_cfg(ROOT)
+                    solver = lambda q: core.solve(q, 20, threading.Event())
+                    r = assistant.chat(snap, hist, msg, cfg, solver)
+                finally:
+                    with LOCK:
+                        AI['busy'] = False
+                with LOCK:
+                    AI['history'] += [{'role': 'user', 'text': r['user_coded']}, {'role': 'assistant', 'text': r['reply_coded'] or '…'}]
+                    out = []
+                    for pr in r['proposals']:
+                        pid = core.uid(); AI['proposals'][pid] = {'project': pr.pop('project'), 'rev': rev, 'title': pr['title']}
+                        out.append({**pr, 'id': pid})
+                log('ai', r['usage'], r['steps'])
+                return self.send(200, json.dumps({'reply': r['reply'], 'proposals': out, 'usage': r['usage'], 'steps': len(r['steps'])}, ensure_ascii=False))
             with LOCK:
                 p = STATE['project']
+                if action == '/api/ai/config':
+                    import assistant
+                    return self.send(200, json.dumps(assistant.public_cfg(assistant.load_cfg(ROOT)), ensure_ascii=False))
+                if action == '/api/ai/config/save':
+                    import assistant
+                    return self.send(200, json.dumps(assistant.public_cfg(assistant.save_cfg(ROOT, req.get('config', {}))), ensure_ascii=False))
+                if action == '/api/ai/models':
+                    import assistant
+                    return self.send(200, json.dumps({'models': assistant.list_models(assistant.load_cfg(ROOT))}, ensure_ascii=False))
+                if action == '/api/ai/reset':
+                    AI['history'].clear(); AI['proposals'].clear()
+                    return self.send(200, '{}')
+                if action == '/api/ai/apply':
+                    import assistant
+                    pr = AI['proposals'].get(req.get('id', ''))
+                    if not pr:
+                        raise ValueError('Η πρόταση δεν υπάρχει πια· ζητήστε τη ξανά.')
+                    if pr['rev'] != STATE['revision']:
+                        raise ValueError('Το πρόγραμμα άλλαξε μετά την πρόταση· ζητήστε από τον βοηθό να την ξαναφτιάξει.')
+                    q = assistant.apply(p, pr['project'])
+                    versions.save(ROOT, p, 'Πριν από πρόταση βοηθού AI (' + time.strftime('%d/%m/%Y %H:%M') + ')')
+                    commit(q, 'Βοηθός AI: ' + pr['title'][:60])
+                    AI['proposals'].clear()
+                    AI['history'].append({'role': 'user', 'text': '[Ο χρήστης εφάρμοσε την πρόταση «' + pr['title'] + '». Το πρόγραμμα ενημερώθηκε.]'})
+                    AI['history'].append({'role': 'assistant', 'text': 'Εντάξει.'})
+                    return self.send(200, state_json())
                 if action == '/api/ping':
                     return self.send(200, '{}')
                 if action == '/api/report':

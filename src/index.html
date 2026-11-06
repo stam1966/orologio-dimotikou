@@ -112,12 +112,25 @@ dialog::backdrop{background:#1E2A3266}.dlg{display:flex;flex-direction:column;ma
 .tag{display:inline-block;font-size:10.5px;font-weight:600;padding:0 6px;border-radius:5px;border:1px solid var(--line,#ccc);color:var(--muted,#666);vertical-align:1px;margin-left:3px}.tag.ea{background:#e2f2ee;color:#1d6b5a;border-color:transparent}.tag.hy{background:#fbeecb;color:#8a5a00;border-color:transparent}.tag.off{background:#f6dcdc;color:#a33;border-color:transparent}
 td.inactive b{text-decoration:line-through;opacity:.6}
 .warnsel{border-color:#d9534f!important}tr.sel td{background:rgba(127,127,127,.07)}
+.aibtn{border-color:var(--slate);color:var(--slate);font-weight:600}
+.aipanel{position:fixed;top:0;right:0;bottom:0;width:min(460px,100vw);background:var(--surface);border-left:1px solid var(--line);box-shadow:-6px 0 24px rgba(0,0,0,.12);z-index:40;display:flex;flex-direction:column}.aipanel[hidden]{display:none}
+.aipanel>header{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--chalk)}.aipanel>header b{flex:1;font-size:15px}
+.aimsgs{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.aimsg{padding:8px 11px;border-radius:9px;max-width:92%;line-height:1.45;font-size:13.5px;white-space:normal}
+.aimsg.user{align-self:flex-end;background:var(--slate);color:#fff}.aimsg.assistant{align-self:flex-start;background:var(--paper)}.aimsg.error{align-self:stretch;background:var(--danger-soft);color:var(--danger)}
+.aiprop{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--surface);margin-top:6px}.aiprop h4{margin:0 0 4px;font-size:13.5px}.aiprop .stats{font-size:12px;color:var(--muted);margin:4px 0}
+.aiprop details{font-size:12px;margin:4px 0}.aiprop details li{margin:2px 0}.aiprop.applied{border-color:var(--ok);background:var(--ok-soft)}
+.aiinput{border-top:1px solid var(--line);padding:10px 12px;display:flex;gap:8px;align-items:flex-end}.aiinput textarea{flex:1;resize:none;min-height:44px;max-height:140px;font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:7px}
+.aiex{display:flex;flex-direction:column;gap:6px;margin-top:8px}.aiex button{text-align:left;white-space:normal}
+.aithink{align-self:flex-start;color:var(--muted);font-size:13px;display:flex;gap:8px;align-items:center}.aithink i{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--slate);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 <div class="app"><aside class="side"><div class="brand"><b id="schoolname">Ωρολόγιο Δημοτικού</b><span id="schoolyear"></span></div><ul class="steps" id="steps"></ul><div class="sidefoot"><span>έκδοση __VERSION__</span><button id="newver" class="newver" hidden title="Υπάρχει νέα έκδοση">Νέα έκδοση</button><button id="exit" title="Κλείσιμο εφαρμογής">Έξοδος</button></div></aside>
 <div class="main"><div class="top"><h1 id="title"></h1><button class="iconbtn helpbtn" id="help" title="Βοήθεια για αυτή την οθόνη">;</button><div class="job" id="job"></div><div class="chips" id="chips"></div>
+<button class="iconbtn aibtn" id="aibtn" title="Βοηθός AI: ζητήστε αλλαγές στο πρόγραμμα με απλά λόγια">✨ Βοηθός AI</button>
 <button class="iconbtn" id="undo" title="Αναίρεση (Ctrl+Z)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 3 2 6l3 3"/><path d="M2.5 6H10a4 4 0 0 1 0 8H7"/></svg>Αναίρεση</button>
 <button class="iconbtn" id="redo" title="Επανάληψη (Ctrl+Y)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m11 3 3 3-3 3"/><path d="M13.5 6H6a4 4 0 0 0 0 8h3"/></svg></button></div>
-<div class="content" id="content"></div></div></div><dialog id="dialog"></dialog><div class="toasts" id="toasts"></div><div class="dropzip">Αφήστε το αρχείο ενημέρωσης (.zip) για να ενημερωθεί η εφαρμογή</div>
+<div class="content" id="content"></div></div></div><dialog id="dialog"></dialog><div class="aipanel" id="aipanel" hidden></div><div class="toasts" id="toasts"></div><div class="dropzip">Αφήστε το αρχείο ενημέρωσης (.zip) για να ενημερωθεί η εφαρμογή</div>
 <script>
 'use strict';
 const token='__TOKEN__',$=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -140,6 +153,55 @@ async function act(path,data,done){try{state=await(await api(path,data)).json();
 const save=(q,label,done)=>act('save',{project:q,label},done||'Αποθηκεύτηκε');
 function toast(t,bad){let el=document.createElement('div');el.className='toast'+(bad?' bad':'');el.textContent=t;$('#toasts').append(el);setTimeout(()=>el.remove(),bad?6500:2600);}
 function download(blob,filename){let url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}
+
+
+/* ---------- βοηθός AI ---------- */
+const ai={open:false,msgs:[],busy:false,cfg:null,t0:0,timer:null};
+const AIEX=['Ο/Η … να μην έχει 1η ώρα την Τρίτη. Τι αλλάζει;','Μείωσε τα κενά των εκπαιδευτικών χωρίς να χαλάσει κάτι άλλο.','Η Γυμναστική της Β1 να μην είναι τελευταία ώρα.','Γιατί δεν μπαίνει η Μουσική της Γ2 την Πέμπτη;'];
+function aiToggle(){ai.open=!ai.open;$('#aipanel').hidden=!ai.open;if(ai.open){aiRender();if(!ai.cfg)aiLoadCfg();setTimeout(()=>$('#aitext')?.focus(),50);}}
+async function aiLoadCfg(){try{ai.cfg=await(await api('ai/config',{})).json();aiRender();}catch(e){toast(e.message,true);}}
+function aiFmt(t){return esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>');}
+function aiProv(){let c=ai.cfg;if(!c)return '';let k=c.provider;return c.providers[k].label+' · '+(c.models[k]||'');}
+function aiRender(){let el=$('#aipanel');if(!el||el.hidden)return;let c=ai.cfg,noKey=c&&c.providers[c.provider].key&&!c.keys[c.provider];
+ let msgs=ai.msgs.map((m,i)=>`<div class="aimsg ${m.role}">${aiFmt(m.text)}${(m.proposals||[]).map((pr,j)=>`<div class="aiprop ${pr.applied?'applied':''}"><h4>${pr.applied?'✓ ':''}Πρόταση ${j+1}: ${esc(pr.title)}</h4>${pr.explanation?`<div>${aiFmt(pr.explanation)}</div>`:''}
+  <div class="stats">Υποχρεωτικές παραβιάσεις: ${pr.hard_before} → <b>${pr.hard_after}</b> · Ποινή: ${pr.score_before} → <b>${pr.score_after}</b> · Μετακινήσεις: ${pr.moves}</div>
+  <details><summary>Τι αλλάζει (${pr.lines.length})</summary><ul>${pr.lines.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></details>
+  ${pr.applied?'<span class="small" style="color:var(--ok)">Εφαρμόστηκε· «Αναίρεση» για επιστροφή.</span>':(m.stale?'<span class="small muted">Το πρόγραμμα άλλαξε· ζητήστε νέα πρόταση.</span>':`<button class="btn primary small" data-aiapply="${i},${j}">Εφαρμογή</button>`)}</div>`).join('')}${m.usage?`<div class="small muted" style="margin-top:4px">${m.usage.input+m.usage.output} tokens · ${esc(m.usage.model)}</div>`:''}${m.role==='error'&&m.cfg?' <button class="btn small" data-aicfg>Ρυθμίσεις</button>':''}</div>`).join('');
+ let intro=`<div class="aimsg assistant">Γράψτε με απλά λόγια τι θέλετε να αλλάξει στο πρόγραμμα. Ο βοηθός δοκιμάζει λύσεις σε πρόχειρο, η εφαρμογή ελέγχει όλους τους κανόνες, και εσείς διαλέγετε ποια πρόταση θα εφαρμοστεί. Τίποτα δεν αλλάζει χωρίς το «Εφαρμογή».${c&&c.anonymize?'<br><span class="small muted">Τα ονόματα των εκπαιδευτικών δεν στέλνονται· αντικαθίστανται με κωδικούς.</span>':''}
+  <div class="aiex">${AIEX.map(x=>`<button class="btn small" data-aiex="${esc(x)}">${esc(x)}</button>`).join('')}</div></div>`;
+ el.innerHTML=`<header><b>✨ Βοηθός AI</b><button class="btn small" id="aicfg" title="Πάροχος, κλειδί, μοντέλο">Ρυθμίσεις</button><button class="btn small" id="ainew" title="Νέα συνομιλία">Νέα</button><button class="btn small" id="aiclose" title="Κλείσιμο">✕</button></header>
+  <div class="small muted" style="padding:4px 12px;border-bottom:1px solid var(--line2)">${c?esc(aiProv()):'…'}${noKey?' · <b style="color:var(--danger)">χωρίς κλειδί API</b>':''}</div>
+  <div class="aimsgs" id="aimsgs">${ai.msgs.length?msgs:intro}${ai.busy?`<div class="aithink"><i></i><span id="aiel">Ο βοηθός δουλεύει…</span></div>`:''}</div>
+  <div class="aiinput"><textarea id="aitext" rows="2" placeholder="π.χ. Ο κ. … να μην έχει μάθημα Παρασκευή 6η" ${ai.busy?'disabled':''}></textarea><button class="btn primary" id="aisend" ${ai.busy?'disabled':''}>Αποστολή</button></div>`;
+ let box=$('#aimsgs');box.scrollTop=box.scrollHeight;
+ $('#aiclose').onclick=aiToggle;$('#aicfg').onclick=aiSettings;$('#ainew').onclick=async()=>{try{await api('ai/reset',{});}catch(e){}ai.msgs=[];aiRender();};
+ $('#aisend').onclick=aiSend;$('#aitext').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();aiSend();}};
+ $$('[data-aiex]').forEach(b=>b.onclick=()=>{$('#aitext').value=b.dataset.aiex;$('#aitext').focus();});
+ $$('[data-aicfg]').forEach(b=>b.onclick=aiSettings);
+ $$('[data-aiapply]').forEach(b=>b.onclick=async()=>{let [i,j]=b.dataset.aiapply.split(',').map(Number),pr=ai.msgs[i].proposals[j];b.disabled=true;
+  try{state=await(await api('ai/apply',{id:pr.id})).json();pr.applied=true;ai.msgs.forEach(m=>{if(m.proposals&&m.proposals.some(x=>!x.applied))m.stale=true;});render();aiRender();toast('Εφαρμόστηκε η πρόταση· «Αναίρεση» για επιστροφή.');}catch(e){toast(e.message,true);b.disabled=false;}});}
+async function aiSend(){let t=$('#aitext').value.trim();if(!t||ai.busy)return;if(!ai.cfg)await aiLoadCfg();
+ let c=ai.cfg;if(c&&c.providers[c.provider].key&&!c.keys[c.provider]){aiSettings();toast('Δηλώστε πρώτα κλειδί API ή διαλέξτε Ollama.',true);return;}
+ ai.msgs.forEach(m=>{if(m.proposals&&m.proposals.some(x=>!x.applied))m.stale=true;});
+ ai.msgs.push({role:'user',text:t});ai.busy=true;ai.t0=Date.now();aiRender();
+ ai.timer=setInterval(()=>{let el=$('#aiel');if(el){let s=Math.round((Date.now()-ai.t0)/1000);el.textContent='Ο βοηθός δουλεύει… '+s+'″'+(s>40?' (ο επανυπολογισμός μπορεί να πάρει λίγο)':'');}},1000);
+ try{let r=await(await api('ai/chat',{message:t})).json();ai.msgs.push({role:'assistant',text:r.reply,proposals:r.proposals,usage:r.usage});}
+ catch(e){ai.msgs.push({role:'error',text:e.message,cfg:/κλειδί|μοντέλο|Ρυθμίσεις|σύνδεση|διεύθυνση/i.test(e.message)});}
+ finally{clearInterval(ai.timer);ai.busy=false;aiRender();setTimeout(()=>$('#aitext')?.focus(),30);}}
+const AICOST={anthropic:'Haiku: λιγότερο από 1 λεπτό του ευρώ ανά αίτημα· Sonnet/Opus: περίπου 10–30 λεπτά.',openai:'Μικρά μοντέλα (mini/nano/Luna): κάτω από 1 λεπτό ανά αίτημα· μεγάλα: περίπου 5–15 λεπτά.',gemini:'Flash-Lite: κάτω από 1 λεπτό ανά αίτημα (υπάρχει και δωρεάν χρήση με όρια)· Pro: περίπου 15 λεπτά.',ollama:'Δωρεάν, χωρίς Internet. Χρειάζεται το πρόγραμμα Ollama και υπολογιστή με τουλάχιστον 16 GB μνήμη (καλύτερα κάρτα γραφικών).',custom:'Οποιαδήποτε υπηρεσία με διεπαφή συμβατή με OpenAI (π.χ. Mistral, DeepSeek, OpenRouter).'};
+async function aiSettings(){if(!ai.cfg)await aiLoadCfg();let c=structuredClone(ai.cfg),pv=c.provider,keys={};
+ let body=()=>{let P=c.providers[pv];return `<div style="min-width:min(560px,88vw)"><label class="field"><span>Πάροχος</span><select id="aipv">${Object.entries(c.providers).map(([k,v])=>option(k,v.label,pv)).join('')}</select></label>
+  <p class="muted small" style="margin-top:-4px">${esc(AICOST[pv]||'')}</p>
+  ${P.key?`<label class="field"><span>Κλειδί API ${P.keyurl?`· <a href="${esc(P.keyurl)}" target="_blank" rel="noopener">πού το βρίσκω;</a>`:''}</span><input id="aikey" type="password" autocomplete="off" placeholder="${c.keys[pv]?'αποθηκευμένο '+esc(c.keys[pv])+' — γράψτε νέο για αλλαγή':'επικολλήστε το κλειδί'}" value="${esc(keys[pv]||'')}" style="width:100%"></label>`:`<p class="small">Κατεβάστε και εγκαταστήστε το <a href="${esc(P.keyurl)}" target="_blank" rel="noopener">Ollama</a>, και κατεβάστε ένα μοντέλο (π.χ. <code>ollama pull qwen3:8b</code>). Δεν χρειάζεται κλειδί.</p>`}
+  <label class="field"><span>Μοντέλο</span><div class="row"><input id="aimodel" list="aimodels" value="${esc(c.models[pv]||'')}" style="flex:1"><datalist id="aimodels"></datalist><button class="btn small" id="ailist">Λίστα διαθέσιμων</button></div></label>
+  <details ${pv==='custom'||pv==='ollama'?'open':''}><summary class="small">Για προχωρημένους: διεύθυνση υπηρεσίας</summary><label class="field" style="margin-top:6px"><span>Διεύθυνση (API base URL)</span><input id="aibase" value="${esc(c.bases[pv]||'')}" style="width:100%"></label></details>
+  <label class="row small" style="margin-top:8px"><input type="checkbox" id="aianon" ${c.anonymize?'checked':''}> Να μη στέλνονται τα ονόματα των εκπαιδευτικών (αντικαθίστανται με κωδικούς Τ1, Τ2… — προτείνεται)</label>
+  <p class="muted small">Το κλειδί αποθηκεύεται μόνο σε αυτόν τον υπολογιστή (data/ai.json), δεν μπαίνει στα αντίγραφα ασφαλείας και δεν στέλνεται πουθενά αλλού. Η χρέωση γίνεται στον λογαριασμό του κατόχου του κλειδιού.</p></div>`;};
+ let grab=()=>{c.models[pv]=$('#aimodel').value.trim();c.bases[pv]=$('#aibase').value.trim();if($('#aikey'))keys[pv]=$('#aikey').value.trim();c.anonymize=$('#aianon').checked;};
+ let saveCfg=async()=>{grab();let conf={provider:pv,model:c.models[pv],base:c.bases[pv],anonymize:c.anonymize};if(keys[pv])conf.key=keys[pv];ai.cfg=await(await api('ai/config/save',{config:conf})).json();aiRender();return true;};
+ let bind=()=>{$('#aipv').onchange=e=>{grab();pv=e.target.value;$('#dialog .body').innerHTML=body();bind();};
+  $('#ailist').onclick=async()=>{try{await saveCfg();let r=await(await api('ai/models',{})).json();$('#aimodels').innerHTML=r.models.map(m=>`<option value="${esc(m)}">`).join('');toast(r.models.length+' μοντέλα· διαλέξτε από τη λίστα του πεδίου «Μοντέλο».');$('#aimodel').focus();}catch(e){toast(e.message,true);}};};
+ modal('Ρυθμίσεις βοηθού AI',body(),{onOk:saveCfg});bind();}
 
 /* ---------- διάλογοι ---------- */
 function modal(title,body,{ok='Αποθήκευση',onOk=null,cancel='Ακύρωση',wide=false,extra=''}={}){let d=$('#dialog');
@@ -204,7 +266,7 @@ function render(){let p=P();if(!PAGES.some(x=>x[0]===page))page='school';
 function go(k){page=k;ui.sel=null;ui.slots=null;remember();render();$('#content').scrollTop=0;}
 function renderJob(){let j=state.job,el=$('#job');if(!j.running){el.innerHTML='';return;}let el2=Math.round((Date.now()/1000-j.started));
  el.innerHTML=`<span>Παραγωγή… ${el2}″ / ${j.seconds}″</span><span class="bar"><i style="width:${Math.min(100,100*el2/j.seconds)}%"></i></span><button class="btn small" id="cancel">Διακοπή</button>`;$('#cancel').onclick=()=>api('cancel',{}).then(()=>toast('Ζητήθηκε διακοπή'));}
-$('#undo').onclick=()=>act('undo',{},'Αναιρέθηκε');$('#redo').onclick=()=>act('redo',{},'Επαναλήφθηκε');
+$('#aibtn').onclick=aiToggle;$('#undo').onclick=()=>act('undo',{},'Αναιρέθηκε');$('#redo').onclick=()=>act('redo',{},'Επαναλήφθηκε');
 $('#exit').onclick=async()=>{if(!await confirmBox('Να κλείσει η εφαρμογή; Όλες οι αλλαγές είναι ήδη αποθηκευμένες.','Κλείσιμο'))return;try{await api('shutdown',{});}catch(e){}document.body.innerHTML='<div class="empty" style="padding:80px"><h2>Η εφαρμογή έκλεισε.</h2><p>Μπορείτε να κλείσετε αυτό το παράθυρο.</p></div>';};
 document.addEventListener('keydown',e=>{if($('#dialog').open)return;let tag=(e.target.tagName||'').toLowerCase();if(['input','select','textarea'].includes(tag))return;
  if(e.ctrlKey&&!e.shiftKey&&e.key.toLowerCase()==='z'){e.preventDefault();if(state.history.undo)$('#undo').click();return;}
@@ -547,7 +609,7 @@ function frameworkDialog(tab='curriculum'){let p=P(),fw=fwOf(p),cur=structuredCl
    <p class="muted small" style="margin:0 0 8px">Διαλέξτε σε ποιο μάθημα της εφαρμογής αντιστοιχεί κάθε μάθημα του ΦΕΚ. Ό,τι δεν υπάρχει δημιουργείται. Οι ώρες των τάξεων ${G.map(g=>g+'΄').join(', ')} θα αντικατασταθούν· μετά μπορείτε να αλλάξετε ό,τι θέλετε.</p>
    <div style="max-height:42vh;overflow:auto"><table class="tbl" style="width:auto"><tr><th>Μάθημα ΦΕΚ</th>${G.map(g=>`<th class="num">${g}΄</th>`).join('')}<th>Μάθημα στην εφαρμογή</th></tr>${T.subjects.map((r,i)=>`<tr><td>${esc(r.name)}${r.optional?' <span class="tag" title="Ελέγχεται μόνο όπου υπάρχει ανάθεση">όπου υπάρχει</span>':''}</td>${G.map(g=>`<td class="num">${r.hours[g]||''}</td>`).join('')}<td><select data-om="${i}"><option value="+">＋ νέο μάθημα «${esc(r.name)}»</option><option value="-" ${r.skip?'selected':''}>— να μη μπει</option>${p.subjects.map(s=>option(s.id,s.name,r.skip?'':r.match)).join('')}</select></td></tr>`).join('')}
    <tr><td><b>Σύνολο ΦΕΚ</b></td>${G.map(g=>`<td class="num"><b>${T.total[g]}</b></td>`).join('')}<td></td></tr></table></div>
-   <div class="row" style="margin-top:8px"><button class="btn primary small" id="offapply">Εφαρμογή</button><button class="btn small" id="offback">Ακύρωση</button></div>`;}
+   <div class="row" style="margin-top:8px"><button class="btn primary small" id="offapply">Εφαρμογή στον πίνακα</button><button class="btn small" id="offback">Ακύρωση</button></div>`;}
   if(tab==='rules'){let band=(r,i,k)=>`<tr><td><input type="number" min="0" max="99" data-b="${k},${i},0" value="${r[0]}"></td><td><input type="number" min="0" max="99" data-b="${k},${i},1" value="${r[1]}" title="99 = χωρίς όριο"></td><td><input type="number" min="0" max="40" data-b="${k},${i},2" value="${r[2]}"></td><td><button class="btn small danger" data-bdel="${k},${i}">✕</button></td></tr>`;
    return `<label class="field"><span>Πηγή (νόμος / ΦΕΚ)</span><input id="thsrc" value="${esc(th.source)}" style="width:100%"></label>
    <div class="row" style="align-items:flex-start;gap:28px"><div><h3>Εκπαιδευτικοί ανά έτη υπηρεσίας</h3><table class="rtbl"><tr><th>Από έτη</th><th>Έως (χωρίς)</th><th>Ώρες</th><th></th></tr>${th.bands.map((r,i)=>band(r,i,'bands')).join('')}</table><button class="btn small" data-badd="bands">＋ γραμμή</button>
@@ -566,13 +628,15 @@ function frameworkDialog(tab='curriculum'){let p=P(),fw=fwOf(p),cur=structuredCl
   if($('#offload'))$('#offload').onclick=async()=>{try{collect();}catch(e){toast(e.message,true);return;}try{if(!off)off=(await (await api('curricula',{})).json()).templates;}catch(e){toast(e.message,true);return;}if(!offSel||off.find(t=>t.id===offSel)?.level!==fw.level)offSel=(off.find(t=>t.level===fw.level)||off[0]).id;tab='official';draw();};
   if($('#offsel'))$('#offsel').onchange=e=>{offSel=e.target.value;draw();};
   if($('#offback'))$('#offback').onclick=()=>{tab='curriculum';draw();};
-  if($('#offapply'))$('#offapply').onclick=()=>{let T=off.find(t=>t.id===offSel),G=Object.keys(T.total),made=0,map={};
+  if($('#offapply'))$('#offapply').onclick=()=>{if(applyOff()){draw();toast(offMsg);}};bind2();};
+ let offMsg='',applyOff=()=>{let T=off.find(t=>t.id===offSel),G=Object.keys(T.total),made=0,map={};
    $$('[data-om]').forEach(sel=>{let r=T.subjects[+sel.dataset.om],v=sel.value;if(v==='-')return;let sid=v;if(v==='+'){let ex=newSubj.find(s=>s.name===r.name);if(!ex){ex={id:newId(),name:r.name,short:r.name.slice(0,6)};newSubj.push(ex);made++;}sid=ex.id;}map[r.name]=sid;});
-   let used=Object.values(map);if(new Set(used).size!==used.length){toast('Δύο μαθήματα του ΦΕΚ αντιστοιχίστηκαν στο ίδιο μάθημα της εφαρμογής.',true);return;}
+   let used=Object.values(map);if(new Set(used).size!==used.length){toast('Δύο μαθήματα του ΦΕΚ αντιστοιχίστηκαν στο ίδιο μάθημα της εφαρμογής.',true);return false;}
    if(T.level!==fw.level){fw.level=T.level;th=thDefault(T.level);}
    for(let g of G){cur[g]={};opt[g]=[];}
    for(let r of T.subjects){let sid=map[r.name];if(!sid)continue;for(let g of G)if(r.hours[g]){cur[g][sid]=r.hours[g];if(r.optional||r.optional_grades.includes(g))opt[g].push(sid);}}
-   fw.curriculum_source=T.source;tab='curriculum';setGrades();draw();toast('Φορτώθηκε: '+T.title+(made?' · '+made+' νέα μαθήματα':'')+'. Ελέγξτε και πατήστε «Αποθήκευση».');};
+   fw.curriculum_source=T.source;tab='curriculum';setGrades();offMsg='Φορτώθηκε: '+T.title+(made?' · '+made+' νέα μαθήματα':'')+'. Ελέγξτε και πατήστε «Αποθήκευση».';return true;};
+ let bind2=()=>{
   if($('#currfill'))$('#currfill').onclick=()=>{for(let g of grades){let c0=p.classes.find(c=>gradeOf(c)===g);if(!c0)continue;for(let s of subj){let hh=p.lessons.filter(l=>l.subject===s.id&&l.classes.includes(c0.id)).reduce((a,l)=>a+l.hours,0);let i=$(`[data-cg="${g}"][data-cs="${s.id}"]`);if(i)i.value=hh||'';}}toast('Συμπληρώθηκε από το πρώτο τμήμα κάθε τάξης· ελέγξτε τις τιμές.');};
   $$('[data-cg]').forEach(i=>i.oninput=()=>{let g=i.dataset.cg;$('#tot_'+g).textContent=$$(`[data-cg="${g}"]`).filter(x=>!$(`[data-co="${x.dataset.cs}"]`)?.checked).reduce((a,x)=>a+(+x.value||0),0)||'';});
   $$('[data-badd]').forEach(b=>b.onclick=()=>{collect();let k=b.dataset.badd,last=th[k][th[k].length-1]||[0,99,20];th[k].push([last[1],99,last[2]]);draw();});
@@ -580,7 +644,7 @@ function frameworkDialog(tab='curriculum'){let p=P(),fw=fwOf(p),cur=structuredCl
   if($('#thdefault'))$('#thdefault').onclick=()=>{th=thDefault(fw.level);draw();};
   if($('#fwlevel'))$('#fwlevel').onchange=e=>{collect();let lv=e.target.value;if(lv===fw.level)return;fw.level=lv;th=thDefault(lv);setGrades();draw();toast('Βαθμίδα: '+lv+'. Οι κανόνες ωραρίου πήραν τις προεπιλογές της· ελέγξτε τους στη 2η καρτέλα.');};
   $$('[data-tr],[data-ty],[data-to]').forEach(x=>x.onchange=()=>{collect();let st=$('#fwbody .tbl')?.parentElement?.scrollTop;draw();if($('#fwbody .tbl'))$('#fwbody .tbl').parentElement.scrollTop=st;});};
- let saveAll=async()=>{collect();let q=clone();q.subjects=[...q.subjects,...newSubj];q.curriculum=cur;for(let g of Object.keys(opt)){opt[g]=opt[g].filter(sid=>cur[g]?.[sid]!=null);if(!opt[g].length)delete opt[g];}q.framework={level:fw.level,curriculum_source:fw.curriculum_source,teacher_hours:th,...(Object.keys(opt).length?{optional:opt}:{})};q.positions=pos===''||pos==null?undefined:+pos;if(q.positions===undefined)delete q.positions;
+ let saveAll=async()=>{if(tab==='official'){if(!applyOff())return false;}else collect();let q=clone();q.subjects=[...q.subjects,...newSubj];q.curriculum=cur;for(let g of Object.keys(opt)){opt[g]=opt[g].filter(sid=>cur[g]?.[sid]!=null);if(!opt[g].length)delete opt[g];}q.framework={level:fw.level,curriculum_source:fw.curriculum_source,teacher_hours:th,...(Object.keys(opt).length?{optional:opt}:{})};q.positions=pos===''||pos==null?undefined:+pos;if(q.positions===undefined)delete q.positions;
   let byid=Object.fromEntries(tch.map(t=>[t.id,t]));q.teachers=q.teachers.map(t=>{let n={...t};for(let k of ['role','years','hours_override']){if(byid[t.id][k]!==undefined)n[k]=byid[t.id][k];else delete n[k];}return n;});return await save(q,'Θεσμικό πλαίσιο','Αποθηκεύτηκε το θεσμικό πλαίσιο');};
  modal('Θεσμικό πλαίσιο',`<div id="fwbody" style="min-width:min(820px,88vw)"></div>`,{wide:true,extra:'<button class="btn" id="fwprint">Αποθήκευση και εκτύπωση</button>',onOk:saveAll});
  $('#fwprint').onclick=async()=>{try{if(await saveAll()){$('#dialog').close();ui.rk='teachers';ui.rm='framework';remember();go('print');}}catch(e){toast(e.message,true);}};draw();}
