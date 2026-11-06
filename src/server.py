@@ -77,7 +77,7 @@ def summary(p):
     found = core.findings(p, True)
     hard = [f for f in found if f['hard'] and f['key'][0] != 'unplaced']
     soft = sorted([f for f in found if not f['hard']], key=lambda f: -f['penalty'])
-    unplaced = sum(1 for e in p['events'] if not e['place'])
+    unplaced = sum(1 for e in rules.active_view(p)['events'] if not e['place'])
     data = {'errors': [f['text'] for f in hard], 'warnings': [{'text': f['text'], 'penalty': f['penalty']} for f in soft],
             'gaps': rules.gap_total(p, False), 'unplaced': unplaced,
             'score': rules.score(p) if not unplaced else None, 'curriculum': core.curriculum_check(p), 'teacher_hours': core.teacher_hours_check(p)}
@@ -91,7 +91,7 @@ def state_json():
         summ = summary(p)
     except Exception as ex:  # ένα λάθος στον έλεγχο δεν πρέπει να «κλειδώνει» τη διεπαφή
         summ = {'errors': ['Σφάλμα ελέγχου: ' + str(ex)], 'warnings': [], 'gaps': 0, 'unplaced': 0, 'score': None}
-    return json.dumps({**STATE, 'settings': backup.load_settings(ROOT), 'catalog': rules.CATALOG, 'strength': rules.STRENGTH, 'summary': summ,
+    return json.dumps({**STATE, 'settings': backup.load_settings(ROOT), 'catalog': rules.CATALOG, 'secondary_only': sorted(rules.SECONDARY_ONLY), 'strength': rules.STRENGTH, 'summary': summ,
                        'history': {'undo': UNDO[-1][0] if UNDO else '', 'redo': REDO[-1][0] if REDO else ''}}, ensure_ascii=False)
 
 

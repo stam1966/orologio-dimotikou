@@ -15,14 +15,17 @@ NS = {'m': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
 RNS = '{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id'
 
 SHEETS = {
-    'teachers': ('Εκπαιδευτικοί', ['Ονοματεπώνυμο', 'Συντομογραφία', 'Ρόλος', 'Έτη υπηρεσίας', 'Υποχρεωτικό ωράριο (με το χέρι)']),
+    'teachers': ('Εκπαιδευτικοί', ['Ονοματεπώνυμο', 'Συντομογραφία', 'Ρόλος', 'Έτη υπηρεσίας', 'Υποχρεωτικό ωράριο (με το χέρι)',
+                                    'Ειδικότητα', 'Συμμετέχει (ΝΑΙ/ΟΧΙ)', 'Ειδική αγωγή (ΝΑΙ/ΟΧΙ)', 'Υποθετικός (ΝΑΙ/ΟΧΙ)']),
     'classes': ('Τμήματα', ['Τμήμα', 'Συντομογραφία', 'Τάξη', 'Υπεύθυνος εκπαιδευτικός']),
     'subjects': ('Μαθήματα', ['Μάθημα', 'Συντομογραφία'] + [g + '΄ (ώρες)' for g in core.GRADES]),
-    'lessons': ('Αναθέσεις', ['Τμήμα', 'Μάθημα', 'Εκπαιδευτικός', 'Ώρες την εβδομάδα', 'Μορφή (1 = μονόωρα, 2 = δίωρα)', 'Ημέρες (κενό = όλες)']),
+    'lessons': ('Αναθέσεις', ['Τμήμα', 'Μάθημα', 'Εκπαιδευτικός', 'Ώρες την εβδομάδα', 'Μορφή (1 = μονόωρα, 2 = δίωρα)', 'Ημέρες (κενό = όλες)',
+                              'Ομάδα τμήματος (κενό = όλο το τμήμα)']),
 }
 # λέξεις-κλειδιά κεφαλίδων (μετά από κανονικοποίηση) → πεδίο
 HEAD = {
-    'teachers': [('ΣΥΝΤΟΜ', 'short'), ('ΡΟΛ', 'role'), ('ΕΤΗ', 'years'), ('ΥΠΟΧΡ', 'override'), ('ΩΡΑΡ', 'override'), ('ΟΝΟΜ', 'name'), ('ΕΚΠΑΙΔ', 'name')],
+    'teachers': [('ΣΥΝΤΟΜ', 'short'), ('ΡΟΛ', 'role'), ('ΕΤΗ', 'years'), ('ΥΠΟΧΡ', 'override'), ('ΩΡΑΡ', 'override'), ('ΕΙΔΙΚΟΤ', 'spec'),
+                 ('ΣΥΜΜΕΤ', 'active'), ('ΕΙΔΙΚΗ', 'special'), ('ΥΠΟΘΕΤ', 'hyp'), ('ΟΝΟΜ', 'name'), ('ΕΚΠΑΙΔ', 'name')],
     'classes': [('ΣΥΝΤΟΜ', 'short'), ('ΥΠΕΥΘ', 'teacher'), ('ΤΑΞ', 'grade'), ('ΤΜΗΜ', 'name'), ('ΟΝΟΜ', 'name')],
     'subjects': [('ΣΥΝΤΟΜ', 'short'), ('ΜΑΘΗΜ', 'name'), ('ΟΝΟΜ', 'name')] + [(g + ' ', 'g:' + g) for g in core.GRADES],
     'lessons': [('ΤΜΗΜ', 'classes'), ('ΜΑΘΗΜ', 'subject'), ('ΕΚΠΑΙΔ', 'teachers'), ('ΩΡΕΣ', 'hours'), ('ΜΟΡΦ', 'duration'), ('ΔΙΑΡΚ', 'duration'), ('ΗΜΕΡ', 'days')],
@@ -117,6 +120,8 @@ def _columns(kind, header):
             m = re.match(r'(ΣΤ|[ΑΒΓΔΕ])( |\(|$)', n)
             if m and m.group(1) in core.GRADES and len(norm(h)) <= 12:
                 cols.setdefault('g:' + m.group(1), i); continue
+        if kind == 'lessons' and n.startswith('ΟΜΑΔ'):
+            cols.setdefault('group', i); continue
         for key, field in HEAD[kind]:
             if key in n and not field.startswith('g:'):
                 cols.setdefault(field, i); break
@@ -171,6 +176,17 @@ def _role(v):
     if n.startswith('ΔΙΕΥΘ') or n.startswith('ΔΙΕΥΘΥΝ'):
         return 'director'
     raise ValueError('Ρόλος: «%s» (γράψτε Εκπαιδευτικός, Διευθυντής ή Υποδιευθυντής)' % v)
+
+
+def _yes(v, what):
+    n = norm(v)
+    if not n:
+        return None
+    if n in ('ΝΑΙ', 'Ν', '1', 'Χ', 'ΝΑΙ.', 'TRUE', 'ΑΛΗΘΕΣ'):
+        return True
+    if n in ('ΟΧΙ', 'Ο', '0', 'ΟΧΙ.', 'FALSE', 'ΨΕΥΔΕΣ'):
+        return False
+    raise ValueError('%s: «%s» (γράψτε ΝΑΙ ή ΟΧΙ)' % (what, v))
 
 
 def _grade(v):
@@ -284,6 +300,16 @@ def apply(p, raw, mode='merge'):
             o = _int(r['override'], 0, 40, 'Υποχρεωτικό ωράριο')
             if o is None: x.pop('hours_override', None)
             else: x['hours_override'] = o
+        if 'spec' in r:
+            if r['spec'].strip(): x['spec'] = r['spec'].strip()[:40]
+            else: x.pop('spec', None)
+        a = _yes(r.get('active', ''), 'Συμμετέχει')
+        if a is False: x['active'] = False
+        elif a is True: x.pop('active', None)
+        for f, k, what in (('special', 'special', 'Ειδική αγωγή'), ('hypothetical', 'hyp', 'Υποθετικός')):
+            b = _yes(r.get(k, ''), what)
+            if b: x[f] = True
+            elif b is False: x.pop(f, None)
 
     for num, r in t.get('teachers', []):
         upsert('teachers', num, r, fill_teacher)
@@ -332,7 +358,18 @@ def apply(p, raw, mode='merge'):
 
     # αναθέσεις
     def lkey(l):
-        return (l['subject'], tuple(sorted(l['classes'])), tuple(sorted(l['teachers'])))
+        return (l['subject'], tuple(sorted(l['classes'])), tuple(sorted(l['teachers'])), tuple(sorted(l.get('groups', []))))
+    newgroups = []
+
+    def group_of(cid, gname):
+        gname = gname.strip()
+        for g in q['groups']:
+            if g['classid'] == cid and norm(g['name']) == norm(gname):
+                return g
+        mine = [g for g in q['groups'] if g['classid'] == cid and g.get('entireclass') != '1']
+        g = dict(id=core.uid(), name=gname[:60], classid=cid, entireclass='0', divisiontag=(mine[0].get('divisiontag') or '1') if mine else '1', studentids='', studentcount='')
+        q['groups'].append(g); newgroups.append(next(c['name'] for c in q['classes'] if c['id'] == cid) + ' ' + g['name'])
+        return g
     existing = {}
     for l in q['lessons']:
         existing.setdefault(lkey(l), []).append(l)
@@ -353,11 +390,15 @@ def apply(p, raw, mode='merge'):
         s = idx['subjects'].get(r['subject']) or autocreate('subjects', r['subject'])
         cls = [(idx['classes'].get(n) or autocreate('classes', n))['id'] for n in _split_names(r.get('classes', ''))]
         tch = [(idx['teachers'].get(n) or autocreate('teachers', n))['id'] for n in tnames]
-        key = (s['id'], tuple(sorted(set(cls))), tuple(sorted(set(tch))))
+        gnames = [x.strip() for x in str(r.get('group', '')).split(',')]
+        if len(gnames) != len(cls):
+            gnames = [gnames[0]] * len(cls)
+        gl = [group_of(c, g)['id'] for c, g in zip(cls, gnames) if g and norm(g) not in ('ΟΛΟ ΤΟ ΤΜΗΜΑ', 'ΟΛΟ')]
+        key = (s['id'], tuple(sorted(set(cls))), tuple(sorted(set(tch))), tuple(sorted(gl)))
         n = occ[key] = occ.get(key, -1) + 1
         l = existing.get(key, [])[n] if n < len(existing.get(key, [])) else None
         if l is None:
-            l = dict(id=core.uid(), subject=s['id'], teachers=list(dict.fromkeys(tch)), classes=list(dict.fromkeys(cls)), groups=[], room='', hours=hours, duration=dur, days=days, max_daily=0)
+            l = dict(id=core.uid(), subject=s['id'], teachers=list(dict.fromkeys(tch)), classes=list(dict.fromkeys(cls)), groups=gl, room='', hours=hours, duration=dur, days=days, max_daily=0)
             q['lessons'].append(l)
             q['events'] += [dict(id=core.uid(), lesson=l['id'], place=None, locked=False) for _ in range(hours // dur)]
             bump('added', 'lessons')
@@ -376,6 +417,8 @@ def apply(p, raw, mode='merge'):
                         e['place'] = None; e['locked'] = False
             l.update(hours=hours, duration=dur, days=days); bump('updated', 'lessons')
 
+    if newgroups:
+        rep['notes'].append('Νέες ομάδες τμημάτων (μπορούν να έχουν μάθημα την ίδια ώρα· αλλάζουν στα Στοιχεία του τμήματος): ' + ', '.join(newgroups))
     for kind, names in created.items():
         if names:
             rep['notes'].append('Νέα %s που δεν υπήρχαν σε δικό τους φύλλο (ελέγξτε για ορθογραφικά λάθη): %s' % ({'teachers': 'ονόματα εκπαιδευτικών', 'classes': 'τμήματα', 'subjects': 'μαθήματα'}[kind], ', '.join(names)))
@@ -428,6 +471,7 @@ GUIDE = [
     ('Εκπαιδευτικοί', True),
     ('Ρόλος: Εκπαιδευτικός, Διευθυντής ή Υποδιευθυντής (κενό = Εκπαιδευτικός). Τα έτη υπηρεσίας χρησιμοποιούνται για το υποχρεωτικό ωράριο.', False),
     ('Υποχρεωτικό ωράριο: μόνο αν ισχύει κάτι ειδικό· αλλιώς κενό και υπολογίζεται αυτόματα.', False),
+    ('Συμμετέχει: ΟΧΙ για όποιον μένει εκτός προγράμματος (άδεια, απόσπαση)· οι αναθέσεις του κρατιούνται. Ειδική αγωγή / Υποθετικός: ΝΑΙ ή κενό.', False),
     ('', False),
     ('Τμήματα', True),
     ('Τάξη: Α, Β, Γ, Δ, Ε ή ΣΤ (ή 1–6). Κενό για Ολοήμερο, Πρωινή Ζώνη κ.λπ. Υπεύθυνος: όπως είναι γραμμένος στους Εκπαιδευτικούς.', False),
@@ -439,6 +483,7 @@ GUIDE = [
     ('Μία γραμμή για κάθε μάθημα κάθε τμήματος. Παράδειγμα: Τμήμα «Α1», Μάθημα «Γλώσσα», Εκπαιδευτικός «Παπαδοπούλου Μαρία», Ώρες 9, Μορφή 1.', False),
     ('Συνδιδασκαλία: δύο εκπαιδευτικοί χωρισμένοι με κόμμα. Κοινό μάθημα σε πολλά τμήματα (π.χ. κολύμβηση): «Δ1, Δ2».', False),
     ('Μορφή: 1 = μονόωρα, 2 = δίωρα. Ημέρες: κενό = όλες, ή π.χ. «Δευ, Τετ».', False),
+    ('Ομάδα τμήματος: κενό για όλο το τμήμα, ή π.χ. «Γενικό» / «Ένταξη», «Γαλλικά» / «Γερμανικά». Οι ομάδες ενός τμήματος μπορούν να έχουν μάθημα την ίδια ώρα.', False),
     ('', False),
     ('Εισαγωγή', True),
     ('Στην εφαρμογή: «Σχολείο & ωράριο» → «Εισαγωγή από Excel…» ή σύρετε το αρχείο μέσα στο παράθυρο. Πριν από κάθε αλλαγή εμφανίζεται προεπισκόπηση.', False),
@@ -458,15 +503,19 @@ def template(p=None):
     if p:
         tn = {t['id']: t['name'] for t in p['teachers']}; cn = {c['id']: c['name'] for c in p['classes']}; sn = {s['id']: s['name'] for s in p['subjects']}
         rn = {'': 'Εκπαιδευτικός', 'director': 'Διευθυντής', 'deputy': 'Υποδιευθυντής'}
-        data['teachers'] = [[t['name'], t.get('short', ''), rn.get(t.get('role', ''), ''), t.get('years', ''), t.get('hours_override', '')] for t in p['teachers']]
+        yn = lambda b: 'ΝΑΙ' if b else 'ΟΧΙ'
+        data['teachers'] = [[t['name'], t.get('short', ''), rn.get(t.get('role', ''), ''), t.get('years', ''), t.get('hours_override', ''), t.get('spec', ''),
+                             yn(t.get('active') is not False), yn(t.get('special')), yn(t.get('hypothetical'))] for t in p['teachers']]
+        gn = {g['id']: g['name'] for g in p.get('groups', []) if g.get('entireclass') != '1'}
         data['classes'] = [[c['name'], c.get('short', ''), c.get('grade', '') or core.grade_of(c), tn.get(c.get('teacher'), '')] for c in p['classes']]
         cur = p.get('curriculum', {})
-        data['subjects'] = [[s['name'], s.get('short', '')] + [cur.get(g, {}).get(s['id'], '') for g in core.GRADES] for s in p['subjects']]
+        data['subjects'] = [[s['name'], s.get('short', '')] + [cur.get(g, {}).get(s['id'], '') for g in core.grades(p)] for s in p['subjects']]
         dn = [d[:3] for d in p['days']]
         data['lessons'] = [[', '.join(cn[c] for c in l['classes']), sn[l['subject']], ', '.join(tn[t] for t in l['teachers']), l['hours'], l['duration'],
-                            '' if sorted(l['days']) == [0, 1, 2, 3, 4] else ', '.join(dn[d] for d in sorted(l['days']))]
+                            '' if sorted(l['days']) == [0, 1, 2, 3, 4] else ', '.join(dn[d] for d in sorted(l['days'])),
+                            ', '.join(gn[g] for g in l.get('groups', []) if g in gn)]
                            for l in sorted(p['lessons'], key=lambda l: (not l['classes'], [cn[c] for c in l['classes']], sn[l['subject']]))]
-    widths = {'teachers': [30, 14, 16, 14, 22], 'classes': [18, 14, 8, 30], 'subjects': [28, 14] + [9] * 6, 'lessons': [18, 26, 36, 10, 16, 18]}
+    widths = {'teachers': [30, 14, 16, 14, 22, 14, 14, 14, 14], 'classes': [18, 14, 8, 30], 'subjects': [28, 14] + [9] * 6, 'lessons': [18, 26, 36, 10, 16, 18, 22]}
     for kind, (name, cols) in SHEETS.items():
         sh = x.sheet(name, freeze=(1, 0))
         for c, h in enumerate(cols, 1):

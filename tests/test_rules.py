@@ -164,6 +164,27 @@ class Rules(unittest.TestCase):
             p['class_rules']['c1'] = {'allowed': [[d, i] for d in range(5) for i in range(1, 6)], 'compact': {'v': True, 'w': rnd.randint(1, 5)}}
             solved(self, p, 60)
 
+    def test_new_teacher_rules_soft_objective_matches(self):
+        rnd = random.Random(11)
+        for trial in range(3):
+            p = base(rnd.randint(6, 9), rnd.randint(5, 8)); add_lesson(p, 'lx', 's1', ['tb'], ['c1'], rnd.randint(2, 4))
+            p['teacher_rules']['ta'] = {'start_at': {'v': 1, 'w': rnd.randint(1, 5)}, 'max_days': {'v': 2, 'w': rnd.randint(1, 5)},
+                                        'avoid': [[d, 3] for d in range(5)] + [[d, 4] for d in range(5)], 'avoid_w': 1,
+                                        'maybe_day': {'v': 0, 'w': rnd.randint(1, 5)}, 'maybe_week': {'v': 1, 'w': rnd.randint(1, 5)}}
+            p['teacher_rules']['tb'] = {'max_last': {'v': 0, 'w': rnd.randint(1, 5)}, 'max_days': {'v': 3, 'w': rnd.randint(1, 5)}}
+            solved(self, p, 60)
+
+    def test_new_teacher_rules_hard(self):
+        p = base(6, 6)
+        p['teacher_rules']['ta'] = {'start_at': {'v': 1, 'w': 0}, 'max_days': {'v': 2, 'w': 0}}
+        p['teacher_rules']['tb'] = {'max_last': {'v': 0, 'w': 0}, 'avoid': [[d, 0] for d in range(5)], 'maybe_week': {'v': 0, 'w': 0}}
+        q = solved(self, p, 60)
+        da = days_hours(q, 'ta'); db = days_hours(q, 'tb')
+        self.assertLessEqual(sum(1 for x in da if x), 2)
+        self.assertTrue(all(min(x) == 1 for x in da if x))
+        self.assertTrue(all(P - 1 not in x and 0 not in x for x in db))
+
+
 if __name__ == '__main__': unittest.main(verbosity=2)
 
 class Outputs(unittest.TestCase):
@@ -334,6 +355,21 @@ class ExcelImport(unittest.TestCase):
         rows['Αναθέσεις'].pop()                                             # χωρίς την ανάθεση του Βήτα: αφαιρείται και αυτός
         q, rep = xlimport.apply(p, _xlsx_shared(rows), 'replace')
         self.assertEqual(sorted(x['name'] for x in q['teachers']), ['Άλφα', 'Νέος']); self.assertEqual(rep['removed'], {'lessons': 1, 'teachers': 1})
+
+    def test_teacher_flags_and_groups(self):
+        import xlimport
+        raw = _xlsx_shared({
+            'Εκπαιδευτικοί': [['Ονοματεπώνυμο', 'Ειδικότητα', 'Συμμετέχει (ΝΑΙ/ΟΧΙ)', 'Ειδική αγωγή (ΝΑΙ/ΟΧΙ)'], ['Άλφα', 'ΠΕ70', 'ΟΧΙ', ''], ['Ζήτα', '', 'ΝΑΙ', 'ΝΑΙ']],
+            'Αναθέσεις': [['Τμήμα', 'Μάθημα', 'Εκπαιδευτικός', 'Ώρες την εβδομάδα', 'Ομάδα τμήματος'],
+                          ['Τμ1', 'Γλώσσα', 'Άλφα', 3, 'Γενικό'], ['Τμ1', 'Γλώσσα', 'Ζήτα', 3, 'Ένταξη']]})
+        q, rep = xlimport.apply(base(4, 2), raw, 'merge')
+        t = {x['name']: x for x in q['teachers']}
+        self.assertEqual((t['Άλφα'].get('spec'), t['Άλφα'].get('active')), ('ΠΕ70', False)); self.assertTrue(t['Ζήτα']['special'])
+        g = {x['name']: x for x in q['groups']}
+        self.assertEqual(g['Γενικό']['divisiontag'], g['Ένταξη']['divisiontag'])
+        self.assertEqual(sorted(len(l['groups']) for l in q['lessons']), [0, 0, 1, 1])
+        back = xlimport.tables(xlimport.template(q))
+        self.assertIn('Ένταξη', [r['group'] for _, r in back['lessons']])
 
     def test_bad_files(self):
         import xlimport

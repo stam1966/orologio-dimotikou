@@ -348,7 +348,7 @@ def report(p, opts):
             cs = pg.get('colors'); fl = pg.get('flags')
             content = ('<p class="note">' + esc(pg['note']) + '</p>' if pg.get('note') else '') + '<table class="plain' + (' few' if len(pg['header']) <= 3 else '') + '"><thead><tr>' + ''.join('<th>' + esc(h) + '</th>' for h in pg['header']) + '</tr></thead><tbody>' + ''.join(
                 '<tr>' + ''.join('<td' + ((' style="background:#' + cs[ri] + ';color:#' + fg_for(cs[ri]) + '"') if colors and cs and ci == 0 else (' class="hi"' if fl and fl[ri][ci] else '')) + '>' + esc(v) + '</td>' for ci, v in enumerate(row)) + '</tr>' for ri, row in enumerate(pg['rows'])) + '</tbody></table>'
-        foot = '' if pg.get('attach') else '<div class="foot">Ωρολόγιο Δημοτικού · ' + stamp + '</div>'
+        foot = '' if pg.get('attach') else '<div class="foot">Ωρολόγιο Πρόγραμμα · ' + stamp + '</div>'
         body.append('<section class="' + ('attach' if pg.get('attach') else '') + '">' + top + band + content + foot + '</section>')
     css = '''
     *{box-sizing:border-box}body{margin:0;font:%(f)spx "Segoe UI",Arial,sans-serif;color:#1f2a36;background:#e9edf1}

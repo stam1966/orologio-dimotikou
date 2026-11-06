@@ -26,6 +26,11 @@ CATALOG = {
         ('max_consecutive', 'Όχι περισσότερες συνεχόμενες ώρες από', 'int', 3),
         ('balance', 'Ισοκατανομή ωρών στις ημέρες διάθεσης', 'flag', 3),
         ('earliest', 'Έναρξη όχι νωρίτερα από', 'period', 0),
+        ('start_at', 'Να ξεκινά ακριβώς στην ώρα (κάθε ημέρα που έρχεται)', 'period', 3),
+        ('max_days', 'Το πολύ τόσες ημέρες παρουσίας την εβδομάδα', 'int', 0),
+        ('maybe_day', 'Το πολύ τόσες ώρες «υπό όρους» (?) ανά ημέρα', 'int', 3),
+        ('maybe_week', 'Το πολύ τόσες ώρες «υπό όρους» (?) την εβδομάδα', 'int', 3),
+        ('max_last', 'Το πολύ τόσες φορές την εβδομάδα την τελευταία ώρα (π.χ. 7η)', 'int', 3),
     ],
     'classes': [
         ('compact', 'Χωρίς κενά: έναρξη την πρώτη επιτρεπτή ώρα, συνεχόμενα', 'flag', 0),
@@ -38,6 +43,7 @@ CATALOG = {
 RULE_KEYS = {'teachers': 'teacher_rules', 'classes': 'class_rules', 'subjects': 'subject_rules'}
 LABEL = {k: {key: label for key, label, *_ in v} for k, v in CATALOG.items()}
 TYPES = {k: {key: typ for key, _, typ, _ in v} for k, v in CATALOG.items()}
+SECONDARY_ONLY = {'max_last'}   # εμφανίζεται μόνο σε Γυμνάσιο/Λύκειο
 LEGACY_INT = {'max_daily', 'min_daily', 'max_gaps_day', 'max_gaps_week'}
 
 
@@ -50,7 +56,8 @@ def norm(raw):
     if isinstance(raw, (int, float)):
         return {'v': int(raw), 'w': 0}
     if isinstance(raw, dict):
-        if not raw.get('on', True) or raw.get('v') in (None, '', False):
+        v = raw.get('v')
+        if not raw.get('on', True) or v is None or v is False or v == '':
             return None
         return {'v': raw['v'], 'w': int(raw.get('w', 0) or 0)}
     raise ValueError('Μη έγκυρη μορφή κανόνα.')
@@ -189,6 +196,26 @@ def resources(p, l):
     return out
 
 
+def active_view(p):
+    """Το έργο χωρίς ό,τι αφορά εκπαιδευτικούς που «δεν συμμετέχουν»: φεύγουν από τις αναθέσεις
+    τους, και οι αναθέσεις χωρίς άλλον εκπαιδευτικό δεν προγραμματίζονται ούτε ελέγχονται."""
+    off = {t['id'] for t in p['teachers'] if t.get('active') is False}
+    if not off:
+        return p
+    q = dict(p); keep = []
+    for l in p['lessons']:
+        if all(t in off for t in l['teachers']):
+            continue
+        keep.append(dict(l, teachers=[t for t in l['teachers'] if t not in off]) if any(t in off for t in l['teachers']) else l)
+    ids = {l['id'] for l in keep}
+    q['lessons'] = keep; q['events'] = [e for e in p['events'] if e['lesson'] in ids]
+    q['teachers'] = [t for t in p['teachers'] if t['id'] not in off]
+    if p.get('links'):
+        q['links'] = [dict(k, lessons=[x for x in k['lessons'] if x in ids]) for k in p['links']]
+        q['links'] = [k for k in q['links'] if len(k['lessons']) >= 2]
+    return q
+
+
 def link_sides(p, link):
     """Οι «πλευρές» ενός δεσίματος: αναθέσεις με τις ίδιες ομάδες είναι η ίδια πλευρά.
     Κάθε πλευρά πρέπει να έχει μάθημα ακριβώς τις ίδιες ώρες με τις άλλες."""
@@ -254,7 +281,7 @@ def describe(p, key):
         if r:
             typ = TYPES[kind][rk]
             if typ == 'period':
-                val = ' ' + p['periods'][r['v']]['start' if rk == 'earliest' else 'end'] if r['v'] < len(p['periods']) else ''
+                val = ' ' + p['periods'][r['v']]['start' if rk in ('earliest', 'start_at') else 'end'] if r['v'] < len(p['periods']) else ''
             elif typ == 'pattern':
                 val = ' ' + ', '.join(str(x) + ' ημ. με ' + str(n) + ' ώρες' for n, x in r['v'])
             elif typ == 'int':
@@ -272,6 +299,7 @@ def describe(p, key):
 def evaluate(p, complete=False):
     """Επιστρέφει λίστα ευρημάτων {key, hard, amount, penalty, text}.
     Οι κανόνες «ίσο/τουλάχιστον» ελέγχονται μόνο όταν complete=True."""
+    p = active_view(p)
     ls = mapping(p, 'lessons'); n = len(p['periods'])
     found = []
 
@@ -383,6 +411,23 @@ def evaluate(p, complete=False):
             starts = Counter(min(tocc[tid, d]) for d in range(5) if tocc[tid, d])
             for i, count in rr.get('start_counts', {}).items():
                 add(('start_counts', tid), None, abs(starts[int(i)] - count), tn + ': μη τήρηση αριθμού ημερών έναρξης')
+        if R['max_days']:
+            add(key('max_days'), R['max_days'], max(0, sum(1 for h in hs if h) - R['max_days']['v']),
+                tn + ': έρχεται ' + str(sum(1 for h in hs if h)) + ' ημέρες (το πολύ ' + str(R['max_days']['v']) + ')')
+        if R['start_at'] and R['start_at']['v'] < n:
+            v = R['start_at']['v']
+            amount = sum((v not in tocc[tid, d]) + sum(1 for i in tocc[tid, d] if i < v) for d in range(5) if tocc[tid, d])
+            add(key('start_at'), R['start_at'], amount, tn + ': δεν ξεκινά στις ' + p['periods'][v]['start'] + ' κάθε ημέρα που έρχεται')
+        if R['maybe_day'] or R['maybe_week']:
+            A = avoid(p, 'teachers', tid)[0]
+            md = [sum(1 for i in tocc[tid, d] if (d, i) in A) for d in range(5)]
+            if R['maybe_day']:
+                add(key('maybe_day'), R['maybe_day'], sum(max(0, x - R['maybe_day']['v']) for x in md), tn + ': πάνω από ' + str(R['maybe_day']['v']) + ' ώρες «υπό όρους» σε ημέρα')
+            if R['maybe_week']:
+                add(key('maybe_week'), R['maybe_week'], max(0, sum(md) - R['maybe_week']['v']), tn + ': ' + str(sum(md)) + ' ώρες «υπό όρους» την εβδομάδα (το πολύ ' + str(R['maybe_week']['v']) + ')')
+        if R['max_last']:
+            last = sum(1 for d in range(5) if n - 1 in tocc[tid, d])
+            add(key('max_last'), R['max_last'], max(0, last - R['max_last']['v']), tn + ': ' + str(last) + ' φορές την τελευταία ώρα (το πολύ ' + str(R['max_last']['v']) + ')')
         if R['earliest'] and R['earliest']['w']:
             amount = sum(1 for d in range(5) for i in tocc[tid, d] if i < R['earliest']['v'])
             add(key('earliest'), R['earliest'], amount, tn + ': ώρες πριν από ' + p['periods'][R['earliest']['v']]['start'])
@@ -444,6 +489,7 @@ def evaluate(p, complete=False):
 
 def gap_total(p, exclude_presence=True):
     """Σύνολο κενών εκπαιδευτικών (μέρος του γενικού στόχου)."""
+    p = active_view(p)
     ls = mapping(p, 'lessons'); tocc = defaultdict(set)
     for e in p['events']:
         if e['place']:
@@ -479,6 +525,7 @@ def score(p):
 def build(p, cp_model, diag=False):
     """Χτίζει το μοντέλο. Με diag=True κάθε υποχρεωτικός κανόνας ελέγχεται από
     λογική μεταβλητή-υπόθεση, ώστε να εντοπιστούν οι κανόνες που συγκρούονται."""
+    p = active_view(p)
     model = cp_model.CpModel(); ls = mapping(p, 'lessons'); n = len(p['periods'])
     lits = {}
     terms = []  # (συντελεστής, μεταβλητή) στόχου
@@ -596,7 +643,8 @@ def build(p, cp_model, diag=False):
         R = {k: rule(p, 'teachers', tid, k) for k in LABEL['teachers']}
         key = lambda k: ('rule', 'teachers', tid, k)
         rr = p.get('teacher_rules', {}).get(tid, {})
-        weekgaps = []; firsts = defaultdict(list); hs = []; occs = []
+        weekgaps = []; firsts = defaultdict(list); hs = []; occs = []; maybes = []
+        A = avoid(p, 'teachers', tid)[0] if (R['maybe_day'] or R['maybe_week']) else set()
         for d in range(5):
             occ = []
             for i in range(n):
@@ -641,9 +689,22 @@ def build(p, cp_model, diag=False):
                 v = R['max_consecutive']['v']
                 for s in range(0, n - v):
                     apply(key('max_consecutive'), R['max_consecutive'], sum(occ[s:s + v + 1]), v, 1)
+            if R['start_at'] and R['start_at']['v'] < n:
+                v = R['start_at']['v']
+                apply(key('start_at'), R['start_at'], active - occ[v] + sum(occ[:v]), 0, n + 1)
+            if A:
+                md = sum(occ[i] for i in range(n) if (d, i) in A); maybes.append(md)
+                if R['maybe_day']:
+                    apply(key('maybe_day'), R['maybe_day'], md, R['maybe_day']['v'], n)
             weekgaps.extend(dg)
         if R['max_gaps_week']:
             apply(key('max_gaps_week'), R['max_gaps_week'], sum(weekgaps), R['max_gaps_week']['v'], 5 * n)
+        if R['max_days']:
+            apply(key('max_days'), R['max_days'], sum(a for _, a in hs), R['max_days']['v'], 5)
+        if R['maybe_week'] and maybes:
+            apply(key('maybe_week'), R['maybe_week'], sum(maybes), R['maybe_week']['v'], 5 * n)
+        if R['max_last']:
+            apply(key('max_last'), R['max_last'], sum(occs[d][n - 1] for d in range(5)), R['max_last']['v'], 5)
         for i, count in rr.get('start_counts', {}).items():
             hard(('start_counts', tid), model.Add(sum(firsts[int(i)]) == count))
         if R['presence']:
@@ -759,7 +820,8 @@ def solve(p, seconds=30, cancel=None, diagnose=True):
             return dict(status='infeasible', message='Αποδείχθηκε ότι οι υποχρεωτικοί κανόνες δεν επιτρέπουν λύση.', reasons=reasons)
         return dict(status='unknown', message='Δεν βρέθηκε λύση στον διαθέσιμο χρόνο. Αυτό δεν αποδεικνύει αδυναμία λύσης. Δοκιμάστε μεγαλύτερο χρόνο ή μετατρέψτε κάποιους κανόνες σε επιθυμητούς.')
     for e in p['events']:
-        e['place'] = next([d, i] for d, i, v in choices[e['id']] if solver.Value(v))
+        if e['id'] in choices:
+            e['place'] = next([d, i] for d, i, v in choices[e['id']] if solver.Value(v))
     return dict(status='optimal' if status == cp_model.OPTIMAL else 'feasible', project=p,
                 objective=round(solver.ObjectiveValue()))
 

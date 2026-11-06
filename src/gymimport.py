@@ -54,6 +54,8 @@ def parse(d):
         raise ValueError('Υποστηρίζονται μόνο 5 ημέρες.')
     p = core.blank()
     p['title'] = 'Ωρολόγιο Πρόγραμμα'; p['school'] = str(d.get('school') or '')
+    sch = p['school'].upper()
+    p['framework'] = {'level': 'Λύκειο' if 'ΛΥΚΕΙ' in sch or 'ΓΕΛ' in sch or 'ΕΠΑΛ' in sch else 'Γυμνάσιο'}
     p['periods'] = [dict(id=str(i), name=str(i + 1), start=DEFAULT_TIMES[2 * i] if 2 * i + 1 < len(DEFAULT_TIMES) else '%02d:00' % (8 + i),
                          end=DEFAULT_TIMES[2 * i + 1] if 2 * i + 1 < len(DEFAULT_TIMES) else '%02d:45' % (8 + i)) for i in range(n)]
     notes = ['Οι ώρες έναρξης και λήξης δεν υπάρχουν στο αρχείο· μπήκαν ενδεικτικές. Διορθώστε τες στο «Σχολείο & ωράριο».']
@@ -83,9 +85,15 @@ def parse(d):
         name = str(t.get('name', '')).strip()
         if not name:
             continue
-        if t.get('active') is False:
-            inactive.append(name); continue
         x = dict(id=core.uid(), name=name, short=_short(name, 3))
+        if t.get('active') is False:
+            x['active'] = False; inactive.append(name)
+        if str(t.get('spec') or '').strip():
+            x['spec'] = str(t['spec']).strip()[:40]
+        if t.get('special'):
+            x['special'] = True
+        if t.get('hypothetical'):
+            x['hypothetical'] = True
         p['teachers'].append(x); tea[_norm(name)] = x
         rr = {}
         av = t.get('avail') or []
@@ -116,18 +124,22 @@ def parse(d):
                 rr['max_consecutive'] = dict(v=v, w=4, on=True)
         if c.get('from2'):
             rr['earliest'] = dict(v=1, w=0, on=True)
-        for k, label in (('meres', 'πλήθος ημερών παρουσίας'), ('sev7', 'όριο τελευταίων ωρών'), ('qmax', 'όριο θέσεων «υπό όρους»')):
-            if on(k) and not (k == 'meres' and int(c[k].get('val', 5) or 5) >= 5):
-                unsupported.setdefault(label, []).append(name)
-        if c.get('early'):
-            unsupported.setdefault('«να έρχεται 1η ώρα»', []).append(name)
+        if on('meres') and int(c['meres'].get('val', 5) or 5) < 5:
+            rr['max_days'] = dict(v=int(c['meres']['val']), w=4, on=True)
+        if on('sev7'):
+            rr['max_last'] = dict(v=int(c['sev7'].get('val', 0) or 0), w=4, on=True)
+        if on('qmax'):
+            k = 'maybe_week' if c['qmax'].get('scope') == 'week' else 'maybe_day'
+            rr[k] = dict(v=int(c['qmax'].get('val', 0) or 0), w=3, on=True)
+        if c.get('early') and not c.get('from2'):
+            rr['start_at'] = dict(v=0, w=3, on=True)
         if rr:
             p['teacher_rules'][x['id']] = rr
     if inactive:
-        notes.append('Δεν συμμετέχουν (δεν εισήχθησαν, ούτε οι αναθέσεις τους): ' + ', '.join(inactive) + '.')
+        notes.append('Δεν συμμετέχουν στο πρόγραμμα (εισήχθησαν με τις αναθέσεις τους, αλλά μένουν εκτός): ' + ', '.join(inactive) + '.')
     for label, names in unsupported.items():
         notes.append('Δεν υποστηρίζεται ακόμη το «%s» (%d εκπαιδευτικοί: %s).' % (label, len(names), ', '.join(names[:6]) + (' …' if len(names) > 6 else '')))
-    notes.append('Αυστηρότητα των κανόνων: μέγιστες ώρες/ημέρα και «όχι 1η ώρα» υποχρεωτικά· κενά, ελάχιστες ώρες και συνεχόμενες ώρες επιθυμητά. Αλλάζουν στους Κανόνες.')
+    notes.append('Αυστηρότητα των κανόνων: μέγιστες ώρες/ημέρα και «όχι 1η ώρα» υποχρεωτικά· όλοι οι άλλοι (κενά, ελάχιστες, συνεχόμενες, ημέρες, 7η ώρα, «υπό όρους», έναρξη 1η ώρα) επιθυμητοί. Αλλάζουν στους Κανόνες.')
 
     # ---- ομάδες τμημάτων: όσες ομάδες «δένονται» στην ίδια ώρα ανήκουν στον ίδιο διαχωρισμό
     src = {l.get('id'): l for l in d['lessons'] if isinstance(l, dict)}
@@ -161,15 +173,14 @@ def parse(d):
         return groups[key]
 
     # ---- αναθέσεις
-    made = {}; skipped = 0; split = 0; off = {_norm(x) for x in inactive}
+    made = {}; skipped = 0; split = 0
     for l in d['lessons']:
         if not isinstance(l, dict):
             continue
         t = tea.get(_norm(l.get('teacher')))
         pairs = lesson_groups(l)
         if not t or not pairs or not all(_norm(c) in cls for c, _ in pairs) or not str(l.get('subject', '')).strip():
-            if _norm(l.get('teacher')) not in off:
-                skipped += 1
+            skipped += 1
             continue
         hours = int(l.get('hours') or 0)
         if hours < 1:

@@ -106,12 +106,15 @@ class GymJson(unittest.TestCase):
         self.assertTrue(gymimport.is_gym_json(GYM)); self.assertFalse(gymimport.is_gym_json(core.blank()))
         p, rep = gymimport.parse(json.loads(json.dumps(GYM)))
         self.assertEqual(p['school'], 'Δοκιμαστικό Γυμνάσιο'); self.assertEqual(len(p['periods']), 5)
-        self.assertEqual([t['name'] for t in p['teachers']], ['ΑΛΦΑ', 'ΒΗΤΑ', 'ΓΑΜΜΑ'])        # ΔΕΛΤΑ δεν συμμετέχει
+        self.assertEqual([t['name'] for t in p['teachers']], ['ΑΛΦΑ', 'ΒΗΤΑ', 'ΓΑΜΜΑ', 'ΔΕΛΤΑ'])
+        self.assertIs(p['teachers'][3]['active'], False)                                     # δεν συμμετέχει, αλλά κρατιέται
+        self.assertEqual(core.level(p), 'Γυμνάσιο')
+        self.assertFalse(any(l['teachers'] == [p['teachers'][3]['id']] for l in R.active_view(p)['lessons']))
         a = p['teacher_rules'][p['teachers'][0]['id']]
         self.assertEqual(a['avoid'], [[4, 4]]); self.assertEqual(a['max_daily']['v'], 4); self.assertEqual(a['max_gaps_day']['v'], 1)
         self.assertEqual(a['earliest'], dict(v=1, w=0, on=True))
         self.assertEqual(len(p['teacher_rules'][p['teachers'][1]['id']]['allowed']), 20)
-        self.assertTrue(any('τελευταίων ωρών' in n for n in rep['notes']))
+        self.assertEqual(a['max_last']['v'], 1)
         # διώρο με 3 ώρες → διώρο + μονόωρο· δέσιμο με ομάδες → ταυτόχρονα· χωρίς ομάδες → συνδιδασκαλία
         self.assertEqual(len(p['links']), 1); self.assertEqual(len(p['links'][0]['lessons']), 4)
         sides = R.link_sides(p, p['links'][0]); self.assertEqual(sorted(len(s) for s in sides), [2, 2])
