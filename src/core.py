@@ -5,7 +5,7 @@ from pathlib import Path
 from collections import Counter, defaultdict
 import xml.etree.ElementTree as ET
 
-VERSION = '0.9.0-beta'
+VERSION = '0.10.0-beta'
 DAYS = ['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή']
 def uid(): return uuid.uuid4().hex[:16]
 def blank():
@@ -157,6 +157,8 @@ def check_structure(p):
         if type(gr)!=str or not isinstance(row,dict):raise ValueError('Μη έγκυρο επίσημο ωρολόγιο.')
         for sid,h in row.items():
             if sid not in ids['subjects'] or type(h)!=int or not 0<=h<=40:raise ValueError('Μη έγκυρη τιμή στο επίσημο ωρολόγιο.')
+    import subs
+    subs.validate(p,ids)
     lk=p.get('links')
     if lk is not None:
         if not isinstance(lk,list):raise ValueError('Μη έγκυρα ταυτόχρονα μαθήματα.')

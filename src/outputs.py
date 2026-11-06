@@ -9,7 +9,8 @@ LABELS = {'teachers': 'Εκπαιδευτικοί', 'classes': 'Τμήματα',
 SINGULAR = {'teachers': 'εκπαιδευτικού', 'classes': 'τμήματος', 'rooms': 'αίθουσας', 'subjects': 'μαθήματος'}
 MODES = {'individual': 'Ωρολόγιο για κάθε εγγραφή', 'overview': 'Συνολικό ωρολόγιο', 'poster': 'Αφίσα τοίχου (A3)',
          'withtable': 'Ωρολόγιο με πίνακα αναθέσεων', 'assignments': 'Πίνακας μαθημάτων', 'distribution': 'Επισκόπηση κατανομής',
-         'fairness': 'Δικαιοσύνη κατανομής', 'framework': 'Θεσμικό πλαίσιο (ώρες μαθημάτων, ωράριο εκπαιδευτικών)'}
+         'fairness': 'Δικαιοσύνη κατανομής', 'framework': 'Θεσμικό πλαίσιο (ώρες μαθημάτων, ωράριο εκπαιδευτικών)',
+         'subs_day': 'Αναπληρώσεις ημέρας', 'subs_stats': 'Αναπληρώσεις ανά εκπαιδευτικό'}
 # Χρωματικό θέμα: κεφαλίδα, λωρίδα τίτλου, ημέρες, στήλη ωρών
 THEMES = {
     'color': dict(head='1F3A5F', head_fg='FFFFFF', band='3E7D6E', band_fg='FFFFFF', day='F2B04A', day_fg='1F2A36', per='4B4F8F', per_fg='FFFFFF', grid='3A3F47'),
@@ -286,6 +287,12 @@ def pages(p, opts):
         return [fairness(p)]
     if mode == 'framework':
         return framework_pages(p)
+    if mode == 'subs_day':
+        import subs
+        return subs.day_pages(p, opts.get('date') or __import__('datetime').date.today().isoformat())
+    if mode == 'subs_stats':
+        import subs
+        return subs.stats_pages(p)
     if mode in ('overview', 'poster'):
         return [matrix_page(p, kind, ents, opts, mode == 'poster')]
     out = []

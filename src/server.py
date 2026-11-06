@@ -4,7 +4,7 @@ from pathlib import Path
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 import base64
-import core, outputs, rules, updater, versions, backup, xlimport, rozimport, gymimport
+import core, outputs, rules, updater, versions, backup, xlimport, rozimport, gymimport, subs
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / 'data' / 'project.json'
@@ -221,6 +221,10 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send(200, json.dumps(core.slot_status(p, req['id']), ensure_ascii=False))
                 if action == '/api/export/xlsx':
                     return self.send(200, outputs.export_xlsx(p, req.get('options', {})), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', download='orologio.xlsx')
+                if action == '/api/subs/day':
+                    return self.send(200, json.dumps(subs.day(p, req.get('rec') or subs.record(p, req['date'])), ensure_ascii=False))
+                if action == '/api/subs/auto':
+                    return self.send(200, json.dumps(subs.auto(p, req['rec']), ensure_ascii=False))
                 if action == '/api/import/preview':
                     q, rep = parse_import(req)
                     return self.send(200, json.dumps(rep, ensure_ascii=False))
