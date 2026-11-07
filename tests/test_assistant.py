@@ -90,6 +90,9 @@ class Mock(BaseHTTPRequestHandler):
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
         Mock.seen.append((self.path, self.headers, body))
+        if body.get('model') == 'missing':
+            b = json.dumps([{'error': {'code': 404, 'message': 'models/missing is not found for API version v1beta', 'status': 'NOT_FOUND'}}]).encode()
+            self.send_response(404); self.send_header('Content-Length', str(len(b))); self.end_headers(); self.wfile.write(b); return
         step = sum(1 for m in body['messages'] if m['role'] == 'tool' or (isinstance(m.get('content'), list) and any(b.get('type') == 'tool_result' for b in m['content'])))
         calls = SCRIPT[step] if step < len(SCRIPT) else []
         if self.path.endswith('/messages'):
@@ -139,6 +142,13 @@ class Providers(unittest.TestCase):
     def test_openai_compatible(self):
         seen = self.run_chat('gemini')
         self.assertTrue(seen[0][0].endswith('/chat/completions')); self.assertEqual(seen[0][1]['Authorization'], 'Bearer sk-test')
+
+    def test_missing_model_message(self):
+        cfg = {'provider': 'gemini', 'keys': {'gemini': 'k'}, 'models': {'gemini': 'missing'}, 'bases': {'gemini': self.base}, 'anonymize': True}
+        with self.assertRaises(ValueError) as cm:
+            assistant.chat(project(), [], 'x', cfg)
+        m = str(cm.exception)
+        self.assertIn('is not found', m); self.assertIn('model-a', m)
 
     def test_models_and_errors(self):
         cfg = {'provider': 'ollama', 'keys': {}, 'models': {}, 'bases': {'ollama': self.base}, 'anonymize': True}

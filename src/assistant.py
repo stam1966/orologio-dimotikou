@@ -109,21 +109,40 @@ def _get(url, headers, timeout=30):
     return _open(urllib.request.Request(url, headers=headers), timeout)
 
 
+class ServiceError(ValueError):
+    def __init__(self, msg, code=0):
+        super().__init__(msg); self.code = code
+
+
+def _detail(ex):
+    """Το μήνυμα λάθους της υπηρεσίας (Anthropic/OpenAI: {error:{message}}, Gemini: [{error:{message}}])."""
+    try:
+        raw = ex.read().decode('utf-8', 'replace')
+    except Exception:
+        return ''
+    try:
+        d = json.loads(raw)
+        if isinstance(d, list) and d:
+            d = d[0]
+        e = d.get('error', d) if isinstance(d, dict) else d
+        if isinstance(e, dict):
+            return str(e.get('message') or e.get('status') or e)
+        return str(e)
+    except Exception:
+        return ' '.join(raw.split())[:300]
+
+
 def _open(req, timeout):
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read().decode('utf-8'))
     except urllib.error.HTTPError as ex:
-        try:
-            detail = json.loads(ex.read().decode('utf-8', 'replace'))
-            detail = (detail.get('error') or {}).get('message') if isinstance(detail.get('error'), dict) else (detail.get('error') or detail.get('message') or '')
-        except Exception:
-            detail = ''
+        detail = _detail(ex)
         msg = {401: 'Το κλειδί API δεν έγινε δεκτό (λάθος ή ανενεργό κλειδί).', 403: 'Η υπηρεσία αρνήθηκε την πρόσβαση με αυτό το κλειδί.',
                404: 'Η υπηρεσία δεν βρήκε το μοντέλο ή τη διεύθυνση· ελέγξτε το όνομα του μοντέλου.',
                429: 'Η υπηρεσία απάντησε «πάρα πολλά αιτήματα» ή «τέλος υπολοίπου». Περιμένετε λίγο ή ελέγξτε τον λογαριασμό σας.',
                529: 'Η υπηρεσία είναι προσωρινά υπερφορτωμένη· δοκιμάστε σε λίγο.'}.get(ex.code, 'Σφάλμα υπηρεσίας AI (' + str(ex.code) + ').')
-        raise ValueError(msg + (' Λεπτομέρειες: ' + str(detail)[:300] if detail else ''))
+        raise ServiceError(msg + (' Λεπτομέρειες: ' + str(detail)[:300] if detail else ''), ex.code)
     except urllib.error.URLError as ex:
         raise ValueError('Δεν υπάρχει σύνδεση με την υπηρεσία AI (' + str(ex.reason)[:120] + '). '
                          'Ελέγξτε το Internet' + (' ή ότι το Ollama είναι ανοικτό.' if '11434' in req.full_url else '.'))
@@ -567,6 +586,23 @@ def _call(pv, base, model, key, system, msgs, tools):
     return m, calls, m.get('content') or '', (u.get('prompt_tokens', 0), u.get('completion_tokens', 0))
 
 
+def _suggest(cfg, model):
+    """Σε «δεν βρέθηκε μοντέλο»: δείχνει ποια μοντέλα του λογαριασμού ταιριάζουν."""
+    try:
+        ms = list_models(cfg)
+    except Exception:
+        return ''
+    if model in ms:
+        return ''
+    bad = ('embed', 'image', 'tts', 'audio', 'live', 'vision', 'whisper', 'dall', 'moderation', 'search', 'realtime', 'transcribe', 'veo', 'imagen', 'aqa', 'robotics', 'computer')
+    good = [m for m in ms if not any(b in m.lower() for b in bad)]
+    pref = [m for m in good if any(k in m.lower() for k in ('flash-lite', 'flash', 'haiku', 'mini', 'nano', 'luna'))] or good
+    if not pref:
+        return ''
+    return ('\nΤο μοντέλο «' + model + '» δεν είναι διαθέσιμο στον λογαριασμό σας. Διαθέσιμα (ενδεικτικά): ' + ', '.join(pref[:8]) +
+            '. Ανοίξτε «Ρυθμίσεις», πατήστε «Λίστα διαθέσιμων» και διαλέξτε ένα από αυτά.')
+
+
 def chat(project, history, message, cfg, solver=None, log=None):
     """Μία σειρά συνομιλίας. history: [{'role','text'}] (κείμενα σε κωδικούς).
     Επιστρέφει {'reply', 'reply_coded', 'proposals', 'usage', 'steps'}."""
@@ -583,7 +619,12 @@ def chat(project, history, message, cfg, solver=None, log=None):
         msgs = [{'role': h['role'], 'content': h['text']} for h in history] + [{'role': 'user', 'content': user}]
     tin = tout = 0; steps = []; text = ''
     for _ in range(MAX_STEPS):
-        raw, calls, text, (i, o) = _call(pv, base, model, key, system, msgs, tools)
+        try:
+            raw, calls, text, (i, o) = _call(pv, base, model, key, system, msgs, tools)
+        except ServiceError as ex:
+            if ex.code in (400, 404) and not steps:
+                raise ValueError(str(ex) + _suggest(cfg, model))
+            raise
         tin += i; tout += o
         if not calls:
             break

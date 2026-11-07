@@ -289,7 +289,11 @@ def pages(p, opts):
         return framework_pages(p)
     if mode == 'subs_day':
         import subs
-        return subs.day_pages(p, opts.get('date') or __import__('datetime').date.today().isoformat())
+        import datetime as _dt
+        d = _dt.date.today()
+        while d.weekday() > 4:  # Σαββατοκύριακο → επόμενη Δευτέρα
+            d += _dt.timedelta(days=1)
+        return subs.day_pages(p, opts.get('date') or d.isoformat())
     if mode == 'subs_stats':
         import subs
         return subs.stats_pages(p)
