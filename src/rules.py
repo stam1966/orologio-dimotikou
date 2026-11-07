@@ -93,8 +93,10 @@ def check_rule_value(kind, key, raw, nperiods):
         if type(v) != bool:
             raise ValueError('Μη έγκυρη τιμή κανόνα: ' + LABEL[kind][key])
     elif typ == 'endpattern':
-        if not isinstance(v, list) or not v or any(not isinstance(x, list) or len(x) != 2 or any(type(n) != int or n < 0 for n in x) for x in v):
+        if not isinstance(v, list) or not v or any(not isinstance(x, list) or len(x) not in (2, 3) or any(type(n) != int or n < 0 for n in x) for x in v):
             raise ValueError('Μη έγκυρος κανόνας «ημέρες με λήξη ώρας».')
+        if any(len(x) == 3 and (x[2] >= nperiods or x[2] > x[0]) for x in v):
+            raise ValueError('Ημέρες με λήξη ώρας: η ώρα έναρξης πρέπει να είναι πριν από την ώρα λήξης.')
         if any(x[0] >= nperiods or x[1] < 1 for x in v) or sum(x[1] for x in v) > 5 or len({x[0] for x in v}) != len(v):
             raise ValueError('Ημέρες με λήξη ώρας: έως 5 ημέρες συνολικά, διαφορετική ώρα σε κάθε γραμμή.')
     elif typ == 'pattern':
@@ -104,14 +106,25 @@ def check_rule_value(kind, key, raw, nperiods):
             raise ValueError('Το μοτίβο ημερών υπερβαίνει τις 5 ημέρες ή επαναλαμβάνει πλήθος ωρών.')
 
 
-def end_pattern_rows(v):
-    """[(ώρα, ημέρες)]: «1 ημ. με λήξη 4η, 1 με λήξη 5η» → τουλάχιστον 1 ημέρα με τελευταία ώρα ακριβώς την 4η και 1 ακριβώς την 5η."""
-    return [(P, x) for P, x in sorted(v)]
+def first_teaching(p):
+    """Η 1η διδακτική ώρα: η ώρα με όνομα «1» (π.χ. μετά την Πρωινή Ζώνη «0»), αλλιώς η πρώτη."""
+    for i, x in enumerate(p['periods']):
+        if str(x.get('name', '')).strip() == '1':
+            return i
+    return 0
+
+
+def end_pattern_rows(p, v):
+    """[(έναρξη, λήξη, ημέρες)]: «1 ημ. 1η–4η, 1 ημ. 1η–5η» → τουλάχιστον τόσες ημέρες που ξεκινούν ακριβώς στην
+    έναρξη ΚΑΙ τελειώνουν ακριβώς στη λήξη. Ημέρες με Πρωινή Ζώνη ή με αργή έναρξη (π.χ. Ολοήμερο) δεν μετρούν."""
+    S0 = first_teaching(p)
+    return [(x[2] if len(x) == 3 else S0, x[0], x[1]) for x in sorted(v)]
 
 
 def end_pattern_text(p, v):
-    per = p['periods']
-    return ', '.join(str(x) + ' ημ. με λήξη ' + str(per[P]['name']) + 'ης (' + per[P]['end'] + ')' for P, x in sorted(v) if P < len(per))
+    per = p['periods']; n = len(per)
+    return ', '.join(str(c) + ' ημ. ' + str(per[S]['name']) + 'η–' + str(per[P]['name']) + 'η (' + per[S]['start'] + '–' + per[P]['end'] + ')'
+                     for S, P, c in end_pattern_rows(p, v) if P < n and S < n)
 
 
 # ---------------------------------------------------------------- βοηθητικά
@@ -420,10 +433,10 @@ def evaluate(p, complete=False):
                 add(key('presence'), R['presence'], abs(sum(gs) - target),
                     tn + ': παρουσία ' + str(sum(hs) + sum(gs)) + ' ώρες αντί για ' + str(R['presence']['v']))
             if R['end_pattern']:
-                days = [max(tocc[tid, d]) for d in range(5) if tocc[tid, d]]
-                amount = sum(max(0, c - sum(1 for e in days if e == P)) for P, c in end_pattern_rows(R['end_pattern']['v']))
+                days = [(min(tocc[tid, d]), max(tocc[tid, d])) for d in range(5) if tocc[tid, d]]
+                amount = sum(max(0, c - sum(1 for x in days if x == (S, P))) for S, P, c in end_pattern_rows(p, R['end_pattern']['v']))
                 add(key('end_pattern'), R['end_pattern'], amount, tn + ': δεν τηρείται «' + end_pattern_text(p, R['end_pattern']['v']) + '» (λήξη ημερών: ' +
-                    ', '.join(p['days'][d][:3] + ' ' + str(p['periods'][max(tocc[tid, d])]['name']) + 'η' for d in range(5) if tocc[tid, d]) + ')')
+                    ', '.join(p['days'][d][:3] + ' ' + str(p['periods'][min(tocc[tid, d])]['name']) + 'η–' + str(p['periods'][max(tocc[tid, d])]['name']) + 'η' for d in range(5) if tocc[tid, d]) + ')')
             if R['balance']:
                 D = available_days(p, tid) or list(range(5)); H = hours_total[tid]
                 lo, hi = H // len(D), -(-H // len(D))
@@ -751,17 +764,18 @@ def build(p, cp_model, diag=False):
             for g in weekgaps:
                 terms.append((gw, g))
         if R['end_pattern']:
-            for P, c in end_pattern_rows(R['end_pattern']['v']):
-                if P >= n:
+            for S, P, c in end_pattern_rows(p, R['end_pattern']['v']):
+                if P >= n or S > P:
                     continue
                 bs = []
                 for d in range(5):
-                    last = occs[d][P]; later = occs[d][P + 1:]  # τελευταία ώρα της ημέρας ακριβώς η P
+                    # η ημέρα ξεκινά ακριβώς στην S και τελειώνει ακριβώς στην P
+                    first, last = occs[d][S], occs[d][P]; outside = occs[d][:S] + occs[d][P + 1:]
                     b = model.NewBoolVar('endat')
-                    model.Add(b <= last)
-                    for o in later:
+                    model.Add(b <= first); model.Add(b <= last)
+                    for o in outside:
                         model.Add(b + o <= 1)
-                    model.Add(b >= last - sum(later))
+                    model.Add(b >= first + last - 1 - sum(outside))
                     bs.append(b)
                 if R['end_pattern']['w'] == 0:
                     hard(key('end_pattern'), model.Add(sum(bs) >= c))

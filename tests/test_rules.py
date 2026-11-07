@@ -190,9 +190,24 @@ class Rules(unittest.TestCase):
         p = base(7, 8)
         p['teacher_rules']['ta'] = {'end_pattern': {'v': [[2, 1], [3, 1]], 'w': 0}}
         q = solved(self, p, 60)
-        ends = [max(x) for x in days_hours(q, 'ta') if x]
-        self.assertGreaterEqual(sum(1 for e in ends if e == 2), 1)
-        self.assertGreaterEqual(sum(1 for e in ends if e == 3), 1)
+        spans = [(min(x), max(x)) for x in days_hours(q, 'ta') if x]
+        # η 1η διδακτική είναι η ώρα με όνομα «1» (η «0» είναι σαν Πρωινή Ζώνη)
+        self.assertGreaterEqual(spans.count((1, 2)), 1, spans)
+        self.assertGreaterEqual(spans.count((1, 3)), 1, spans)
+        # ρητή ώρα έναρξης (3ο στοιχείο)
+        p = base(7, 8); p['teacher_rules']['ta'] = {'end_pattern': {'v': [[3, 2, 0]], 'w': 0}}
+        q = solved(self, p, 60)
+        self.assertGreaterEqual([(min(x), max(x)) for x in days_hours(q, 'ta') if x].count((0, 3)), 2)
+        # ημέρα με Πρωινή Ζώνη (0η–4η) ή αργή έναρξη (2η–4η) δεν μετρά ως «1η–4η»
+        p = base(6, 4); p['teacher_rules']['ta'] = {'end_pattern': {'v': [[4, 1]], 'w': 3}}
+        slots = [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 2]]
+        for e, sl in zip([e for e in p['events'] if e['lesson'] == 'la'], slots): e['place'] = sl
+        f = [x for x in core.findings(p, True) if x['key'][-1] == 'end_pattern']
+        self.assertEqual(len(f), 1)
+        for e, sl in zip([e for e in p['events'] if e['lesson'] == 'la'], [[0, 1], [0, 2], [0, 3], [0, 4], [1, 2], [1, 3]]): e['place'] = sl
+        self.assertFalse([x for x in core.findings(p, True) if x['key'][-1] == 'end_pattern'])
+        p['teacher_rules']['ta'] = {'end_pattern': {'v': [[2, 1, 3]], 'w': 0}}
+        with self.assertRaises(ValueError): core.check_structure(p)
         rnd = random.Random(5)
         for trial in range(3):
             p = base(rnd.randint(6, 8), rnd.randint(6, 9))
