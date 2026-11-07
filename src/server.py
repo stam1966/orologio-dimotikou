@@ -70,10 +70,10 @@ def commit(p, label='Αλλαγή', history=True):
     core.save(p, DATA); STATE['project'] = p; STATE['revision'] += 1
 
 
-def summary(p):
+def summary(p, cache=True):
     """Σύνοψη ποιότητας (με προσωρινή μνήμη ανά αναθεώρηση)."""
     key = STATE['revision']
-    if SUMMARY_CACHE.get('rev') == key:
+    if cache and SUMMARY_CACHE.get('rev') == key:
         return SUMMARY_CACHE['data']
     found = core.findings(p, True)
     hard = [f for f in found if f['hard'] and f['key'][0] != 'unplaced']
@@ -82,7 +82,8 @@ def summary(p):
     data = {'errors': [f['text'] for f in hard], 'warnings': [{'text': f['text'], 'penalty': f['penalty']} for f in soft],
             'gaps': rules.gap_total(p, False), 'unplaced': unplaced,
             'score': rules.score(p) if not unplaced else None, 'curriculum': core.curriculum_check(p), 'teacher_hours': core.teacher_hours_check(p)}
-    SUMMARY_CACHE.update(rev=key, data=data)
+    if cache:
+        SUMMARY_CACHE.update(rev=key, data=data)
     return data
 
 
@@ -246,6 +247,15 @@ class Handler(BaseHTTPRequestHandler):
                 if action == '/api/ai/reset':
                     AI['history'].clear(); AI['proposals'].clear()
                     return self.send(200, '{}')
+                if action == '/api/ai/preview':
+                    import assistant
+                    pr = AI['proposals'].get(req.get('id', ''))
+                    if not pr:
+                        raise ValueError('Η πρόταση δεν υπάρχει πια· ζητήστε τη ξανά.')
+                    if pr['rev'] != STATE['revision']:
+                        raise ValueError('Το πρόγραμμα άλλαξε μετά την πρόταση· ζητήστε από τον βοηθό να την ξαναφτιάξει.')
+                    q = assistant.apply(p, pr['project'])
+                    return self.send(200, json.dumps({'project': q, 'summary': summary(q, False)}, ensure_ascii=False))
                 if action == '/api/ai/apply':
                     import assistant
                     pr = AI['proposals'].get(req.get('id', ''))
