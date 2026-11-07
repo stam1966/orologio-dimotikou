@@ -5,7 +5,7 @@ from pathlib import Path
 from collections import Counter, defaultdict
 import xml.etree.ElementTree as ET
 
-VERSION = '0.13.0-beta'
+VERSION = '0.14.0-beta'
 DAYS = ['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή']
 def uid(): return uuid.uuid4().hex[:16]
 def blank():
@@ -366,6 +366,40 @@ def solve(p,seconds=30,cancel=None):
     result['message']='Έγκυρη λύση'+(' (βέλτιστη για τους κανόνες)' if result['status']=='optimal' else '')+'. Κενά εκπαιδευτικών: '+str(gaps)+'. '+('Όλοι οι επιθυμητοί κανόνες τηρούνται.' if not soft else 'Επιθυμητοί κανόνες που δεν τηρήθηκαν πλήρως: '+str(len(soft))+' (δείτε «Έλεγχος»).')
     result['score']=R.score(q)
     return result
+
+
+def move_bump(project, event_id, place):
+    """Μετακίνηση σε θέση που είναι πιασμένη: όσα συγκρούονται (ίδιος εκπαιδευτικός/τμήμα/ομάδα/αίθουσα)
+    πηγαίνουν στις εκκρεμότητες (μαζί με τα ταυτόχρονα συνδεδεμένα τους). Κλειδωμένα δεν μετακινούνται."""
+    p=copy.deepcopy(project);ls=mapping(p,'lessons')
+    e=next(x for x in p['events'] if x['id']==event_id)
+    if e['locked']:raise ValueError('Η διδασκαλία είναι κλειδωμένη.')
+    l=ls[e['lesson']];d,i=place;cover=set(range(i,i+l['duration']))
+    # συνδεδεμένα «ταυτόχρονα» μαθήματα μετακινούνται μαζί: οι πόροι τους μετρούν κι αυτοί
+    mine={e['id']};res=set(R.resources(p,l));covers={e['id']:cover}
+    for k in p.get('links',[]):
+        if e['lesson'] in k['lessons'] and e['place']:
+            for x in p['events']:
+                if x['lesson'] in k['lessons'] and x['lesson']!=e['lesson'] and x['place']==e['place']:
+                    mine.add(x['id']);res|=set(R.resources(p,ls[x['lesson']]))
+    bumped=[]
+    for x in p['events']:
+        if x['id'] in mine or not x['place']:continue
+        lx=ls[x['lesson']]
+        if x['place'][0]!=d or not cover&set(range(x['place'][1],x['place'][1]+lx['duration'])):continue
+        if not res&set(R.resources(p,lx)):continue
+        if x['locked']:raise ValueError('Στη θέση αυτή υπάρχει κλειδωμένο μάθημα ('+R.lesson_label(p,lx)+'). Ξεκλειδώστε το πρώτα.')
+        bumped.append(x)
+    extra=[]
+    for x in bumped:  # και οι ταυτόχρονοι εταίροι τους
+        for k in p.get('links',[]):
+            if x['lesson'] in k['lessons']:
+                for y in p['events']:
+                    if y['lesson'] in k['lessons'] and y is not x and y['place']==x['place'] and y['id'] not in mine and y not in bumped and y not in extra:
+                        if y['locked']:raise ValueError('Στη θέση αυτή υπάρχει κλειδωμένο μάθημα ('+R.lesson_label(p,ls[y['lesson']])+').')
+                        extra.append(y)
+    for x in bumped+extra:x['place']=None
+    return move_event(p,event_id,place),[x['id'] for x in bumped+extra]
 
 
 def move_event(project, event_id, place, swap_id=None):

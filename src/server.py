@@ -378,6 +378,10 @@ class Handler(BaseHTTPRequestHandler):
                 elif action == '/api/save':
                     q = req['project']; core.check_structure(q); commit(q, req.get('label') or 'Αλλαγή')
                 elif action == '/api/move':
+                    if req.get('bump') and req['place'] is not None:
+                        q, out = core.move_bump(p, req['id'], req['place'])
+                        commit(q, 'Μετακίνηση' + (' (' + str(len(out)) + ' στις εκκρεμότητες)' if out else ''))
+                        return self.send(200, state_json())
                     q = core.move_event(p, req['id'], req['place'], req.get('swap'))
                     commit(q, 'Ανταλλαγή' if req.get('swap') else ('Αφαίρεση θέσης' if req['place'] is None else 'Μετακίνηση'))
                 elif action == '/api/demo':

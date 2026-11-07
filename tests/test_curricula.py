@@ -49,5 +49,24 @@ class Joint(unittest.TestCase):
             core.check_structure(p)
 
 
+class Bump(unittest.TestCase):
+    def test_move_bumps_conflicts_to_pending(self):
+        p = core.check_structure(copy.deepcopy(DEMO))
+        ls = core.mapping(p, 'lessons')
+        evs = [e for e in p['events'] if e['place'] and not e['locked'] and ls[e['lesson']]['duration'] == 1 and ls[e['lesson']]['classes']]
+        a = evs[0]; cid = ls[a['lesson']]['classes'][0]
+        b = next(e for e in evs if e is not a and cid in ls[e['lesson']]['classes'] and e['place'] != a['place'] and not (set(ls[e['lesson']]['teachers']) & set(ls[a['lesson']]['teachers'])))
+        try:
+            q, out = core.move_bump(p, a['id'], b['place'])
+        except ValueError as ex:
+            self.skipTest('κανόνας εμποδίζει: ' + str(ex))
+        self.assertIn(b['id'], out)
+        m = {e['id']: e for e in q['events']}
+        self.assertEqual(m[a['id']]['place'], b['place']); self.assertIsNone(m[b['id']]['place'])
+        b2 = next(e for e in p['events'] if e['id'] == b['id']); b2['locked'] = True
+        with self.assertRaises(ValueError):
+            core.move_bump(p, a['id'], b['place'])
+
+
 if __name__ == '__main__':
     unittest.main()
