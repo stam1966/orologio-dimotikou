@@ -5,7 +5,7 @@ from pathlib import Path
 from collections import Counter, defaultdict
 import xml.etree.ElementTree as ET
 
-VERSION = '0.12.2-beta'
+VERSION = '0.13.0-beta'
 DAYS = ['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή']
 def uid(): return uuid.uuid4().hex[:16]
 def blank():
@@ -116,6 +116,7 @@ def check_structure(p):
         if c.get('teacher') and c['teacher'] not in ids['teachers']:raise ValueError('Άγνωστος υπεύθυνος τμήματος.')
     for l in p['lessons']:
         if type(l.get('exempt_subject_limit',False))!=bool:raise ValueError('Μη έγκυρη εξαίρεση ανάθεσης.')
+        if type(l.get('joint',False))!=bool or type(l.get('joint_deduct',False))!=bool:raise ValueError('Μη έγκυρη συνδιδασκαλία τάξεων.')
     for key,entities in [('teacher_rules','teachers'),('class_rules','classes'),('subject_rules','subjects')]:
         for id,rule in p.get(key,{}).items():
             if id not in ids[entities]:raise ValueError('Κανόνας άγνωστης οντότητας.')

@@ -39,5 +39,15 @@ class Curricula(unittest.TestCase):
             core.check_structure(p)
 
 
+class Joint(unittest.TestCase):
+    def test_joint_flags_validated(self):
+        p = core.check_structure(copy.deepcopy(DEMO))
+        l = p['lessons'][0]; l['joint'] = True; l['joint_deduct'] = False
+        core.check_structure(p)
+        l['joint'] = 'ναι'
+        with self.assertRaises(ValueError):
+            core.check_structure(p)
+
+
 if __name__ == '__main__':
     unittest.main()
