@@ -41,6 +41,8 @@ class Substitutions(unittest.TestCase):
         self.assertTrue(all(n['period'] == 1 for n in ns))
         with self.assertRaises(ValueError): subs.weekday('2026-11-08')            # Κυριακή
         bad = copy.deepcopy(p); bad['substitutions'] = [dict(date='2026-11-10', absent=[dict(teacher='χ', periods=None)], covers=[])]
+        self.assertEqual(core.check_structure(bad)['substitutions'][0]['absent'], [])  # άγνωστος (διαγραμμένος) → αφαιρείται
+        bad['substitutions'] = [dict(date='2026-11-10', absent=[dict(teacher=self.t0, periods=[99])], covers=[])]
         with self.assertRaises(ValueError): core.check_structure(bad)
         bad['substitutions'] = [dict(date='x', absent=[], covers=[])]
         with self.assertRaises(ValueError): core.check_structure(bad)
@@ -55,6 +57,17 @@ class Substitutions(unittest.TestCase):
         p['events'].append(dict(id='dispe', lesson='disp', place=[0, n['period']], locked=False))
         c = subs.candidates(p, rec, n)
         self.assertEqual((c[0]['teacher'], c[0]['kind']), (other, 0))
+
+
+    def test_deleted_teacher_keeps_history(self):
+        p = self.p; t = p['teachers'][-1]['id']
+        ev = next(e for e in p['events'] if e['place'])
+        p['substitutions'] = [dict(date='2026-11-09', absent=[dict(teacher=t, periods=None, reason='')],
+                                   covers=[dict(event=ev['id'], period=ev['place'][1], teacher=t, kind='teacher', note='')])]
+        q = copy.deepcopy(p); q['teachers'] = [x for x in q['teachers'] if x['id'] != t]
+        q = core.check_structure(q)
+        r = q['substitutions'][0]
+        self.assertEqual(r['absent'], []); self.assertEqual(r['covers'][0]['kind'], 'other'); self.assertEqual(r['covers'][0]['teacher'], '')
 
 
 if __name__ == '__main__':

@@ -42,9 +42,9 @@ def validate(p, ids):
         if not isinstance(r, dict) or not DATE.match(str(r.get('date', ''))) or r['date'] in seen:
             raise ValueError('Μη έγκυρη ημερομηνία αναπληρώσεων.')
         seen.add(r['date'])
-        for a in r.get('absent', []):
-            if a.get('teacher') not in ids['teachers']:
-                raise ValueError('Άγνωστος εκπαιδευτικός στις απουσίες.')
+        # εκπαιδευτικός που διαγράφηκε: η απουσία του δεν χρειάζεται πια
+        r['absent'] = [a for a in r.get('absent', []) if isinstance(a, dict) and a.get('teacher') in ids['teachers']]
+        for a in r['absent']:
             if a.get('periods') is not None and (not isinstance(a['periods'], list) or any(type(i) != int or not 0 <= i < n for i in a['periods'])):
                 raise ValueError('Μη έγκυρες ώρες απουσίας.')
             if len(str(a.get('reason', ''))) > 120:
@@ -55,7 +55,8 @@ def validate(p, ids):
             if type(c.get('period')) != int or not 0 <= c['period'] < n:
                 raise ValueError('Μη έγκυρη ώρα αναπλήρωσης.')
             if c.get('teacher', '') not in ('',) and c['teacher'] not in ids['teachers']:
-                raise ValueError('Άγνωστος εκπαιδευτικός στις αναπληρώσεις.')
+                # η κάλυψη έγινε από εκπαιδευτικό που διαγράφηκε: κρατιέται ως «άλλη λύση»
+                c['teacher'] = ''; c['kind'] = 'other'; c['note'] = (str(c.get('note', '')) or 'εκπαιδευτικός που διαγράφηκε')[:200]
             if c.get('kind', 'teacher') not in COVER_KINDS or len(str(c.get('note', ''))) > 200:
                 raise ValueError('Μη έγκυρη αναπλήρωση.')
 

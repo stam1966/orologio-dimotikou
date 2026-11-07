@@ -357,8 +357,10 @@ def apply(p, raw, mode='merge'):
         cc['teacher'] = tt['id']
 
     # αναθέσεις
-    def lkey(l):
-        return (l['subject'], tuple(sorted(l['classes'])), tuple(sorted(l['teachers'])), tuple(sorted(l.get('groups', []))))
+    whole_g = {g['id'] for g in q['groups'] if g.get('entireclass') == '1'}
+
+    def lkey(l):  # η ομάδα «Όλο το τμήμα» ισοδυναμεί με καμία ομάδα
+        return (l['subject'], tuple(sorted(l['classes'])), tuple(sorted(l['teachers'])), tuple(sorted(g for g in l.get('groups', []) if g not in whole_g)))
     newgroups = []
 
     def group_of(cid, gname):

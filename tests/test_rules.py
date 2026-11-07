@@ -335,6 +335,15 @@ class ExcelImport(unittest.TestCase):
         self.assertEqual(len(p['lessons']), 2)                              # το αρχικό δεν αλλάζει
         self.assertEqual(len(q['lessons']) + 0, 4); self.assertEqual(len(p['teachers']), 2)
 
+    def test_roundtrip_demo_with_whole_class_groups(self):
+        import xlimport, json as _j
+        from pathlib import Path as _P
+        p = core.check_structure(_j.loads((_P(__file__).resolve().parents[1] / 'src' / 'demo_school.json').read_text(encoding='utf-8')))
+        raw = xlimport.template(p)
+        for mode in ('merge', 'replace'):
+            q, rep = xlimport.apply(p, raw, mode)
+            self.assertFalse(rep['changed'], (mode, {k: rep[k] for k in ('added', 'updated', 'removed')}))
+
     def test_roundtrip_and_replace(self):
         import xlimport
         p = base(4, 2); p['events'][0]['place'] = [0, 0]
