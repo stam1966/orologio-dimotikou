@@ -59,10 +59,10 @@ class Rules(unittest.TestCase):
         span = sum(max(u) - min(u) + 1 for u in days_hours(q, 'ta') if u)
         self.assertEqual(span, 8)
 
-    def test_day_pattern_hard(self):
-        p = base(13); p['teacher_rules']['ta'] = {'day_pattern': {'v': [[5, 1], [2, 4]], 'w': 0}}
-        q = solved(self, p)
-        self.assertEqual(sorted(len(u) for u in days_hours(q, 'ta')), [2, 2, 2, 2, 5])
+    def test_old_day_pattern_removed_on_load(self):
+        p = base(13); p['teacher_rules']['ta'] = {'day_pattern': {'v': [[5, 1], [2, 4]], 'w': 0}, 'max_daily': {'v': 6, 'w': 0}}
+        q = core.check_structure(p)
+        self.assertNotIn('day_pattern', q['teacher_rules']['ta']); self.assertIn('max_daily', q['teacher_rules']['ta'])
 
     def test_balance(self):
         p = base(9); p['teacher_rules']['ta'] = {'allowed': [[d, i] for d in (0, 2, 4) for i in range(P)], 'balance': {'v': True, 'w': 5}}
@@ -151,7 +151,7 @@ class Rules(unittest.TestCase):
         with self.assertRaises(ValueError): core.check_structure(p)
         p['teacher_rules']['ta'] = {'unknown': 3}
         with self.assertRaises(ValueError): core.check_structure(p)
-        p['teacher_rules']['ta'] = {'day_pattern': {'v': [[5, 4], [4, 4]], 'w': 0}}
+        p['teacher_rules']['ta'] = {'end_pattern': {'v': [[2, 4], [3, 4]], 'w': 0}}
         with self.assertRaises(ValueError): core.check_structure(p)
 
     def test_random_soft_mix_objective_matches(self):
@@ -160,7 +160,7 @@ class Rules(unittest.TestCase):
             p = base(rnd.randint(5, 9), rnd.randint(4, 8)); add_lesson(p, 'lx', 's1', ['tb'], ['c1'], rnd.randint(2, 4))
             p['teacher_rules']['ta'] = {'presence': {'v': rnd.randint(8, 14), 'w': rnd.randint(1, 5)}, 'max_consecutive': {'v': 2, 'w': rnd.randint(1, 5)},
                                         'avoid': [[d, 0] for d in range(5)], 'avoid_w': rnd.randint(1, 5)}
-            p['teacher_rules']['tb'] = {'day_pattern': {'v': [[3, 2]], 'w': rnd.randint(1, 5)}, 'balance': {'v': True, 'w': rnd.randint(1, 5)}, 'min_daily': {'v': 2, 'w': rnd.randint(1, 5)}}
+            p['teacher_rules']['tb'] = {'end_pattern': {'v': [[3, 2]], 'w': rnd.randint(1, 5)}, 'balance': {'v': True, 'w': rnd.randint(1, 5)}, 'min_daily': {'v': 2, 'w': rnd.randint(1, 5)}}
             p['subject_rules']['s1'] = {'max_per_day': {'v': 1, 'w': rnd.randint(1, 5)}}
             p['class_rules']['c1'] = {'allowed': [[d, i] for d in range(5) for i in range(1, 6)], 'compact': {'v': True, 'w': rnd.randint(1, 5)}}
             solved(self, p, 60)
@@ -191,8 +191,8 @@ class Rules(unittest.TestCase):
         p['teacher_rules']['ta'] = {'end_pattern': {'v': [[2, 1], [3, 1]], 'w': 0}}
         q = solved(self, p, 60)
         ends = [max(x) for x in days_hours(q, 'ta') if x]
-        self.assertGreaterEqual(sum(1 for e in ends if e <= 2), 1)
-        self.assertGreaterEqual(sum(1 for e in ends if e <= 3), 2)
+        self.assertGreaterEqual(sum(1 for e in ends if e == 2), 1)
+        self.assertGreaterEqual(sum(1 for e in ends if e == 3), 1)
         rnd = random.Random(5)
         for trial in range(3):
             p = base(rnd.randint(6, 8), rnd.randint(6, 9))

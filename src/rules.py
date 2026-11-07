@@ -22,8 +22,7 @@ CATALOG = {
         ('max_gaps_day', 'Μέγιστα κενά ανά ημέρα', 'int', 0),
         ('max_gaps_week', 'Μέγιστα κενά την εβδομάδα', 'int', 0),
         ('presence', 'Ώρες παρουσίας την εβδομάδα (μαθήματα + κενά)', 'int', 3),
-        ('end_pattern', 'Ημέρες που τελειώνει νωρίς (έως τη λήξη της ώρας)', 'endpattern', 5),
-        ('day_pattern', 'Ημέρες με τόσες ώρες μαθημάτων (πλήθος ωρών)', 'pattern', 5),
+        ('end_pattern', 'Ημέρες που τελειώνει με τη λήξη συγκεκριμένης ώρας', 'endpattern', 5),
         ('max_consecutive', 'Όχι περισσότερες συνεχόμενες ώρες από', 'int', 3),
         ('balance', 'Ισοκατανομή ωρών στις ημέρες διάθεσης', 'flag', 3),
         ('earliest', 'Έναρξη όχι νωρίτερα από', 'period', 0),
@@ -46,7 +45,8 @@ RULE_KEYS = {'teachers': 'teacher_rules', 'classes': 'class_rules', 'subjects': 
 LABEL = {k: {key: label for key, label, *_ in v} for k, v in CATALOG.items()}
 TYPES = {k: {key: typ for key, _, typ, _ in v} for k, v in CATALOG.items()}
 SECONDARY_ONLY = {'max_last'}   # εμφανίζεται μόνο σε Γυμνάσιο/Λύκειο
-LEGACY_HIDDEN = {'day_pattern'}  # παλιός κανόνας: φαίνεται μόνο όπου είναι ήδη ορισμένος
+LEGACY_HIDDEN = set()
+REMOVED = {'teachers': {'day_pattern'}}  # παλιοί κανόνες που αφαιρούνται σιωπηλά κατά το άνοιγμα
 LEGACY_INT = {'max_daily', 'min_daily', 'max_gaps_day', 'max_gaps_week'}
 
 
@@ -94,9 +94,9 @@ def check_rule_value(kind, key, raw, nperiods):
             raise ValueError('Μη έγκυρη τιμή κανόνα: ' + LABEL[kind][key])
     elif typ == 'endpattern':
         if not isinstance(v, list) or not v or any(not isinstance(x, list) or len(x) != 2 or any(type(n) != int or n < 0 for n in x) for x in v):
-            raise ValueError('Μη έγκυρος κανόνας «ημέρες που τελειώνει νωρίς».')
+            raise ValueError('Μη έγκυρος κανόνας «ημέρες με λήξη ώρας».')
         if any(x[0] >= nperiods or x[1] < 1 for x in v) or sum(x[1] for x in v) > 5 or len({x[0] for x in v}) != len(v):
-            raise ValueError('Ημέρες που τελειώνει νωρίς: έως 5 ημέρες συνολικά, διαφορετική ώρα σε κάθε γραμμή.')
+            raise ValueError('Ημέρες με λήξη ώρας: έως 5 ημέρες συνολικά, διαφορετική ώρα σε κάθε γραμμή.')
     elif typ == 'pattern':
         if not isinstance(v, list) or any(not isinstance(x, list) or len(x) != 2 or any(type(n) != int or n < 0 for n in x) for x in v):
             raise ValueError('Μη έγκυρο μοτίβο ημερών.')
@@ -105,16 +105,13 @@ def check_rule_value(kind, key, raw, nperiods):
 
 
 def end_pattern_rows(v):
-    """[(ώρα, σωρευτικές ημέρες)] με αύξουσα ώρα: «1 ημ. έως 4η και 1 έως 5η» → 1 ημέρα έως 4η, 2 ημέρες έως 5η."""
-    out = []; c = 0
-    for P, x in sorted(v):
-        c += x; out.append((P, c))
-    return out
+    """[(ώρα, ημέρες)]: «1 ημ. με λήξη 4η, 1 με λήξη 5η» → τουλάχιστον 1 ημέρα με τελευταία ώρα ακριβώς την 4η και 1 ακριβώς την 5η."""
+    return [(P, x) for P, x in sorted(v)]
 
 
 def end_pattern_text(p, v):
     per = p['periods']
-    return ', '.join(str(x) + ' ημ. έως ' + str(per[P]['name']) + 'η (' + per[P]['end'] + ')' for P, x in sorted(v) if P < len(per))
+    return ', '.join(str(x) + ' ημ. με λήξη ' + str(per[P]['name']) + 'ης (' + per[P]['end'] + ')' for P, x in sorted(v) if P < len(per))
 
 
 # ---------------------------------------------------------------- βοηθητικά
@@ -424,12 +421,9 @@ def evaluate(p, complete=False):
                     tn + ': παρουσία ' + str(sum(hs) + sum(gs)) + ' ώρες αντί για ' + str(R['presence']['v']))
             if R['end_pattern']:
                 days = [max(tocc[tid, d]) for d in range(5) if tocc[tid, d]]
-                amount = sum(max(0, c - sum(1 for e in days if e <= P)) for P, c in end_pattern_rows(R['end_pattern']['v']))
+                amount = sum(max(0, c - sum(1 for e in days if e == P)) for P, c in end_pattern_rows(R['end_pattern']['v']))
                 add(key('end_pattern'), R['end_pattern'], amount, tn + ': δεν τηρείται «' + end_pattern_text(p, R['end_pattern']['v']) + '» (λήξη ημερών: ' +
                     ', '.join(p['days'][d][:3] + ' ' + str(p['periods'][max(tocc[tid, d])]['name']) + 'η' for d in range(5) if tocc[tid, d]) + ')')
-            if R['day_pattern']:
-                amount = sum(abs(sum(1 for h in hs if h == nh) - x) for nh, x in R['day_pattern']['v'])
-                add(key('day_pattern'), R['day_pattern'], amount, tn + ': το μοτίβο ' + ', '.join(str(x) + '×' + str(nh) + 'ωρο' for nh, x in R['day_pattern']['v']) + ' δεν τηρείται (ημέρες: ' + '-'.join(map(str, hs)) + ')')
             if R['balance']:
                 D = available_days(p, tid) or list(range(5)); H = hours_total[tid]
                 lo, hi = H // len(D), -(-H // len(D))
@@ -762,31 +756,17 @@ def build(p, cp_model, diag=False):
                     continue
                 bs = []
                 for d in range(5):
-                    act = hs[d][1]; later = occs[d][P + 1:]
-                    b = model.NewBoolVar('endby')
-                    model.Add(b <= act)
+                    last = occs[d][P]; later = occs[d][P + 1:]  # τελευταία ώρα της ημέρας ακριβώς η P
+                    b = model.NewBoolVar('endat')
+                    model.Add(b <= last)
                     for o in later:
                         model.Add(b + o <= 1)
-                    model.Add(b >= act - sum(later))
+                    model.Add(b >= last - sum(later))
                     bs.append(b)
                 if R['end_pattern']['w'] == 0:
                     hard(key('end_pattern'), model.Add(sum(bs) >= c))
                 else:
                     soft(WEIGHTS[R['end_pattern']['w']], c - sum(bs), 5)
-        if R['day_pattern']:
-            for nh, x in R['day_pattern']['v']:
-                bs = []
-                for h, _ in hs:
-                    b = model.NewBoolVar('pat'); lt = model.NewBoolVar('lt')
-                    model.Add(h == nh).OnlyEnforceIf(b)
-                    model.Add(h <= nh - 1).OnlyEnforceIf([b.Not(), lt])
-                    model.Add(h >= nh + 1).OnlyEnforceIf([b.Not(), lt.Not()])
-                    bs.append(b)
-                if R['day_pattern']['w'] == 0:
-                    hard(key('day_pattern'), model.Add(sum(bs) == x))
-                else:
-                    w = WEIGHTS[R['day_pattern']['w']]
-                    soft(w, sum(bs) - x, 5); soft(w, x - sum(bs), 5)
         if R['balance']:
             D = available_days(p, tid) or list(range(5)); H = hours_total[tid]
             lo, hi = H // len(D), -(-H // len(D))
