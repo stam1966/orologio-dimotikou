@@ -363,7 +363,7 @@ SYSTEM = """Είσαι ο βοηθός της εφαρμογής «Ωρολόγ�
 
 def tools_spec(p):
     pnames = [str(x['name']) for x in p['periods']]
-    keys = {k: [x[0] for x in v if x[2] != 'pattern'] for k, v in R.CATALOG.items()}
+    keys = {k: [x[0] for x in v if x[2] not in ('pattern', 'endpattern')] for k, v in R.CATALOG.items()}
     T = [
         ('teacher_schedule', 'Το εβδομαδιαίο πρόγραμμα ενός εκπαιδευτικού στο πρόχειρο.', {'teacher': {'type': 'string', 'description': 'κωδικός, π.χ. Τ3'}}, ['teacher']),
         ('class_schedule', 'Το εβδομαδιαίο πρόγραμμα ενός τμήματος στο πρόχειρο.', {'class_name': {'type': 'string'}}, ['class_name']),
@@ -461,7 +461,7 @@ class Session:
     def t_set_rule(self, target_type, target, rule, value=None, weight=None):
         kind = self._kind(target_type); eid = self._find(kind, target)
         typ = R.TYPES[kind].get(rule)
-        if not typ or typ == 'pattern':
+        if not typ or typ in ('pattern', 'endpattern'):
             raise ValueError('Ο κανόνας «' + str(rule) + '» δεν υπάρχει για ' + target_type)
         q = copy.deepcopy(self.draft); rr = q.setdefault(R.RULE_KEYS[kind], {}).setdefault(eid, {})
         if value is None or value == '':

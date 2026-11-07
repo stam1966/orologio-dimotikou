@@ -1,3 +1,4 @@
+import copy
 """Έλεγχοι των κανόνων 0.2: τήρηση από τον solver, ίδια μέτρηση με τον ανεξάρτητο έλεγχο, διάγνωση."""
 import unittest, sys, copy, random
 from pathlib import Path
@@ -183,6 +184,42 @@ class Rules(unittest.TestCase):
         self.assertLessEqual(sum(1 for x in da if x), 2)
         self.assertTrue(all(min(x) == 1 for x in da if x))
         self.assertTrue(all(P - 1 not in x and 0 not in x for x in db))
+
+
+    def test_end_pattern_hard_soft_and_validation(self):
+        p = base(7, 8)
+        p['teacher_rules']['ta'] = {'end_pattern': {'v': [[2, 1], [3, 1]], 'w': 0}}
+        q = solved(self, p, 60)
+        ends = [max(x) for x in days_hours(q, 'ta') if x]
+        self.assertGreaterEqual(sum(1 for e in ends if e <= 2), 1)
+        self.assertGreaterEqual(sum(1 for e in ends if e <= 3), 2)
+        rnd = random.Random(5)
+        for trial in range(3):
+            p = base(rnd.randint(6, 8), rnd.randint(6, 9))
+            p['teacher_rules']['ta'] = {'end_pattern': {'v': [[2, 2], [4, 1]], 'w': rnd.randint(1, 5)}, 'start_at': {'v': 0, 'w': rnd.randint(1, 5)}}
+            solved(self, p, 60)
+        for bad in ([[2, 3], [2, 1]], [[99, 1]], [[2, 4], [3, 2]], []):
+            p = base(6, 6); p['teacher_rules']['ta'] = {'end_pattern': {'v': bad, 'w': 0}}
+            with self.assertRaises(ValueError): core.check_structure(p)
+
+    def test_every_day_hard_soft_respects_availability(self):
+        p = base(7, 5)
+        p['teacher_rules']['ta'] = {'every_day': {'v': True, 'w': 0}, 'max_days': {'v': 5, 'w': 0}}
+        q = solved(self, p, 60)
+        self.assertTrue(all(days_hours(q, 'ta')))
+        # μη διαθέσιμος την Τετάρτη: εκείνη η ημέρα δεν μετρά
+        p = base(6, 5)
+        p['teacher_rules']['ta'] = {'every_day': {'v': True, 'w': 0}, 'allowed': [[d, i] for d in (0, 1, 3, 4) for i in range(P)]}
+        q = solved(self, p, 60); dh = days_hours(q, 'ta')
+        self.assertFalse(dh[2]); self.assertTrue(all(dh[d] for d in (0, 1, 3, 4)))
+        # επιθυμητός: ο έλεγχος μετρά τις κενές ημέρες ίδια με τον solver
+        p = base(7, 5); p['teacher_rules']['ta'] = {'every_day': {'v': True, 'w': 4}, 'start_at': {'v': 0, 'w': 2}}
+        solved(self, p, 60)
+        q = copy.deepcopy(p)
+        for k, e in enumerate(e for e in q['events'] if e['lesson'] == 'la'):
+            e['place'] = [0 if k < 4 else 1, k % 4]
+        f = [x for x in core.findings(q, True) if x['key'][-1] == 'every_day']
+        self.assertEqual(len(f), 1); self.assertIn('Τετάρτη', f[0]['text'])
 
 
 if __name__ == '__main__': unittest.main(verbosity=2)

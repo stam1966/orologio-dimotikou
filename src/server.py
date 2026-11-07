@@ -92,7 +92,7 @@ def state_json():
         summ = summary(p)
     except Exception as ex:  # ένα λάθος στον έλεγχο δεν πρέπει να «κλειδώνει» τη διεπαφή
         summ = {'errors': ['Σφάλμα ελέγχου: ' + str(ex)], 'warnings': [], 'gaps': 0, 'unplaced': 0, 'score': None}
-    return json.dumps({**STATE, 'settings': backup.load_settings(ROOT), 'catalog': rules.CATALOG, 'secondary_only': sorted(rules.SECONDARY_ONLY), 'strength': rules.STRENGTH, 'summary': summ,
+    return json.dumps({**STATE, 'settings': backup.load_settings(ROOT), 'catalog': rules.CATALOG, 'secondary_only': sorted(rules.SECONDARY_ONLY), 'legacy_hidden': sorted(rules.LEGACY_HIDDEN), 'strength': rules.STRENGTH, 'summary': summ,
                        'history': {'undo': UNDO[-1][0] if UNDO else '', 'redo': REDO[-1][0] if REDO else ''}}, ensure_ascii=False)
 
 

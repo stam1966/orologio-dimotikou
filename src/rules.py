@@ -22,12 +22,14 @@ CATALOG = {
         ('max_gaps_day', 'Μέγιστα κενά ανά ημέρα', 'int', 0),
         ('max_gaps_week', 'Μέγιστα κενά την εβδομάδα', 'int', 0),
         ('presence', 'Ώρες παρουσίας την εβδομάδα (μαθήματα + κενά)', 'int', 3),
-        ('day_pattern', 'Ημέρες με 5 ώρες / ημέρες με 4 ώρες', 'pattern', 5),
+        ('end_pattern', 'Ημέρες που τελειώνει νωρίς (έως τη λήξη της ώρας)', 'endpattern', 5),
+        ('day_pattern', 'Ημέρες με τόσες ώρες μαθημάτων (πλήθος ωρών)', 'pattern', 5),
         ('max_consecutive', 'Όχι περισσότερες συνεχόμενες ώρες από', 'int', 3),
         ('balance', 'Ισοκατανομή ωρών στις ημέρες διάθεσης', 'flag', 3),
         ('earliest', 'Έναρξη όχι νωρίτερα από', 'period', 0),
         ('start_at', 'Να ξεκινά ακριβώς στην ώρα (κάθε ημέρα που έρχεται)', 'period', 3),
         ('max_days', 'Το πολύ τόσες ημέρες παρουσίας την εβδομάδα', 'int', 0),
+        ('every_day', 'Μάθημα κάθε ημέρα που είναι διαθέσιμος (καμία ημέρα κενή)', 'flag', 0),
         ('maybe_day', 'Το πολύ τόσες ώρες «υπό όρους» (?) ανά ημέρα', 'int', 3),
         ('maybe_week', 'Το πολύ τόσες ώρες «υπό όρους» (?) την εβδομάδα', 'int', 3),
         ('max_last', 'Το πολύ τόσες φορές την εβδομάδα την τελευταία ώρα (π.χ. 7η)', 'int', 3),
@@ -44,6 +46,7 @@ RULE_KEYS = {'teachers': 'teacher_rules', 'classes': 'class_rules', 'subjects': 
 LABEL = {k: {key: label for key, label, *_ in v} for k, v in CATALOG.items()}
 TYPES = {k: {key: typ for key, _, typ, _ in v} for k, v in CATALOG.items()}
 SECONDARY_ONLY = {'max_last'}   # εμφανίζεται μόνο σε Γυμνάσιο/Λύκειο
+LEGACY_HIDDEN = {'day_pattern'}  # παλιός κανόνας: φαίνεται μόνο όπου είναι ήδη ορισμένος
 LEGACY_INT = {'max_daily', 'min_daily', 'max_gaps_day', 'max_gaps_week'}
 
 
@@ -89,11 +92,29 @@ def check_rule_value(kind, key, raw, nperiods):
     elif typ == 'flag':
         if type(v) != bool:
             raise ValueError('Μη έγκυρη τιμή κανόνα: ' + LABEL[kind][key])
+    elif typ == 'endpattern':
+        if not isinstance(v, list) or not v or any(not isinstance(x, list) or len(x) != 2 or any(type(n) != int or n < 0 for n in x) for x in v):
+            raise ValueError('Μη έγκυρος κανόνας «ημέρες που τελειώνει νωρίς».')
+        if any(x[0] >= nperiods or x[1] < 1 for x in v) or sum(x[1] for x in v) > 5 or len({x[0] for x in v}) != len(v):
+            raise ValueError('Ημέρες που τελειώνει νωρίς: έως 5 ημέρες συνολικά, διαφορετική ώρα σε κάθε γραμμή.')
     elif typ == 'pattern':
         if not isinstance(v, list) or any(not isinstance(x, list) or len(x) != 2 or any(type(n) != int or n < 0 for n in x) for x in v):
             raise ValueError('Μη έγκυρο μοτίβο ημερών.')
         if sum(x[1] for x in v) > 5 or len({x[0] for x in v}) != len(v):
             raise ValueError('Το μοτίβο ημερών υπερβαίνει τις 5 ημέρες ή επαναλαμβάνει πλήθος ωρών.')
+
+
+def end_pattern_rows(v):
+    """[(ώρα, σωρευτικές ημέρες)] με αύξουσα ώρα: «1 ημ. έως 4η και 1 έως 5η» → 1 ημέρα έως 4η, 2 ημέρες έως 5η."""
+    out = []; c = 0
+    for P, x in sorted(v):
+        c += x; out.append((P, c))
+    return out
+
+
+def end_pattern_text(p, v):
+    per = p['periods']
+    return ', '.join(str(x) + ' ημ. έως ' + str(per[P]['name']) + 'η (' + per[P]['end'] + ')' for P, x in sorted(v) if P < len(per))
 
 
 # ---------------------------------------------------------------- βοηθητικά
@@ -284,6 +305,8 @@ def describe(p, key):
                 val = ' ' + p['periods'][r['v']]['start' if rk in ('earliest', 'start_at') else 'end'] if r['v'] < len(p['periods']) else ''
             elif typ == 'pattern':
                 val = ' ' + ', '.join(str(x) + ' ημ. με ' + str(n) + ' ώρες' for n, x in r['v'])
+            elif typ == 'endpattern':
+                val = ' ' + end_pattern_text(p, r['v'])
             elif typ == 'int':
                 val = ' ' + str(r['v'])
         return name_of(p, kind, eid) + ': ' + LABEL[kind][rk] + val
@@ -399,6 +422,11 @@ def evaluate(p, complete=False):
                 target = R['presence']['v'] - hours_total[tid]
                 add(key('presence'), R['presence'], abs(sum(gs) - target),
                     tn + ': παρουσία ' + str(sum(hs) + sum(gs)) + ' ώρες αντί για ' + str(R['presence']['v']))
+            if R['end_pattern']:
+                days = [max(tocc[tid, d]) for d in range(5) if tocc[tid, d]]
+                amount = sum(max(0, c - sum(1 for e in days if e <= P)) for P, c in end_pattern_rows(R['end_pattern']['v']))
+                add(key('end_pattern'), R['end_pattern'], amount, tn + ': δεν τηρείται «' + end_pattern_text(p, R['end_pattern']['v']) + '» (λήξη ημερών: ' +
+                    ', '.join(p['days'][d][:3] + ' ' + str(p['periods'][max(tocc[tid, d])]['name']) + 'η' for d in range(5) if tocc[tid, d]) + ')')
             if R['day_pattern']:
                 amount = sum(abs(sum(1 for h in hs if h == nh) - x) for nh, x in R['day_pattern']['v'])
                 add(key('day_pattern'), R['day_pattern'], amount, tn + ': το μοτίβο ' + ', '.join(str(x) + '×' + str(nh) + 'ωρο' for nh, x in R['day_pattern']['v']) + ' δεν τηρείται (ημέρες: ' + '-'.join(map(str, hs)) + ')')
@@ -411,6 +439,9 @@ def evaluate(p, complete=False):
             starts = Counter(min(tocc[tid, d]) for d in range(5) if tocc[tid, d])
             for i, count in rr.get('start_counts', {}).items():
                 add(('start_counts', tid), None, abs(starts[int(i)] - count), tn + ': μη τήρηση αριθμού ημερών έναρξης')
+        if R['every_day'] and hours_total[tid]:
+            empty = [d for d in (available_days(p, tid) or range(5)) if not hs[d]]
+            add(key('every_day'), R['every_day'], len(empty), tn + ': χωρίς μάθημα ' + ', '.join(p['days'][d] for d in empty) + ' (πρέπει να έρχεται κάθε διαθέσιμη ημέρα)')
         if R['max_days']:
             add(key('max_days'), R['max_days'], max(0, sum(1 for h in hs if h) - R['max_days']['v']),
                 tn + ': έρχεται ' + str(sum(1 for h in hs if h)) + ' ημέρες (το πολύ ' + str(R['max_days']['v']) + ')')
@@ -701,6 +732,13 @@ def build(p, cp_model, diag=False):
             apply(key('max_gaps_week'), R['max_gaps_week'], sum(weekgaps), R['max_gaps_week']['v'], 5 * n)
         if R['max_days']:
             apply(key('max_days'), R['max_days'], sum(a for _, a in hs), R['max_days']['v'], 5)
+        if R['every_day'] and hours_total[tid]:
+            D = available_days(p, tid) or list(range(5))
+            if R['every_day']['w'] == 0:
+                for d in D:
+                    hard(key('every_day'), model.Add(hs[d][1] == 1))
+            else:
+                soft(WEIGHTS[R['every_day']['w']], len(D) - sum(hs[d][1] for d in D), len(D))
         if R['maybe_week'] and maybes:
             apply(key('maybe_week'), R['maybe_week'], sum(maybes), R['maybe_week']['v'], 5 * n)
         if R['max_last']:
@@ -718,6 +756,23 @@ def build(p, cp_model, diag=False):
         elif gw:
             for g in weekgaps:
                 terms.append((gw, g))
+        if R['end_pattern']:
+            for P, c in end_pattern_rows(R['end_pattern']['v']):
+                if P >= n:
+                    continue
+                bs = []
+                for d in range(5):
+                    act = hs[d][1]; later = occs[d][P + 1:]
+                    b = model.NewBoolVar('endby')
+                    model.Add(b <= act)
+                    for o in later:
+                        model.Add(b + o <= 1)
+                    model.Add(b >= act - sum(later))
+                    bs.append(b)
+                if R['end_pattern']['w'] == 0:
+                    hard(key('end_pattern'), model.Add(sum(bs) >= c))
+                else:
+                    soft(WEIGHTS[R['end_pattern']['w']], c - sum(bs), 5)
         if R['day_pattern']:
             for nh, x in R['day_pattern']['v']:
                 bs = []
