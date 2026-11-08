@@ -5,7 +5,7 @@ from pathlib import Path
 from collections import Counter, defaultdict
 import xml.etree.ElementTree as ET
 
-VERSION = '0.23.0-beta'
+VERSION = '0.24.0-beta'
 DAYS = ['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή']
 def uid(): return uuid.uuid4().hex[:16]
 def blank():
@@ -150,7 +150,8 @@ def check_structure(p):
         th=fw.get('teacher_hours') or {}
         for key in ('bands','director'):
             for row in th.get(key,[]):
-                if not (isinstance(row,list) and len(row)==3 and all(type(x)==int and 0<=x<=99 for x in row) and row[0]<=row[1]):raise ValueError('Μη έγκυρη γραμμή ωραρίου εκπαιδευτικών.')
+                if not (isinstance(row,list) and len(row) in ((3,4) if key=='director' else (3,)) and all(type(x)==int and 0<=x<=99 for x in row) and row[0]<=row[1]):raise ValueError('Μη έγκυρη γραμμή ωραρίου εκπαιδευτικών.')
+        if 'director_years' in th and (type(th['director_years'])!=int or not 0<=th['director_years']<=60):raise ValueError('Μη έγκυρα έτη υπηρεσίας διευθυντή.')
         for key in ('small_school_max','small_school_hours','deputy_reduction'):
             if key in th and (type(th[key])!=int or not 0<=th[key]<=40):raise ValueError('Μη έγκυρη τιμή ωραρίου εκπαιδευτικών.')
     cur=p.get('curriculum',{})
@@ -262,10 +263,11 @@ TEACHER_HOURS_DEFAULT={
     'director':[[4,5,18],[6,9,10],[10,11,8],[12,99,6]],       # [από θέσεις, έως θέσεις, ώρες]
     'deputy_reduction':2}
 TEACHER_HOURS_SECONDARY={
-    'source':'ν. 1566/1985, άρθρο 13 (δευτεροβάθμια, όπως ισχύει) — ελέγξτε το ισχύον ΦΕΚ· συμπληρώστε διευθυντές/υποδιευθυντές',
+    'source':'ν. 1566/1985, άρθρο 13 (δευτεροβάθμια, όπως ισχύει) — ελέγξτε το ισχύον ΦΕΚ· υποδιευθυντές: συμπληρώστε τη μείωση',
     'bands':[[0,6,23],[6,12,21],[12,20,20],[20,99,18]],
     'small_school_max':0,'small_school_hours':0,
-    'director':[],'deputy_reduction':0}
+    # διευθυντές Γυμνασίων/Λυκείων: [από τμήματα, έως τμήματα, ώρες, ώρες με υπηρεσία πάνω από director_years έτη]
+    'director':[[3,5,10,8],[6,9,9,7],[10,12,7,5],[13,99,5,3]],'director_years':20,'deputy_reduction':0}
 LEVELS=('Δημοτικό','Γυμνάσιο','Λύκειο')
 LEVEL_GRADES={'Δημοτικό':['Α','Β','Γ','Δ','Ε','ΣΤ'],'Γυμνάσιο':['Α','Β','Γ'],'Λύκειο':['Α','Β','Γ']}
 ROLES={'':'Εκπαιδευτικός','director':'Διευθυντής/ντρια','deputy':'Υποδιευθυντής/ντρια'}
@@ -282,18 +284,26 @@ def hours_defaults(lv):
 
 def framework(p):
     f=dict(p.get('framework') or {})
-    th={**hours_defaults(level(p)),**(f.get('teacher_hours') or {})}
+    d=hours_defaults(level(p));th={**d,**(f.get('teacher_hours') or {})}
+    if not th.get('director') and d['director']:th['director']=[r[:] for r in d['director']]   # παλιά έργα χωρίς τιμές διευθυντών
+    th.setdefault('director_years',20)
     return {'level':level(p),'curriculum_source':f.get('curriculum_source',''),'teacher_hours':th,'optional':f.get('optional') or {}}
 
 def required_hours(p,t):
     """Υποχρεωτικό διδακτικό ωράριο εκπαιδευτικού ή None αν δεν αρκούν τα στοιχεία."""
     if t.get('hours_override') is not None:return t['hours_override']
     th=framework(p)['teacher_hours'];pos=p.get('positions')
+    if not pos and level(p)!='Δημοτικό':pos=len(p.get('classes') or []) or None   # δευτεροβάθμια: αριθμός τμημάτων
     role=t.get('role','')
     if role=='director':
         if not pos:return None
-        for a,b,h in th['director']:
-            if a<=pos<=b:return h
+        for r in th['director']:
+            if r[0]<=pos<=r[1]:
+                if len(r)>3 and r[3]!=r[2]:
+                    y=t.get('years')
+                    if y is None:return None
+                    return r[3] if y>th.get('director_years',20) else r[2]
+                return r[2]
         return None
     if pos and pos<=th['small_school_max']:h=th['small_school_hours']
     else:

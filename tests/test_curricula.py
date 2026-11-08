@@ -68,5 +68,28 @@ class Bump(unittest.TestCase):
             core.move_bump(p, a['id'], b['place'])
 
 
+class DirectorSecondary(unittest.TestCase):
+    def proj(self, n_classes, positions=None, stored=None):
+        p = core.blank()
+        p['framework'] = {'level': 'Γυμνάσιο'}
+        if stored is not None: p['framework']['teacher_hours'] = stored
+        p['classes'] = [{'id': 'c%d' % i, 'name': 'Τ%d' % i} for i in range(n_classes)]
+        if positions: p['positions'] = positions
+        return p
+    def test_table(self):
+        for n, young, old in [(3, 10, 8), (5, 10, 8), (6, 9, 7), (9, 9, 7), (10, 7, 5), (12, 7, 5), (13, 5, 3), (20, 5, 3)]:
+            p = self.proj(n)
+            self.assertEqual(core.required_hours(p, {'role': 'director', 'years': 12}), young, n)
+            self.assertEqual(core.required_hours(p, {'role': 'director', 'years': 25}), old, n)
+            self.assertEqual(core.required_hours(p, {'role': 'director', 'years': 20}), young)   # «πάνω από 20»
+            self.assertIsNone(core.required_hours(p, {'role': 'director'}))
+    def test_positions_override_and_old_projects(self):
+        p = self.proj(4, positions=11, stored={'director': [], 'bands': [[0, 99, 18]]})
+        self.assertEqual(core.required_hours(p, {'role': 'director', 'years': 30}), 5)
+        self.assertEqual(core.required_hours(p, {'years': 3}), 18)
+    def test_primary_unchanged(self):
+        p = self.proj(12); p['framework']['level'] = 'Δημοτικό'; p['positions'] = 12
+        self.assertEqual(core.required_hours(p, {'role': 'director', 'years': 30}), 6)
+
 if __name__ == '__main__':
     unittest.main()
