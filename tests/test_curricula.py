@@ -90,6 +90,22 @@ class DirectorSecondary(unittest.TestCase):
     def test_primary_unchanged(self):
         p = self.proj(12); p['framework']['level'] = 'Δημοτικό'; p['positions'] = 12
         self.assertEqual(core.required_hours(p, {'role': 'director', 'years': 30}), 6)
+    def test_deputy_secondary(self):
+        p = self.proj(8)
+        self.assertEqual(core.required_hours(p, {'role': 'deputy', 'years': 5}), 16)
+        self.assertEqual(core.required_hours(p, {'role': 'deputy', 'years': 20}), 16)
+        self.assertEqual(core.required_hours(p, {'role': 'deputy', 'years': 21}), 14)
+        self.assertIsNone(core.required_hours(p, {'role': 'deputy'}))
+    def test_deputy_secondary_custom_and_old(self):
+        p = self.proj(8, stored={'deputy_hours': [15, 15]})
+        self.assertEqual(core.required_hours(p, {'role': 'deputy'}), 15)
+        p = self.proj(8, stored={'deputy_reduction': 2, 'bands': [[0, 99, 20]]})   # παλιό έργο με δική του μείωση
+        self.assertEqual(core.required_hours(p, {'role': 'deputy', 'years': 25}), 18)
+        p = self.proj(8, stored={'deputy_hours': [16]})
+        with self.assertRaises(ValueError): core.check_structure(p)
+    def test_deputy_primary_unchanged(self):
+        p = self.proj(12); p['framework']['level'] = 'Δημοτικό'; p['positions'] = 12
+        self.assertEqual(core.required_hours(p, {'role': 'deputy', 'years': 25}), 19)
 
 if __name__ == '__main__':
     unittest.main()
