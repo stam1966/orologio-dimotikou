@@ -12,7 +12,10 @@ from pathlib import Path
 
 APP_ID = 'orologio-dimotikou'
 REPO = 'stam1966/orologio-dimotikou'
-ALLOWED_HOSTS = ('github.com', 'api.github.com', 'objects.githubusercontent.com', 'release-assets.githubusercontent.com')
+ALLOWED_HOSTS = ('github.com', 'api.github.com', 'objects.githubusercontent.com', 'release-assets.githubusercontent.com', 'raw.githubusercontent.com')
+# Εφεδρική πηγή: κλάδος «updates» με latest.json + Orologio_Enimerosi.zip, μέσω raw.githubusercontent.com (CDN).
+# Χρησιμοποιείται όταν το github.com / api.github.com δεν απαντά (π.χ. HTTP 503/504).
+MIRROR = 'https://raw.githubusercontent.com/' + REPO + '/updates/'
 MANIFEST = 'orologio-update.json'
 MAX_SIZE = 40_000_000
 REQUIRED = ('src/server.py', 'src/core.py', 'src/rules.py', 'src/outputs.py', 'src/index.html', 'src/updater.py')
@@ -177,33 +180,108 @@ def restart(root, port):
     subprocess.Popen(args, **kw)
 
 
-def _get(url, limit, accept='application/octet-stream'):
-    import urllib.request, urllib.parse
+def _get(url, limit, accept='application/octet-stream', tries=3, timeout=30):
+    """HTTPS GET μόνο προς τα επιτρεπτά hosts· ξαναδοκιμάζει σε προσωρινά σφάλματα (5xx, 429, λήξη χρόνου, δίκτυο)."""
+    import urllib.request, urllib.parse, urllib.error
     host = urllib.parse.urlparse(url).hostname or ''
     if url.split(':', 1)[0] != 'https' or not any(host == h or host.endswith('.' + h) for h in ALLOWED_HOSTS):
         raise ValueError('Μη αποδεκτή διεύθυνση ενημέρωσης.')
     req = urllib.request.Request(url, headers={'User-Agent': 'Orologio-Dimotikou', 'Accept': accept})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        final = urllib.parse.urlparse(r.geturl()).hostname or ''
-        if not any(final == h or final.endswith('.' + h) for h in ALLOWED_HOSTS):
-            raise ValueError('Μη αποδεκτή ανακατεύθυνση ενημέρωσης.')
-        data = r.read(limit + 1)
+    for attempt in range(tries):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                final = urllib.parse.urlparse(r.geturl()).hostname or ''
+                if not any(final == h or final.endswith('.' + h) for h in ALLOWED_HOSTS):
+                    raise ValueError('Μη αποδεκτή ανακατεύθυνση ενημέρωσης.')
+                data = r.read(limit + 1)
+            break
+        except urllib.error.HTTPError as ex:
+            if ex.code not in (429, 500, 502, 503, 504) or attempt == tries - 1:
+                raise
+        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as ex:
+            if isinstance(ex, ValueError) or attempt == tries - 1:
+                raise
+        time.sleep(1.5 * (attempt + 1))
     if len(data) > limit:
         raise ValueError('Πολύ μεγάλο αρχείο.')
     return data
 
 
-def check_online():
-    """Η τελευταία δημοσιευμένη έκδοση στο GitHub: {'version','notes','url','page'} ή None."""
-    try:
-        info = json.loads(_get('https://api.github.com/repos/' + REPO + '/releases/latest', 2_000_000, 'application/vnd.github+json').decode('utf-8'))
-    except Exception as ex:
-        raise ValueError('Δεν ήταν δυνατός ο έλεγχος για νέα έκδοση (σύνδεση στο Internet;). ' + str(ex)[:120])
+def _why(ex):
+    """Σύντομη, κατανοητή αιτία αποτυχίας σύνδεσης."""
+    import urllib.error
+    if isinstance(ex, urllib.error.HTTPError):
+        if ex.code in (502, 503, 504):
+            return 'το GitHub δεν απαντά αυτή τη στιγμή (HTTP %d)' % ex.code
+        if ex.code in (403, 429):
+            return 'το GitHub περιόρισε προσωρινά τους ελέγχους (HTTP %d)' % ex.code
+        return 'HTTP %d' % ex.code
+    if isinstance(ex, urllib.error.URLError):
+        r = getattr(ex, 'reason', ex)
+        return 'δεν υπάρχει σύνδεση (' + str(r)[:80] + ')'
+    if isinstance(ex, (TimeoutError,)):
+        return 'λήξη χρόνου αναμονής'
+    return str(ex)[:120]
+
+
+def _from_api():
+    info = json.loads(_get('https://api.github.com/repos/' + REPO + '/releases/latest', 2_000_000, 'application/vnd.github+json').decode('utf-8'))
     asset = next((a for a in info.get('assets', []) if a.get('name', '').startswith('Orologio_Enimerosi_') and a['name'].endswith('.zip')), None)
     if not asset:
         return None
-    return {'version': (info.get('tag_name') or '').lstrip('v'), 'notes': info.get('body') or '', 'url': asset['browser_download_url'], 'page': info.get('html_url', '')}
+    return {'version': (info.get('tag_name') or '').lstrip('v'), 'notes': info.get('body') or '', 'url': asset['browser_download_url'], 'page': info.get('html_url', ''), 'source': 'github'}
+
+
+def _from_mirror():
+    m = json.loads(_get(MIRROR + 'latest.json', 200_000, 'application/json').decode('utf-8'))
+    if m.get('app') != APP_ID or not m.get('version') or not re.fullmatch(r'[A-Za-z0-9_.-]+\.zip', m.get('file') or ''):
+        raise ValueError('Μη έγκυρη εφεδρική πηγή ενημέρωσης.')
+    return {'version': m['version'], 'notes': m.get('notes') or '', 'url': MIRROR + m['file'], 'sha256': m.get('sha256') or '',
+            'page': 'https://github.com/' + REPO + '/releases/latest', 'source': 'mirror'}
+
+
+def check_online():
+    """Η τελευταία δημοσιευμένη έκδοση: {'version','notes','url','page','source'[,'sha256']} ή None.
+    Πρώτα το GitHub API· αν δεν απαντά, η εφεδρική πηγή (raw.githubusercontent.com)."""
+    errors = []
+    for source in (_from_api, _from_mirror):
+        try:
+            return source()
+        except Exception as ex:
+            errors.append(ex)
+    raise ValueError('Δεν ήταν δυνατός ο έλεγχος για νέα έκδοση: ' + _why(errors[0]) + '. Δοκιμάστε ξανά σε λίγο, '
+                     'ή κατεβάστε το αρχείο ενημέρωσης από https://github.com/' + REPO + '/releases/latest '
+                     'και σύρετέ το στο παράθυρο.')
+
+
+def _sha_ok(data, sha):
+    import hashlib
+    return not sha or hashlib.sha256(data).hexdigest().lower() == sha.lower()
+
+
+def download_info(info):
+    """Κατεβάζει την ενημέρωση· αν η κύρια πηγή αποτύχει, δοκιμάζει την εφεδρική για την ίδια έκδοση."""
+    errors = []
+    try:
+        data = _get(info['url'], MAX_SIZE, timeout=60)
+        if _sha_ok(data, info.get('sha256')):
+            return data
+        errors.append(ValueError('το αρχείο δεν είναι ακέραιο'))
+    except Exception as ex:
+        errors.append(ex)
+    if info.get('source') != 'mirror':
+        try:
+            m = _from_mirror()
+            if vtuple(m['version']) == vtuple(info['version']):
+                data = _get(m['url'], MAX_SIZE, timeout=60)
+                if _sha_ok(data, m.get('sha256')):
+                    return data
+                errors.append(ValueError('το αρχείο δεν είναι ακέραιο'))
+        except Exception as ex:
+            errors.append(ex)
+    raise ValueError('Δεν ήταν δυνατή η λήψη της ενημέρωσης: ' + _why(errors[0]) + '. Δοκιμάστε ξανά σε λίγο, '
+                     'ή κατεβάστε το αρχείο από https://github.com/' + REPO + '/releases/latest και σύρετέ το στο παράθυρο.')
 
 
 def download(url):
-    return _get(url, MAX_SIZE)
+    return _get(url, MAX_SIZE, timeout=60)

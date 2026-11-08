@@ -66,4 +66,67 @@ class Updater(unittest.TestCase):
         self.assertGreater(updater.vtuple('0.10.0-beta'), updater.vtuple('0.9.3'))
         self.assertEqual(updater.vtuple('0.4.0-beta'), (0, 4, 0))
 
+class Online(unittest.TestCase):
+    """Έλεγχος/λήψη από το Internet με ψεύτικο δίκτυο: εφεδρική πηγή όταν το GitHub δεν απαντά."""
+    def setUp(self):
+        import urllib.error, hashlib
+        self.err = lambda code: urllib.error.HTTPError('u', code, 'x', {}, None)
+        self.zipdata = b'ZIPDATA'; self.sha = hashlib.sha256(self.zipdata).hexdigest()
+        self.orig = updater._get; self.calls = []
+    def tearDown(self):
+        updater._get = self.orig
+    def net(self, table):
+        def fake(url, limit, accept='', tries=3, timeout=30):
+            self.calls.append(url)
+            for key, val in table.items():
+                if key in url:
+                    if isinstance(val, Exception): raise val
+                    return val
+            raise AssertionError(url)
+        updater._get = fake
+    def mirror_json(self, version='9.9.9', sha=None):
+        return json.dumps({'app': 'orologio-dimotikou', 'version': version, 'file': 'Orologio_Enimerosi.zip', 'sha256': sha or self.sha, 'notes': 'n'}).encode()
+    def test_api_ok(self):
+        api = json.dumps({'tag_name': 'v9.9.9', 'body': 'b', 'assets': [{'name': 'Orologio_Enimerosi_9.9.9.zip', 'browser_download_url': 'https://github.com/a.zip'}]}).encode()
+        self.net({'api.github.com': api})
+        i = updater.check_online(); self.assertEqual((i['version'], i['source']), ('9.9.9', 'github'))
+    def test_api_down_uses_mirror(self):
+        self.net({'api.github.com': self.err(504), 'latest.json': self.mirror_json(), 'updates/Orologio_Enimerosi.zip': self.zipdata})
+        i = updater.check_online()
+        self.assertEqual((i['version'], i['source']), ('9.9.9', 'mirror')); self.assertIn('raw.githubusercontent.com', i['url'])
+        self.assertEqual(updater.download_info(i), self.zipdata)
+    def test_both_down_clear_message(self):
+        self.net({'api.github.com': self.err(503), 'latest.json': self.err(503)})
+        with self.assertRaisesRegex(ValueError, 'δεν απαντά.*503.*releases/latest'): updater.check_online()
+    def test_download_falls_back_and_checks_sha(self):
+        info = {'version': '9.9.9', 'url': 'https://github.com/x.zip', 'source': 'github'}
+        self.net({'github.com/x.zip': self.err(503), 'latest.json': self.mirror_json(), 'updates/Orologio_Enimerosi.zip': self.zipdata})
+        self.assertEqual(updater.download_info(info), self.zipdata)
+        self.net({'github.com/x.zip': self.err(503), 'latest.json': self.mirror_json(sha='0' * 64), 'updates/Orologio_Enimerosi.zip': self.zipdata})
+        with self.assertRaises(ValueError): updater.download_info(info)
+        self.net({'github.com/x.zip': self.err(503), 'latest.json': self.mirror_json(version='8.0.0')})   # άλλη έκδοση: δεν χρησιμοποιείται
+        with self.assertRaises(ValueError): updater.download_info(info)
+    def test_mirror_rejects_bad_file(self):
+        self.net({'api.github.com': self.err(504), 'latest.json': json.dumps({'app': 'orologio-dimotikou', 'version': '1', 'file': '../x.zip'}).encode()})
+        with self.assertRaises(ValueError): updater.check_online()
+    def test_retry_on_5xx(self):
+        import urllib.request
+        n = [0]; orig = urllib.request.urlopen; sl = updater.time.sleep
+        class R:
+            def __enter__(s): return s
+            def __exit__(s, *a): pass
+            def geturl(s): return 'https://api.github.com/x'
+            def read(s, n): return b'ok'
+        def fake(req, timeout=0):
+            n[0] += 1
+            if n[0] < 3: raise self.err(503)
+            return R()
+        urllib.request.urlopen = fake; updater.time.sleep = lambda s: None
+        try:
+            self.assertEqual(self.orig('https://api.github.com/x', 10), b'ok'); self.assertEqual(n[0], 3)
+            n[0] = -10
+            with self.assertRaises(Exception): self.orig('https://api.github.com/x', 10)
+        finally:
+            urllib.request.urlopen = orig; updater.time.sleep = sl
+
 if __name__ == '__main__': unittest.main(verbosity=2)

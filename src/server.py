@@ -390,7 +390,7 @@ class Handler(BaseHTTPRequestHandler):
                     if action == '/api/update/apply' and req.get('online'):
                         if not STATE['update']:
                             raise ValueError('Δεν βρέθηκε νέα έκδοση· πατήστε πρώτα «Έλεγχος τώρα».')
-                        raw = updater.download(STATE['update']['url'])
+                        raw = updater.download_info(STATE['update'])
                     elif action == '/api/update/apply':
                         raw = base64.b64decode(req['data'])
                     else:

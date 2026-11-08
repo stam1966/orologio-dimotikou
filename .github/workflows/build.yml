@@ -115,3 +115,24 @@ jobs:
             dist/Orologio_Enimerosi.zip
             dist/Orologio_Dimotikou_*_Egkatastasi.zip
             dist/Orologio_Enimerosi_*.zip
+
+      - name: Εφεδρική πηγή ενημερώσεων (κλάδος updates, μέσω raw.githubusercontent.com)
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.ver.outputs.new == 'true') || github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = (Get-Content dist/VERSION.txt).Trim()
+          $zip = (Get-ChildItem dist\Orologio_Enimerosi_*.zip | Select-Object -First 1).FullName
+          $sha = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          $tmp = Join-Path $env:RUNNER_TEMP 'updates'
+          New-Item -ItemType Directory -Force $tmp | Out-Null
+          Copy-Item $zip (Join-Path $tmp 'Orologio_Enimerosi.zip')
+          $notes = Get-Content dist/RELEASE_NOTES.md -Raw -Encoding utf8
+          [ordered]@{app='orologio-dimotikou'; version=$v; file='Orologio_Enimerosi.zip'; sha256=$sha; notes=$notes} | ConvertTo-Json | Set-Content -Encoding utf8NoBOM (Join-Path $tmp 'latest.json')
+          Set-Location $tmp
+          git init -q
+          git checkout -q -b updates
+          git add -A
+          git -c user.name=github-actions -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -q -m "Εφεδρική ενημέρωση $v"
+          git push -q -f "https://x-access-token:$env:GH_TOKEN@github.com/${{ github.repository }}.git" updates
+          Write-Host "Εφεδρική πηγή: $v ($sha)"
