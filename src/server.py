@@ -471,6 +471,16 @@ class Handler(BaseHTTPRequestHandler):
                         if e['id'] in ids and not e['locked']:
                             e['place'] = None
                     commit(q, 'Αφαίρεση θέσεων')
+                elif action == '/api/clear_schedule':
+                    q = copy.deepcopy(p); keep = bool(req.get('keep_locked', True)); n = 0
+                    for e in q['events']:
+                        if e['place'] and not (keep and e.get('locked')):
+                            e['place'] = None; e['locked'] = False; n += 1
+                        elif not keep:
+                            e['locked'] = False
+                    if not n:
+                        raise ValueError('Δεν υπάρχουν θέσεις για διαγραφή.')
+                    commit(q, 'Διαγραφή προγράμματος')
                 elif action in ('/api/undo', '/api/redo'):
                     src, dst = (UNDO, REDO) if action == '/api/undo' else (REDO, UNDO)
                     if not src:
