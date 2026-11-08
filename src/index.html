@@ -116,6 +116,9 @@ td.inactive b{text-decoration:line-through;opacity:.6}
 .warnsel{border-color:#d9534f!important}tr.sel td{background:rgba(127,127,127,.07)}
 .aibtn{border-color:var(--slate);color:var(--slate);font-weight:600}
 .aipanel{position:fixed;top:0;right:0;bottom:0;width:min(460px,100vw);background:var(--surface);border-left:1px solid var(--line);box-shadow:-6px 0 24px rgba(0,0,0,.12);z-index:40;display:flex;flex-direction:column}.aipanel[hidden]{display:none}
+#curfile{display:block;font-size:11.5px;color:#B9CBC2;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#curfile b{display:inline;color:#F2C230;font-size:15px;margin-left:3px}.app.narrow #curfile{display:none}
+.popmenu{position:fixed;z-index:60;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:6px;min-width:280px}.popmenu button{display:flex;width:100%;justify-content:space-between;gap:16px;background:none;border:0;padding:7px 10px;border-radius:6px;font:inherit;font-size:13.5px;cursor:pointer;text-align:left;color:var(--ink)}.popmenu button:hover:not(:disabled){background:var(--paper)}.popmenu button:disabled{color:var(--muted);cursor:default}.popmenu kbd{font:inherit;font-size:11.5px;color:var(--muted)}.popmenu hr{border:0;border-top:1px solid var(--line2);margin:5px 4px}.popmenu .lbl{font-size:11px;color:var(--muted);padding:4px 10px 2px}
+.fsl button.on{background:var(--accent-soft,#DDEFE6);font-weight:600}.fsl .file{display:flex;justify-content:space-between;gap:12px}.fsl .file small{color:var(--muted)}
 .pvbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#FDF3CF;border:1px solid #EAD48A;border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:13px}
 .tile.pv-new{outline:3px solid #E0A800;outline-offset:-1px;z-index:3}.ghost{position:absolute;border:2px dashed #9AA5AD;border-radius:5px;color:#7A858D;font-size:11px;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,#ffffff00 0 6px,#9AA5AD22 6px 12px);pointer-events:none;z-index:1}
 .pvkey{display:inline-block;padding:0 6px;border-radius:4px;font-size:11px}.pvkey.new{outline:2px solid #E0A800}.pvkey.old{border:2px dashed #9AA5AD}
@@ -131,8 +134,8 @@ td.inactive b{text-decoration:line-through;opacity:.6}
 .aithink{align-self:flex-start;color:var(--muted);font-size:13px;display:flex;gap:8px;align-items:center}.aithink i{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--slate);border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
-<div class="app"><aside class="side"><div class="brand"><b id="schoolname">Ωρολόγιο Δημοτικού</b><span id="schoolyear"></span></div><ul class="steps" id="steps"></ul><ul class="steps steps2" id="steps2"></ul><div class="sidefoot"><button id="manualbtn" title="Οδηγός χρήσης με εικόνες">📖 Οδηγός</button><span>έκδοση __VERSION__</span><button id="newver" class="newver" hidden title="Υπάρχει νέα έκδοση">Νέα έκδοση</button><button id="exit" title="Κλείσιμο εφαρμογής">Έξοδος</button></div></aside>
-<div class="main"><div class="top"><h1 id="title"></h1><button class="iconbtn helpbtn" id="help" title="Βοήθεια για αυτή την οθόνη (F1)">?</button><button class="iconbtn" id="qsearch" title="Γρήγορη αναζήτηση εκπαιδευτικού, τμήματος, μαθήματος (Ctrl+K)">🔍 Αναζήτηση</button><button class="btn small primary" id="nextstep" hidden></button><div class="job" id="job"></div><div class="chips" id="chips"></div>
+<div class="app"><aside class="side"><div class="brand"><b id="schoolname">Ωρολόγιο Δημοτικού</b><span id="schoolyear"></span><span id="curfile"></span></div><ul class="steps" id="steps"></ul><ul class="steps steps2" id="steps2"></ul><div class="sidefoot"><button id="manualbtn" title="Οδηγός χρήσης με εικόνες">📖 Οδηγός</button><span>έκδοση __VERSION__</span><button id="newver" class="newver" hidden title="Υπάρχει νέα έκδοση">Νέα έκδοση</button><button id="exit" title="Κλείσιμο εφαρμογής">Έξοδος</button></div></aside>
+<div class="main"><div class="top"><h1 id="title"></h1><button class="iconbtn helpbtn" id="help" title="Βοήθεια για αυτή την οθόνη (F1)">?</button><button class="iconbtn" id="filemenu" title="Άνοιγμα, αποθήκευση, αποθήκευση ως (Ctrl+O, Ctrl+S)">📁 Αρχείο ▾</button><button class="iconbtn" id="qsearch" title="Γρήγορη αναζήτηση εκπαιδευτικού, τμήματος, μαθήματος (Ctrl+K)">🔍 Αναζήτηση</button><button class="btn small primary" id="nextstep" hidden></button><div class="job" id="job"></div><div class="chips" id="chips"></div>
 <button class="iconbtn aibtn" id="aibtn" title="Βοηθός AI: ζητήστε αλλαγές στο πρόγραμμα με απλά λόγια">✨ Βοηθός AI</button>
 <button class="iconbtn" id="undo" title="Αναίρεση (Ctrl+Z)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 3 2 6l3 3"/><path d="M2.5 6H10a4 4 0 0 1 0 8H7"/></svg>Αναίρεση</button>
 <button class="iconbtn" id="redo" title="Επανάληψη (Ctrl+Y)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m11 3 3 3-3 3"/><path d="M13.5 6H6a4 4 0 0 0 0 8h3"/></svg></button></div>
@@ -222,6 +225,39 @@ async function aiSettings(){if(!ai.cfg)await aiLoadCfg();let c=structuredClone(a
  modal('Ρυθμίσεις βοηθού AI',body(),{onOk:saveCfg});bind();}
 
 
+
+/* ---------- Αρχείο: άνοιγμα / αποθήκευση / αποθήκευση ως ---------- */
+function fileMenu(anchor){$('#popmenu')?.remove();let f=state.file||{},nm=x=>x.split(/[\\/]/).pop(),r=anchor.getBoundingClientRect();
+ let m=document.createElement('div');m.className='popmenu';m.id='popmenu';m.style.left=r.left+'px';m.style.top=(r.bottom+4)+'px';
+ m.innerHTML=`<button data-fm="open"><span>📂 Άνοιγμα από αρχείο…</span><kbd>Ctrl+O</kbd></button><button data-fm="save"><span>💾 Αποθήκευση${f.path?' στο «'+esc(nm(f.path))+'»':''}</span><kbd>Ctrl+S</kbd></button><button data-fm="saveas"><span>💾 Αποθήκευση ως…</span><kbd>Ctrl+Shift+S</kbd></button>
+  ${(f.recent||[]).length?`<hr><div class="lbl">Πρόσφατα αρχεία</div>${f.recent.slice(0,6).map(x=>`<button data-fmr="${esc(x)}" title="${esc(x)}"><span>📄 ${esc(nm(x))}</span></button>`).join('')}`:''}
+  <hr><button data-fm="download"><span>⬇ Λήψη αντιγράφου (JSON) στις Λήψεις</span></button><button data-fm="import"><span>📥 Εισαγωγή από aSc / Excel…</span></button>`;
+ document.body.appendChild(m);let close=()=>{m.remove();document.removeEventListener('mousedown',out,true);},out=e=>{if(!m.contains(e.target)&&e.target!==anchor)close();};setTimeout(()=>document.addEventListener('mousedown',out,true),0);
+ $$('[data-fm]',m).forEach(b=>b.onclick=()=>{close();({open:fileOpen,save:fileSave,saveas:fileSaveAs,download:async()=>{try{download(await(await api('export')).blob(),'orologio_'+new Date().toISOString().slice(0,10)+'.json');}catch(e){toast(e.message,true);}},import:()=>go('school')})[b.dataset.fm]();});
+ $$('[data-fmr]',m).forEach(b=>b.onclick=()=>{close();openPath(b.dataset.fmr);});}
+async function fileSave(){if(!(state.file||{}).path)return fileSaveAs();try{state=await(await api('file/save',{})).json();render();toast('Αποθηκεύτηκε στο '+state.file.path);}catch(e){toast(e.message,true);}}
+function defaultFileName(){let p=P();return ((p.school||'Ωρολόγιο')+(p.year?' '+p.year.replace(/\s*-\s*/,'-'):'')).replace(/[<>:"/\\|?*]/g,'').trim();}
+function fileSaveAs(){let f=state.file||{},start=f.path?f.path.replace(/[\\/][^\\/]*$/,''):'',name=f.path?f.path.split(/[\\/]/).pop().replace(/\.json$/i,''):defaultFileName();
+ filePicker({title:'Αποθήκευση ως',start,save:true,name,onPick:async(folder,nm)=>{try{let r=await(await api('file/saveas',{folder,name:nm})).json();
+  if(r.exists){if(!await confirmBox('Υπάρχει ήδη το αρχείο <b>'+esc(r.exists)+'</b>. Να αντικατασταθεί;','Αντικατάσταση'))return;r=await(await api('file/saveas',{folder,name:nm,overwrite:true})).json();}
+  state=r;render();toast('Αποθηκεύτηκε: '+state.file.path);}catch(e){toast(e.message,true);}}});}
+function fileOpen(){let f=state.file||{};filePicker({title:'Άνοιγμα από αρχείο',start:f.path?f.path.replace(/[\\/][^\\/]*$/,''):'',onPick:(folder,nm,path)=>openPath(path)});}
+async function openPath(path){if((state.file||{}).dirty&&!await confirmBox('Το τρέχον αρχείο έχει αλλαγές που δεν έχουν αποθηκευτεί σε αρχείο. Να συνεχίσει το άνοιγμα; (Το τρέχον έργο φυλάσσεται έτσι κι αλλιώς στις «Εκδοχές».)','Συνέχεια'))return;importReq({path},path.split(/[\\/]/).pop());}
+async function filePicker(o){let cur=o.start||'',sel='';const EXT=['.json','.roz','.xml'];
+ let load=async path=>{let x;try{x=await(await api('fs/list',{path,files:o.save?['.json']:EXT})).json();}catch(e){if(path){toast(e.message,true);return load('');}toast(e.message,true);return;}cur=x.path;sel='';
+  let crumbs=x.crumbs.map(c=>`<button class="btn small" data-fsgo="${esc(c.path)}">${esc(c.label)}</button>`).join(' › ');
+  let list=x.path?(x.parent!==null?`<button data-fsgo="${esc(x.parent)}">⬆ <i>Επάνω</i></button>`:'')+x.dirs.map(d=>`<button data-fsgo="${esc(d.path)}">📁 ${esc(d.name)}</button>`).join('')+(x.files||[]).map(fl=>`<button class="file" data-fsfile="${esc(fl.path)}" data-fsname="${esc(fl.name)}"><span>📄 ${esc(fl.name)}</span><small>${esc(fl.mtime)}</small></button>`).join('')+(!x.dirs.length&&!(x.files||[]).length?'<p class="muted small" style="padding:6px 10px">Ο φάκελος δεν έχει αρχεία της εφαρμογής ούτε υποφακέλους.</p>':'')
+   :x.places.map(g=>`<button data-fsgo="${esc(g.path)}">⭐ ${esc(g.label)}</button>`).join('')+x.drives.map(g=>`<button data-fsgo="${esc(g.path)}">${g.usb?'🔌':'💽'} ${esc(g.label)}</button>`).join('');
+  $('#fsbody').innerHTML=`<div class="row" style="margin-bottom:6px"><button class="btn small" data-fsgo="">🏠 Αρχή</button>${crumbs}</div><div class="fsl">${list}</div>
+   ${o.save?`<div class="row" style="margin-top:8px"><label class="field" style="flex:1"><span>Όνομα αρχείου</span><input id="fsname" value="${esc(o.name||'')}" style="width:100%"></label><span class="muted small" style="align-self:end;padding-bottom:8px">.json</span></div>${x.path?(x.writable?`<p class="small" style="margin:4px 0">Φάκελος: <b>${esc(x.path)}</b></p>`:'<p class="err small">Δεν επιτρέπεται εγγραφή σε αυτόν τον φάκελο.</p>'):'<p class="muted small">Διαλέξτε φάκελο (π.χ. Έγγραφα ή USB).</p>'}`
+    :`<p class="muted small" style="margin:8px 0 0">Ανοίγουν: έργα της εφαρμογής (.json) και αρχεία aSc (.roz, .xml).</p>`}`;
+  let ok=$('#dok');ok.disabled=o.save?!(x.path&&x.writable):true;
+  $$('[data-fsgo]').forEach(b=>b.onclick=()=>load(b.dataset.fsgo));
+  $$('[data-fsfile]').forEach(b=>{b.onclick=()=>{$$('[data-fsfile]').forEach(z=>z.classList.remove('on'));b.classList.add('on');sel=b.dataset.fsfile;if(o.save)$('#fsname').value=b.dataset.fsname.replace(/\.json$/i,'');else ok.disabled=false;};b.ondblclick=()=>{sel=b.dataset.fsfile;if(o.save)$('#fsname').value=b.dataset.fsname.replace(/\.json$/i,'');ok.click();};});
+  if($('#fsname'))$('#fsname').onkeydown=e=>{if(e.key==='Enter'&&!ok.disabled)ok.click();};};
+ modal(o.title,`<div id="fsbody" style="min-width:min(640px,80vw)">Φόρτωση…</div>`,{wide:true,ok:o.save?'Αποθήκευση':'Άνοιγμα',cancel:'Άκυρο',onOk:()=>{let nm=o.save?$('#fsname').value.trim():'';if(o.save&&!nm){toast('Γράψτε όνομα αρχείου.',true);return false;}let c=cur,sl=sel;setTimeout(()=>o.onPick(c,nm,sl),0);}});load(cur);}
+document.addEventListener('keydown',e=>{if(!(e.ctrlKey||e.metaKey))return;let k=e.key.toLowerCase();if(k==='s'){e.preventDefault();e.shiftKey?fileSaveAs():fileSave();}else if(k==='o'){e.preventDefault();fileOpen();}});
+
 /* ---------- γρήγορη αναζήτηση (Ctrl+K) ---------- */
 function quickSearch(){let p=P(),items=[];for(let [k,lab] of [['teachers','Εκπαιδευτικός'],['classes','Τμήμα'],['subjects','Μάθημα']])for(let x of p[k])items.push({k,lab,x});
  let nrm=t=>String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(),idx=0,list=[];
@@ -290,7 +326,7 @@ function stepStatus(k){let p=P(),s=state.summary;
  return {done:false,badge:''};}
 const EXTRA=[['settings','Ρυθμίσεις']];
 function render(){if(PREVIEW&&PREVIEW.rev!==state.revision)PREVIEW=null;let p=P();if(!PAGES.some(x=>x[0]===page)&&!EXTRA.some(x=>x[0]===page))page='school';
- $('#schoolname').textContent=p.school||'Ωρολόγιο Δημοτικού';$('#schoolyear').textContent=p.year?'Σχολικό έτος '+p.year:'Ορίστε σχολείο και έτος';
+ $('#schoolname').textContent=p.school||'Ωρολόγιο Δημοτικού';{let f=state.file||{},n=f.path?f.path.split(/[\\/]/).pop():'';$('#curfile').innerHTML=n?`📄 ${esc(n)}${f.dirty?' <b title="Υπάρχουν αλλαγές που δεν έχουν αποθηκευτεί σε αυτό το αρχείο (Ctrl+S)">•</b>':''}`:'';$('#curfile').title=f.path||'';}$('#schoolyear').textContent=p.year?'Σχολικό έτος '+p.year:'Ορίστε σχολείο και έτος';
  $('.app').classList.toggle('narrow',page==='schedule');
  $('#steps').innerHTML=PAGES.map(([k,t],i)=>{let s=stepStatus(k);return `<li><button data-page="${k}" title="${esc(t)}" class="${k===page?'on':''} ${s.done?'done':''}"><span class="n">${s.done&&k!==page?'✓':i+1}</span><span>${t}</span>${s.badge?`<span class="badge ${s.bad?'bad':''}">${esc(s.badge)}</span>`:''}</button></li>`;}).join('');
  $('#steps2').innerHTML=`<li><button data-page="settings" title="Στοιχεία σχολείου, σχολικό έτος, αντίγραφα ασφαλείας, ενημερώσεις, βοηθός AI" class="${page==='settings'?'on':''}"><span class="n">⚙</span><span>Ρυθμίσεις</span>${!p.school?'<span class="badge bad">!</span>':''}</button></li>`;
@@ -306,7 +342,7 @@ function render(){if(PREVIEW&&PREVIEW.rev!==state.revision)PREVIEW=null;let p=P(
 function go(k){if(PREVIEW&&k!=='schedule')PREVIEW=null;page=k;ui.sel=null;ui.slots=null;remember();render();$('#content').scrollTop=0;}
 function renderJob(){let j=state.job,el=$('#job');if(!j.running){el.innerHTML='';return;}let el2=Math.round((Date.now()/1000-j.started));
  el.innerHTML=`<span>Παραγωγή… ${el2}″ / ${j.seconds}″</span><span class="bar"><i style="width:${Math.min(100,100*el2/j.seconds)}%"></i></span><button class="btn small" id="cancel">Διακοπή</button>`;$('#cancel').onclick=()=>api('cancel',{}).then(()=>toast('Ζητήθηκε διακοπή'));}
-$('#aibtn').onclick=aiToggle;$('#qsearch').onclick=quickSearch;$('#manualbtn').onclick=()=>window.open('/manual#'+(MANUAL_CH[page]||''),'_blank');$('#undo').onclick=()=>act('undo',{},'Αναιρέθηκε');$('#redo').onclick=()=>act('redo',{},'Επαναλήφθηκε');
+$('#aibtn').onclick=aiToggle;$('#qsearch').onclick=quickSearch;$('#filemenu').onclick=e=>fileMenu(e.currentTarget);$('#manualbtn').onclick=()=>window.open('/manual#'+(MANUAL_CH[page]||''),'_blank');$('#undo').onclick=()=>act('undo',{},'Αναιρέθηκε');$('#redo').onclick=()=>act('redo',{},'Επαναλήφθηκε');
 $('#exit').onclick=async()=>{if(!await confirmBox('Να κλείσει η εφαρμογή; Όλες οι αλλαγές είναι ήδη αποθηκευμένες.','Κλείσιμο'))return;try{await api('shutdown',{});}catch(e){}document.body.innerHTML='<div class="empty" style="padding:80px"><h2>Η εφαρμογή έκλεισε.</h2><p>Μπορείτε να κλείσετε αυτό το παράθυρο.</p></div>';};
 document.addEventListener('keydown',e=>{if($('#dialog').open)return;let tag=(e.target.tagName||'').toLowerCase();if(['input','select','textarea'].includes(tag))return;
  if(e.ctrlKey&&!e.shiftKey&&e.key.toLowerCase()==='z'){e.preventDefault();if(state.history.undo)$('#undo').click();return;}
@@ -353,7 +389,7 @@ function pageSchool(){let p=P(),s=state.summary,h=p.lessons.reduce((a,l)=>a+l.ho
  if(state.settings.check_updates===null&&page==='school')$('#content').insertAdjacentHTML('afterbegin',`<div class="ask" id="askupd"><span><b>Να ελέγχει η εφαρμογή για νέες εκδόσεις;</b> Μία φορά την ημέρα κοιτάζει στο GitHub αν βγήκε νεότερη έκδοση. Δεν στέλνει κανένα δεδομένο του σχολείου.</span><button class="btn primary small" id="askyes">Ναι</button><button class="btn small" id="askno">Όχι</button></div>`);
  if($g('#askyes')){$g('#askyes').onclick=async()=>{await api('settings/save',{check_updates:true});await refresh();checkOnline(true);};$g('#askno').onclick=async()=>{await api('settings/save',{check_updates:false});refresh();};}$g('#updfile').onchange=ev=>{let f=ev.target.files[0];ev.target.value='';if(f)updateFrom(f);};loadBackups();
  $g('#exportjson').onclick=async()=>{try{download(await(await api('export')).blob(),'orologio_'+new Date().toISOString().slice(0,10)+'.json');}catch(e){toast(e.message,true);}};
- $g('#newproj').onclick=async()=>{if(!await confirmBox('Να ξεκινήσει νέο κενό έργο; Το σημερινό κρατιέται ως αντίγραφο και επανέρχεται με Αναίρεση.','Νέο έργο'))return;let q=clone();for(let k of ['teachers','subjects','classes','rooms','groups','lessons','events'])q[k]=[];q.teacher_rules={};q.class_rules={};q.subject_rules={};q.global_rules={min_gaps:{w:1,on:true}};save(q,'Νέο έργο');};}
+ $g('#newproj').onclick=async()=>{if(!await confirmBox('Να ξεκινήσει νέο κενό έργο; Το σημερινό κρατιέται ως αντίγραφο και επανέρχεται με Αναίρεση.','Νέο έργο'))return;let q=clone();for(let k of ['teachers','subjects','classes','rooms','groups','lessons','events'])q[k]=[];q.teacher_rules={};q.class_rules={};q.subject_rules={};q.global_rules={min_gaps:{w:1,on:true}};q.curriculum={};q.links=[];q.substitutions=[];if(q.framework)delete q.framework.optional;if(await save(q,'Νέο έργο')){try{state=await(await api('file/forget',{})).json();render();}catch(e){}}};}
 
 /* ================= 2. Δεδομένα ================= */
 function homeroomOf(tid){return P().classes.filter(c=>c.teacher===tid).map(c=>c.short||c.name).join(', ');}
@@ -867,13 +903,14 @@ async function fileB64(f){let buf=new Uint8Array(await f.arrayBuffer()),bin='';f
 async function importFile(f){let kind=/\.roz$/i.test(f.name)?'roz':/\.xml$/i.test(f.name)?'xml':'json',req={kind};
  if(f.size>14e6){toast('Το αρχείο είναι πολύ μεγάλο.',true);return;}
  if(kind==='roz')req.data=await fileB64(f);else req.text=await f.text();
- let r;try{r=await(await api('import/preview',req)).json();}catch(e){toast(e.message,true);return;}
+ return importReq(req,f.name);}
+async function importReq(req,fname){let f={name:fname},r;try{r=await(await api('import/preview',req)).json();}catch(e){toast(e.message,true);return;}
  const K=[['teachers','Εκπαιδευτικοί'],['classes','Τμήματα'],['subjects','Μαθήματα'],['periods','Διδακτικές ώρες'],['lessons','Αναθέσεις'],['links','Ταυτόχρονα μαθήματα']],c=r.counts,
   src={roz:'aSc TimeTables (.roz)',xml:'XML',json:'JSON',gym:'«Δεδομένα Προγράμματος» (JSON)'}[r.kind]||r.kind;
- modal('Εισαγωγή: '+f.name,`<p class="muted small" style="margin-top:0">Μορφή: <b>${esc(src)}</b></p><table class="tbl" style="width:auto">${K.filter(([k])=>c[k]!=null).map(([k,t])=>`<tr><td>${t}</td><td class="num"><b>${c[k]}</b></td></tr>`).join('')}<tr><td>Διδασκαλίες στο πρόγραμμα</td><td class="num"><b>${c.placed}</b> / ${c.events}</td></tr></table>
+ modal((req.path?'Άνοιγμα: ':'Εισαγωγή: ')+f.name,`<p class="muted small" style="margin-top:0">Μορφή: <b>${esc(src)}</b></p><table class="tbl" style="width:auto">${K.filter(([k])=>c[k]!=null).map(([k,t])=>`<tr><td>${t}</td><td class="num"><b>${c[k]}</b></td></tr>`).join('')}<tr><td>Διδασκαλίες στο πρόγραμμα</td><td class="num"><b>${c.placed}</b> / ${c.events}</td></tr></table>
   ${r.notes.length?`<div class="small" style="margin:10px 0;max-width:640px">${r.notes.map(n=>`<p style="margin:4px 0">ℹ ${esc(n)}</p>`).join('')}</div>`:''}
   <p class="note" style="max-width:640px">Το τρέχον έργο θα αντικατασταθεί. Φυλάσσεται πρώτα στις «Εκδοχές» και επανέρχεται και με Αναίρεση (Ctrl+Z).</p>`,
-  {ok:'Εισαγωγή',wide:true,onOk:async()=>await act('import',req,'Η εισαγωγή ολοκληρώθηκε (Αναίρεση για επιστροφή)')});}
+  {ok:req.path?'Άνοιγμα':'Εισαγωγή',wide:true,onOk:async()=>await act('import',req,req.path?'Άνοιξε το '+f.name+' (Αναίρεση για επιστροφή)':'Η εισαγωγή ολοκληρώθηκε (Αναίρεση για επιστροφή)')});}
 
 /* ---------- στοιχεία εκπαιδευτικών και ομάδες τμημάτων ---------- */
 function teacherBadges(x){let b=[];if(x.spec)b.push(`<span class="tag">${esc(x.spec)}</span>`);if(x.special)b.push('<span class="tag ea" title="Ειδική αγωγή">ΕΑ</span>');if(x.hypothetical)b.push('<span class="tag hy" title="Θέση που δεν έχει καλυφθεί ακόμη">υποθετικός</span>');if(x.active===false)b.push('<span class="tag off">δεν συμμετέχει</span>');return b.length?' '+b.join(' '):'';}

@@ -56,6 +56,31 @@ class Server(unittest.TestCase):
         self.assertNotEqual(server.STATE['project']['title'], 'Β')
         s = server.summary(server.STATE['project']); self.assertEqual(s['unplaced'], 1)
 
+class Files(unittest.TestCase):
+    def test_save_as_and_open(self):
+        import backup, json
+        with tempfile.TemporaryDirectory() as d:
+            with self.assertRaises(ValueError): backup.project_file_path(d, 'Έργο: δοκιμή')
+            path = str(backup.project_file_path(d, 'Έργο δοκιμή')); self.assertTrue(path.endswith('Έργο δοκιμή.json'))
+            self.assertTrue(str(backup.project_file_path(d, 'Β.json')).endswith('Β.json'))
+            p = placed_fixture(); backup.write_project_file(path, p)
+            self.assertEqual(json.loads(Path(path).read_text(encoding='utf-8'))['events'], p['events'])
+            self.assertEqual(server.project_hash(p), server.project_hash(copy.deepcopy(p)))
+            req = server.parse_import({'path': path})
+            q, info = req; self.assertEqual(len(q['events']), len(p['events'])); self.assertEqual(info['kind'], 'json')
+            with self.assertRaises(Exception): backup.write_project_file(str(Path(d) / 'x.txt'), p)
+            bad = Path(d) / 'a.docx'; bad.write_bytes(b'x')
+            with self.assertRaises(Exception): server.parse_import({'path': str(bad)})
+
+    def test_recent_files(self):
+        import backup
+        with tempfile.TemporaryDirectory() as d:
+            for i in range(10): backup.remember_file(Path(d), f'/x/{i}.json', 'h')
+            backup.remember_file(Path(d), '/x/3.json', 'h')
+            s = backup.load_settings(Path(d))
+            self.assertEqual(s['current_file'], '/x/3.json'); self.assertEqual(s['recent_files'][0], '/x/3.json')
+            self.assertEqual(len(s['recent_files']), 8); self.assertEqual(len(set(s['recent_files'])), 8)
+
 if __name__ == '__main__': unittest.main(verbosity=2)
 
 class Versions(unittest.TestCase):

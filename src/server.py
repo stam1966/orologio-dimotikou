@@ -38,8 +38,26 @@ def boot():
     STATE['project'] = core.load(DATA) if DATA.exists() else core.blank()
 
 
+def project_hash(p):
+    import hashlib
+    return hashlib.sha1(json.dumps(p, ensure_ascii=False, sort_keys=True).encode('utf-8')).hexdigest()
+
+
 def parse_import(req):
-    """Ανάγνωση αρχείου προς εισαγωγή: XML aSc ή εφαρμογής, .roz aSc, JSON εφαρμογής ή «Δεδομένα Προγράμματος»."""
+    """Ανάγνωση αρχείου προς εισαγωγή: XML aSc ή εφαρμογής, .roz aSc, JSON εφαρμογής ή «Δεδομένα Προγράμματος».
+    Με «path»: το αρχείο διαβάζεται από τον δίσκο (Άνοιγμα από αρχείο)."""
+    if req.get('path'):
+        raw = backup.read_file(req['path']); low = req['path'].lower()
+        if low.endswith('.roz'):
+            req = {'kind': 'roz', 'data': base64.b64encode(raw).decode()}
+        elif low.endswith(('.xml', '.json')):
+            try:
+                text = raw.decode('utf-8-sig')
+            except UnicodeDecodeError:
+                text = raw.decode('cp1253', 'replace')
+            req = {'kind': 'xml' if low.endswith('.xml') else 'json', 'text': text}
+        else:
+            raise ValueError('Ανοίγουν αρχεία .json (έργο της εφαρμογής), .roz και .xml (aSc). Για Excel: «Εισαγωγή από Excel».')
     kind = req.get('kind')
     if kind == 'roz':
         return rozimport.parse(base64.b64decode(req['data']))
@@ -93,7 +111,9 @@ def state_json():
         summ = summary(p)
     except Exception as ex:  # ένα λάθος στον έλεγχο δεν πρέπει να «κλειδώνει» τη διεπαφή
         summ = {'errors': ['Σφάλμα ελέγχου: ' + str(ex)], 'warnings': [], 'gaps': 0, 'unplaced': 0, 'score': None}
-    return json.dumps({**STATE, 'settings': backup.load_settings(ROOT), 'catalog': rules.CATALOG, 'secondary_only': sorted(rules.SECONDARY_ONLY), 'legacy_hidden': sorted(rules.LEGACY_HIDDEN), 'strength': rules.STRENGTH, 'summary': summ,
+    st = backup.load_settings(ROOT)
+    fileinfo = {'path': st.get('current_file', ''), 'dirty': bool(st.get('current_file')) and st.get('file_hash') != project_hash(p), 'recent': st.get('recent_files') or []}
+    return json.dumps({**STATE, 'file': fileinfo, 'settings': st, 'catalog': rules.CATALOG, 'secondary_only': sorted(rules.SECONDARY_ONLY), 'legacy_hidden': sorted(rules.LEGACY_HIDDEN), 'strength': rules.STRENGTH, 'summary': summ,
                        'history': {'undo': UNDO[-1][0] if UNDO else '', 'redo': REDO[-1][0] if REDO else ''}}, ensure_ascii=False)
 
 
@@ -301,7 +321,23 @@ class Handler(BaseHTTPRequestHandler):
                 if action == '/api/settings':
                     return self.send(200, json.dumps({'settings': backup.load_settings(ROOT), 'suggestions': backup.suggestions()}, ensure_ascii=False))
                 if action == '/api/fs/list':
-                    return self.send(200, json.dumps(backup.browse(req.get('path', '')), ensure_ascii=False))
+                    return self.send(200, json.dumps(backup.browse(req.get('path', ''), req.get('files')), ensure_ascii=False))
+                if action == '/api/file/forget':
+                    backup.remember_file(ROOT, '', '')
+                    return self.send(200, state_json())
+                if action in ('/api/file/save', '/api/file/saveas'):
+                    if action == '/api/file/saveas':
+                        path = backup.project_file_path(req.get('folder', ''), req.get('name', ''))
+                        if Path(path).exists() and not req.get('overwrite'):
+                            return self.send(200, json.dumps({'exists': path}, ensure_ascii=False))
+                    else:
+                        path = backup.load_settings(ROOT).get('current_file', '')
+                        if not path:
+                            raise ValueError('Δεν έχει οριστεί αρχείο· χρησιμοποιήστε «Αποθήκευση ως…».')
+                    backup.write_project_file(path, p)
+                    backup.remember_file(ROOT, path, project_hash(p))
+                    log('file save', path)
+                    return self.send(200, state_json())
                 if action == '/api/fs/mkdir':
                     return self.send(200, json.dumps({'path': backup.make_dir(req.get('parent', ''), req.get('name', ''))}, ensure_ascii=False))
                 if action == '/api/settings/save':
@@ -376,10 +412,12 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError('Τα δεδομένα άλλαξαν σε άλλο παράθυρο. Η σελίδα θα ανανεωθεί.')
                 if action == '/api/import':
                     q, rep = parse_import(req)
+                    opened = req.get('path') if str(req.get('path', '')).lower().endswith('.json') and rep.get('kind') == 'json' else ''
                     if p['teachers'] or p['lessons']:
                         versions.save(ROOT, p, 'Πριν από την εισαγωγή (' + time.strftime('%d/%m/%Y %H:%M') + ')')
                     q['version'] = core.VERSION
-                    commit(q, 'Εισαγωγή αρχείου')
+                    commit(q, 'Άνοιγμα αρχείου' if req.get('path') else 'Εισαγωγή αρχείου')
+                    backup.remember_file(ROOT, opened, project_hash(STATE['project']) if opened else '')
                 elif action == '/api/xlsx/import':
                     q, rep = xlimport.apply(p, base64.b64decode(req['data']), req.get('mode', 'merge'))
                     if not rep['changed']:
@@ -400,6 +438,7 @@ class Handler(BaseHTTPRequestHandler):
                     q = core.check_structure(json.loads((ROOT / 'src' / 'demo_school.json').read_text(encoding='utf-8')))
                     q['version'] = core.VERSION
                     commit(q, 'Δοκιμαστικό σχολείο')
+                    backup.remember_file(ROOT, '', '')
                 elif action == '/api/backup/restore':
                     name = req['name']
                     if not any(x['name'] == name for x in backup.points(ROOT)):

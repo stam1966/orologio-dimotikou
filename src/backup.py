@@ -4,7 +4,8 @@ import json, os, re, shutil, string, sys, time
 from datetime import datetime, timedelta
 from pathlib import Path
 
-DEFAULTS = {'backup_dir': '', 'check_updates': None, 'tour_done': False, 'last_backup': '', 'last_update_check': ''}
+DEFAULTS = {'backup_dir': '', 'check_updates': None, 'tour_done': False, 'last_backup': '', 'last_update_check': '',
+            'current_file': '', 'file_hash': '', 'recent_files': []}
 
 
 def settings_path(root):
@@ -163,7 +164,7 @@ def _drives():
     return out
 
 
-def browse(path=''):
+def browse(path='', files=None):
     """Πλοήγηση φακέλων για την επιλογή φακέλου αντιγράφων.
     Χωρίς διαδρομή: γνωστοί φάκελοι και δίσκοι. Με διαδρομή: οι υποφάκελοί της."""
     if not path:
@@ -178,12 +179,15 @@ def browse(path=''):
     p = Path(path).expanduser()
     if not p.is_dir():
         raise ValueError('Ο φάκελος δεν υπάρχει: ' + str(p))
-    dirs = []
+    dirs = []; found = []
+    exts = tuple(e.lower() for e in (files or ()))
     try:
         for c in p.iterdir():
             try:
                 if c.is_dir() and not c.name.startswith(('.', '$')) and c.name not in ('System Volume Information', '__pycache__'):
                     dirs.append(c.name)
+                elif exts and c.is_file() and c.name.lower().endswith(exts) and not c.name.startswith(('.', '~$')):
+                    st = c.stat(); found.append({'name': c.name, 'path': str(c), 'size': st.st_size, 'mtime': datetime.fromtimestamp(st.st_mtime).strftime('%d/%m/%Y %H:%M')})
             except OSError:
                 continue
     except PermissionError:
@@ -196,7 +200,53 @@ def browse(path=''):
         writable = False
     crumbs = [{'label': (q.name or str(q)).rstrip('\\/') or str(q), 'path': str(q)} for q in reversed([p, *p.parents])]
     return {'path': str(p), 'parent': parent, 'places': [], 'drives': [], 'crumbs': crumbs,
-            'dirs': [{'name': d, 'path': str(p / d)} for d in dirs[:500]], 'writable': writable}
+            'dirs': [{'name': d, 'path': str(p / d)} for d in dirs[:500]], 'writable': writable,
+            'files': sorted(found, key=lambda f: f['name'].casefold())[:500]}
+
+
+PROJECT_EXT = '.json'
+
+
+def project_file_path(folder, name):
+    """Πλήρης διαδρομή αρχείου έργου στον φάκελο, με έγκυρο όνομα και κατάληξη .json."""
+    name = (name or '').strip()
+    if name.lower().endswith(PROJECT_EXT):
+        name = name[:-len(PROJECT_EXT)]
+    name = name.strip().rstrip('.')
+    if not name or BAD_NAME.search(name):
+        raise ValueError('Μη έγκυρο όνομα αρχείου (δεν επιτρέπονται οι χαρακτήρες < > : " / \\ | ? *).')
+    check_folder(folder)
+    return str(Path(folder) / (name + PROJECT_EXT))
+
+
+def write_project_file(path, project):
+    p = Path(path)
+    if p.suffix.lower() != PROJECT_EXT or not p.parent.is_dir():
+        raise ValueError('Μη έγκυρη διαδρομή αρχείου: ' + str(p))
+    data = json.dumps(project, ensure_ascii=False, indent=1)
+    tmp = p.with_name(p.name + '.tmp')
+    try:
+        tmp.write_text(data, encoding='utf-8'); os.replace(tmp, p)
+    except OSError as ex:
+        raise ValueError('Δεν ήταν δυνατή η αποθήκευση στο ' + str(p) + ' (' + str(ex) + ')')
+    return str(p)
+
+
+def read_file(path, limit=30_000_000):
+    p = Path(path)
+    if not p.is_file():
+        raise ValueError('Το αρχείο δεν βρέθηκε: ' + str(p))
+    if p.stat().st_size > limit:
+        raise ValueError('Το αρχείο είναι πολύ μεγάλο.')
+    return p.read_bytes()
+
+
+def remember_file(root, path, h):
+    s = load_settings(root)
+    s['current_file'] = path or ''; s['file_hash'] = h or ''
+    if path:
+        s['recent_files'] = [path] + [x for x in s.get('recent_files') or [] if x != path][:7]
+    return save_settings(root, s)
 
 
 BAD_NAME = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
