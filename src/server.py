@@ -554,7 +554,7 @@ def message_box(text):
     if sys.platform == 'win32':
         try:
             import ctypes
-            ctypes.windll.user32.MessageBoxW(0, text, 'Ωρολόγιο Δημοτικού', 0x10)
+            ctypes.windll.user32.MessageBoxW(0, text, 'Ωρολόγιο Σχολείου', 0x10)
             return
         except Exception:
             pass
@@ -610,7 +610,7 @@ def main():
         urlfile.write_text(url, encoding='utf-8')
     except OSError:
         pass
-    log('Ωρολόγιο Δημοτικού ' + core.VERSION + ' ' + url + (' (μετά από ενημέρωση)' if restarted else ''))
+    log('Ωρολόγιο Σχολείου ' + core.VERSION + ' ' + url + (' (μετά από ενημέρωση)' if restarted else ''))
     if not restarted or server.server_port != int(arg('--port', 0) or 0):
         open_window(url)
     LAST_SEEN[0] = time.time()

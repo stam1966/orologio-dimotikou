@@ -42,23 +42,82 @@ def validate(p, ids):
         if not isinstance(r, dict) or not DATE.match(str(r.get('date', ''))) or r['date'] in seen:
             raise ValueError('Μη έγκυρη ημερομηνία αναπληρώσεων.')
         seen.add(r['date'])
-        # εκπαιδευτικός που διαγράφηκε: η απουσία του δεν χρειάζεται πια
-        r['absent'] = [a for a in r.get('absent', []) if isinstance(a, dict) and a.get('teacher') in ids['teachers']]
+        r['absent'] = [a for a in r.get('absent', []) if isinstance(a, dict)]
+        r['covers'] = [c for c in r.get('covers', []) if isinstance(c, dict)]
+        snapshot(p, r, ids)
+        # εκπαιδευτικός που διαγράφηκε: η απουσία του δεν μετρά πια, αλλά το όνομά του μένει στο ιστορικό της ημέρας
+        gone = [str(a.get('name') or '')[:120] for a in r['absent'] if a.get('teacher') not in ids['teachers'] and a.get('name')]
+        r['gone'] = list(dict.fromkeys([str(x)[:120] for x in r.get('gone', []) if isinstance(x, str)] + gone))[:60]
+        if not r['gone']:
+            r.pop('gone')
+        r['absent'] = [a for a in r['absent'] if a.get('teacher') in ids['teachers']]
         for a in r['absent']:
             if a.get('periods') is not None and (not isinstance(a['periods'], list) or any(type(i) != int or not 0 <= i < n for i in a['periods'])):
                 raise ValueError('Μη έγκυρες ώρες απουσίας.')
             if len(str(a.get('reason', ''))) > 120:
                 raise ValueError('Πολύ μεγάλη αιτιολογία απουσίας.')
-        # κάλυψη για διδασκαλία που δεν υπάρχει πια: αφαιρείται σιωπηλά
-        r['covers'] = [c for c in r.get('covers', []) if isinstance(c, dict) and c.get('event') in evs]
+        # κάλυψη για διδασκαλία που δεν υπάρχει πια: μένει στο ιστορικό αν έχει «φωτογραφία» της ημέρας
+        r['covers'] = [c for c in r['covers'] if c.get('event') in evs or isinstance(c.get('snap'), dict)]
         for c in r['covers']:
             if type(c.get('period')) != int or not 0 <= c['period'] < n:
                 raise ValueError('Μη έγκυρη ώρα αναπλήρωσης.')
             if c.get('teacher', '') not in ('',) and c['teacher'] not in ids['teachers']:
                 # η κάλυψη έγινε από εκπαιδευτικό που διαγράφηκε: κρατιέται ως «άλλη λύση»
-                c['teacher'] = ''; c['kind'] = 'other'; c['note'] = (str(c.get('note', '')) or 'εκπαιδευτικός που διαγράφηκε')[:200]
+                who = (c.get('snap') or {}).get('teacher') or 'εκπαιδευτικός'
+                c['teacher'] = ''; c['kind'] = 'other'; c['note'] = (str(c.get('note', '')) or who + ' (διαγράφηκε)')[:200]
             if c.get('kind', 'teacher') not in COVER_KINDS or len(str(c.get('note', ''))) > 200:
                 raise ValueError('Μη έγκυρη αναπλήρωση.')
+
+
+SNAP_KEYS = ('period', 'classes', 'subject', 'absent', 'teacher')
+
+
+def snapshot(p, r, ids=None):
+    """Κρατά μέσα σε κάθε αναπλήρωση τι ήταν (ώρα, τμήμα, μάθημα, απών, αναπληρωτής) με βάση το πρόγραμμα
+    εκείνης της στιγμής, ώστε το ιστορικό να μη χάνεται αν αργότερα διαγραφεί ανάθεση ή εκπαιδευτικός
+    ή αλλάξει το πρόγραμμα. Όσες αντιστοιχούν σε ώρα που χρειάζεται κάλυψη σήμερα ανανεώνονται."""
+    tnames = {t['id']: t['name'] for t in p.get('teachers', []) if isinstance(t, dict) and 'id' in t}
+    for a in r['absent']:
+        if a.get('teacher') in tnames:
+            a['name'] = tnames[a['teacher']]
+    try:
+        ns, _ = needs(p, r)
+    except Exception:
+        ns = []
+    by = {(n['event'], n['period']): n for n in ns}
+    per = p.get('periods') or []
+    for c in r['covers']:
+        n = by.get((c.get('event'), c.get('period')))
+        if n:
+            j = n['period']
+            c['snap'] = dict(period=per[j]['name'] + 'η (' + per[j]['start'] + ')', classes=n['classes'], subject=n['subject'],
+                             absent=n['absent'], teacher=tnames.get(c.get('teacher'), ''))
+        elif isinstance(c.get('snap'), dict):
+            c['snap'] = {k: c['snap'].get(k) for k in SNAP_KEYS}
+            c['snap']['classes'] = [str(x)[:60] for x in (c['snap']['classes'] or [])][:20]
+            c['snap']['absent'] = [str(x)[:120] for x in (c['snap']['absent'] or [])][:20]
+            for k in ('period', 'subject', 'teacher'):
+                c['snap'][k] = str(c['snap'][k] or '')[:120]
+        else:
+            c.pop('snap', None)
+
+
+def history(p, rec, ns=None):
+    """Αναπληρώσεις της ημέρας που δεν αντιστοιχούν πια σε ώρα του τρέχοντος προγράμματος."""
+    if ns is None:
+        ns, _ = needs(p, rec)
+    keys = {(n['event'], n['period']) for n in ns}
+    out = []
+    for c in rec.get('covers', []):
+        sn = c.get('snap')
+        if (c.get('event'), c.get('period')) in keys or not isinstance(sn, dict):
+            continue
+        who = R.name_of(p, 'teachers', c['teacher']) if c.get('teacher') else (sn.get('teacher') or '')
+        if c.get('kind') in ('merge', 'other'):
+            who = COVER_KINDS[c['kind']] + (': ' + who if who else '')
+        out.append(dict(event=c.get('event'), period=c.get('period'), label=sn.get('period') or '', classes=sn.get('classes') or [],
+                        subject=sn.get('subject') or '', absent=sn.get('absent') or [], who=who or '— ακάλυπτη —', note=c.get('note', '')))
+    return sorted(out, key=lambda x: (x['period'] if isinstance(x['period'], int) else 99, x['classes']))
 
 
 def record(p, date):
@@ -165,7 +224,7 @@ def day(p, rec):
     dm = day_map(p, wd)
     present = sorted({t for (t, _) in dm})
     return dict(date=rec['date'], weekday=wd, day=p['days'][wd], needs=ns, covered=info,
-                teachers_today=present, year=year)
+                teachers_today=present, year=year, history=history(p, rec, ns), gone=rec.get('gone', []))
 
 
 def auto(p, rec, max_per_day=2):
@@ -201,6 +260,9 @@ def day_pages(p, date):
     for n in info:
         rows.append([p['periods'][n['period']]['name'] + 'η', ', '.join(n['classes']), n['subject'], ', '.join(n['absent']),
                      'συνδιδασκαλία: ' + ', '.join(n['covered_by']), ''])
+    for h in history(p, rec, ns):
+        rows.append([h['label'], ', '.join(h['classes']), h['subject'], ', '.join(h['absent']), h['who'],
+                     ((h['note'] + ' · ') if h['note'] else '') + 'από παλαιότερο πρόγραμμα'])
     abs_rows = []
     for a in rec.get('absent', []):
         per = 'όλη την ημέρα' if a.get('periods') is None else ', '.join(p['periods'][i]['name'] + 'η' for i in sorted(a['periods']))
@@ -208,7 +270,7 @@ def day_pages(p, date):
     title = 'Αναπληρώσεις ' + p['days'][wd] + ' ' + d.strftime('%d/%m/%Y')
     return [dict(type='table', heading='', name=title, header=['Ώρα', 'Τμήμα', 'Μάθημα', 'Απών/ούσα', 'Αναπληρώνει', 'Σημείωση'],
                  rows=rows or [['—', '', '', '', 'Δεν υπάρχουν ώρες για κάλυψη', '']],
-                 note='Απουσιάζουν: ' + ('; '.join(abs_rows) if abs_rows else '—'))]
+                 note='Απουσιάζουν: ' + ('; '.join(abs_rows + [x + ' (διαγράφηκε από τους εκπαιδευτικούς)' for x in rec.get('gone', [])]) or '—'))]
 
 
 def stats_pages(p):

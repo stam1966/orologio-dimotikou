@@ -59,7 +59,7 @@ try:
             url = f.read_text(encoding='utf-8').strip(); break
     assert url, 'server did not start'
     page = urllib.request.urlopen(url, timeout=10).read().decode('utf-8')
-    assert 'Ωρολόγιο Δημοτικού' in page and core.VERSION in page
+    assert 'Ωρολόγιο Σχολείου' in page and core.VERSION in page
     print('server OK', url)
 finally:
     proc.terminate()

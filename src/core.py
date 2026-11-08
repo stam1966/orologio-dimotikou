@@ -5,11 +5,11 @@ from pathlib import Path
 from collections import Counter, defaultdict
 import xml.etree.ElementTree as ET
 
-VERSION = '0.22.0-beta'
+VERSION = '0.23.0-beta'
 DAYS = ['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή']
 def uid(): return uuid.uuid4().hex[:16]
 def blank():
-    return dict(schema=1,version=VERSION,title='Ωρολόγιο Δημοτικού',school='',year='',days=DAYS[:],periods=[],teachers=[],classes=[],subjects=[],rooms=[],groups=[],lessons=[],events=[],teacher_rules={},class_rules={},subject_rules={},global_rules={'min_gaps':{'w':1,'on':True}})
+    return dict(schema=1,version=VERSION,title='Ωρολόγιο Σχολείου',school='',year='',days=DAYS[:],periods=[],teachers=[],classes=[],subjects=[],rooms=[],groups=[],lessons=[],events=[],teacher_rules={},class_rules={},subject_rules={},global_rules={'min_gaps':{'w':1,'on':True}})
 def mapping(p,k): return {x['id']:x for x in p[k]}
 def split(s): return [x for x in s.split(',') if x]
 def slots(p): return [[d,i] for d in range(5) for i in range(len(p['periods']))]

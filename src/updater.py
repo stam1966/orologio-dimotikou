@@ -50,7 +50,7 @@ def read(raw):
     if MANIFEST not in names:
         if any(n.replace('\\', '/').split('/')[-1] == 'python.exe' for n in names):
             raise ValueError('Αυτό είναι το πλήρες πακέτο εγκατάστασης. Αποσυμπιέστε το και τρέξτε την ΕΓΚΑΤΑΣΤΑΣΗ.cmd.')
-        raise ValueError('Το αρχείο δεν είναι ενημέρωση του «Ωρολόγιο Δημοτικού» (λείπει το ' + MANIFEST + ').')
+        raise ValueError('Το αρχείο δεν είναι ενημέρωση του «Ωρολόγιο Σχολείου» (λείπει το ' + MANIFEST + ').')
     man = json.loads(z.read(MANIFEST).decode('utf-8'))
     if man.get('app') != APP_ID or not man.get('version'):
         raise ValueError('Το αρχείο δεν είναι ενημέρωση αυτής της εφαρμογής.')

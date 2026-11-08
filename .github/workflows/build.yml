@@ -106,7 +106,7 @@ jobs:
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
           target_commitish: ${{ github.sha }}
-          name: Ωρολόγιο Δημοτικού ${{ steps.ver.outputs.tag }}
+          name: Ωρολόγιο Σχολείου ${{ steps.ver.outputs.tag }}
           make_latest: true
           body_path: dist/RELEASE_NOTES.md
           files: |

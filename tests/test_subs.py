@@ -69,6 +69,48 @@ class Substitutions(unittest.TestCase):
         r = q['substitutions'][0]
         self.assertEqual(r['absent'], []); self.assertEqual(r['covers'][0]['kind'], 'other'); self.assertEqual(r['covers'][0]['teacher'], '')
 
+    def test_history_survives_deleted_lesson_only(self):
+        p = self.p
+        rec = subs.auto(p, dict(date='2026-11-10', absent=[dict(teacher=self.t0, periods=None, reason='')], covers=[]))
+        p['substitutions'] = [rec]; p = core.check_structure(p)
+        covs = [x for x in p['substitutions'][0]['covers'] if x['teacher']]; c = covs[0]
+        before = subs.counts(p)
+        lid = next(e['lesson'] for e in p['events'] if e['id'] == c['event'])
+        q = copy.deepcopy(p); q['lessons'] = [l for l in q['lessons'] if l['id'] != lid]; q['events'] = [e for e in q['events'] if e['lesson'] != lid]
+        q = core.check_structure(q); q = core.check_structure(copy.deepcopy(q))   # και μετά από επόμενες αποθηκεύσεις
+        r2 = q['substitutions'][0]
+        self.assertEqual(len([x for x in r2['covers'] if x['teacher']]), len(covs))
+        self.assertEqual(subs.counts(q), before)
+        h = subs.day(q, r2)['history']; self.assertTrue(any(x['event'] == c['event'] and x['subject'] for x in h))
+        rows = subs.day_pages(q, '2026-11-10')[0]['rows']
+        self.assertTrue(any('από παλαιότερο πρόγραμμα' in r[5] for r in rows))
+
+    def test_history_survives_deleted_lesson_and_teacher(self):
+        p = self.p
+        rec = subs.auto(p, dict(date='2026-11-09', absent=[dict(teacher=self.t0, periods=None, reason='')], covers=[]))
+        p['substitutions'] = [rec]; p = core.check_structure(p)
+        r = p['substitutions'][0]; c = next(x for x in r['covers'] if x['teacher'])
+        self.assertEqual(set(c['snap']), set(subs.SNAP_KEYS)); self.assertTrue(c['snap']['teacher'])
+        before = subs.counts(p)[c['teacher']]
+        # διαγράφεται η ανάθεση της ώρας που καλύφθηκε και ο εκπαιδευτικός που απουσίαζε
+        lid = next(e['lesson'] for e in p['events'] if e['id'] == c['event'])
+        q = copy.deepcopy(p); q['lessons'] = [l for l in q['lessons'] if l['id'] != lid]; q['events'] = [e for e in q['events'] if e['lesson'] != lid]
+        q['teachers'] = [t for t in q['teachers'] if t['id'] != self.t0]
+        for l in q['lessons']: l['teachers'] = [t for t in l['teachers'] if t != self.t0]
+        for c_ in q['classes']:
+            if c_.get('teacher') == self.t0: c_['teacher'] = ''
+        q['teacher_rules'].pop(self.t0, None)
+        dead = {l['id'] for l in q['lessons'] if not l['teachers']}
+        q['lessons'] = [l for l in q['lessons'] if l['id'] not in dead]; q['events'] = [e for e in q['events'] if e['lesson'] not in dead]
+        q = core.check_structure(q)
+        r2 = q['substitutions'][0]
+        self.assertIn(c['event'], [x['event'] for x in r2['covers']])          # δεν χάθηκε
+        self.assertEqual(subs.counts(q)[c['teacher']], before)                  # μετρά ακόμη
+        self.assertTrue(r2.get('gone'))                                          # το όνομα του απόντα μένει
+        d = subs.day(q, r2); self.assertTrue(any(h['event'] == c['event'] for h in d['history']))
+        html = outputs.report(q, dict(kind='teachers', mode='subs_day', date='2026-11-09'))
+        self.assertIn('παλαιότερο πρόγραμμα', html); self.assertIn(r2['gone'][0], html)
+
 
 if __name__ == '__main__':
     unittest.main()
