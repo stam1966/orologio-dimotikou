@@ -262,7 +262,7 @@ const MENUS=()=>{let f=state.file||{},nm=x=>x.split(/[\\/]/).pop(),ev=P().events
    ['Εκδοχές…','',versionsDialog],['Δικαιοσύνη κατανομής','',()=>{ui.rk='teachers';ui.rm='fairness';remember();go('print');}],
    ['-'],['🗑 Διαγραφή προγράμματος…','',clearSchedule,placed]]],
  ['Εργαλεία',[['✨ Βοηθός AI','',()=>$('#aibtn').click()],['Θεσμικό πλαίσιο (ΦΕΚ)…','',()=>frameworkDialog('curriculum')],['Νέα σχολική χρονιά…','',newYearDialog],
-   ['Αναπληρώσεις','',()=>go('subs')],['-'],['⚙ Ρυθμίσεις','',()=>go('settings')]]],
+   ['Αναπληρώσεις','',()=>go('subs')],['-'],['🧰 Βοηθητικά εργαλεία','',()=>go('tools')],['📄 Έντυπα Διεύθυνσης (Excel)','',()=>{ui.toolTab='forms';go('tools');}],['💡 Προϋπολογισμός αναγκών','',()=>{ui.toolTab='needs';go('tools');}],['-'],['⚙ Ρυθμίσεις','',()=>go('settings')]]],
  ['Βοήθεια',[['Βοήθεια για αυτή την οθόνη','F1',()=>$('#help').click()],['📖 Οδηγός χρήσης','',()=>$('#manualbtn').click()],['Ξενάγηση','',()=>tour(0)],
    ['Συντομεύσεις πλήκτρων','',keysDialog],['-'],['Σχετικά με την εφαρμογή','',aboutDialog]]]];};
 function keysDialog(){let k=[['Ctrl+O','Άνοιγμα από αρχείο'],['Ctrl+S','Αποθήκευση'],['Ctrl+Shift+S','Αποθήκευση ως'],['Ctrl+Z / Ctrl+Y','Αναίρεση / Επανάληψη'],['Ctrl+K','Αναζήτηση'],['F1','Βοήθεια οθόνης'],['F10','Μετάβαση στο μενού (μετά ← → ↑ ↓, Enter)'],['Alt+1 … Alt+7','Βήματα εργασίας · Alt+0: Ρυθμίσεις'],['L / Delete / Esc','Πρόγραμμα: κλείδωμα / αφαίρεση θέσης / αποεπιλογή'],['Ctrl + σύρσιμο','Ανταλλαγή δύο μαθημάτων']];
@@ -327,7 +327,7 @@ function quickSearch(){let p=P(),items=[];for(let [k,lab] of [['teachers','Εκ�
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();quickSearch();}else if(e.key==='F1'){e.preventDefault();$('#help').click();}});
 const NEXTSTEP={school:'data',data:'lessons',lessons:'rules',rules:'schedule',schedule:'print'};
 function renderNext(){let b=$('#nextstep');if(!b)return;let nx=NEXTSTEP[page],ok=nx&&stepStatus(page).done&&!stepStatus(nx).done;b.hidden=!ok;if(ok){b.textContent='Επόμενο βήμα: '+PAGES.find(x=>x[0]===nx)[1]+' →';b.onclick=()=>go(nx);}}
-const MANUAL_CH={settings:'safe',school:'start',data:'data',lessons:'lessons',rules:'rules',schedule:'sched',print:'print',subs:'subs'};
+const MANUAL_CH={settings:'safe',tools:'tools',school:'start',data:'data',lessons:'lessons',rules:'rules',schedule:'sched',print:'print',subs:'subs'};
 
 /* ---------- διάλογοι ---------- */
 function modal(title,body,{ok='Αποθήκευση',onOk=null,cancel='Ακύρωση',wide=false,extra=''}={}){let d=$('#dialog');
@@ -378,12 +378,12 @@ function stepStatus(k){let p=P(),s=state.summary;
  if(k==='schedule'){let bad=s.unplaced+s.errors.length;return {done:p.events.length&&!bad,badge:bad?String(bad):(p.events.length?'✓':''),bad:bad>0};}
  if(k==='subs'){let n=(p.substitutions||[]).length;return {done:false,badge:n?n+' ημ.':''};}
  return {done:false,badge:''};}
-const EXTRA=[['settings','Ρυθμίσεις']];
+const EXTRA=[['settings','Ρυθμίσεις'],['tools','Βοηθητικά εργαλεία']];
 function render(){if($('#menubar')&&!$('#menubar').childElementCount)renderMenubar();if(PREVIEW&&PREVIEW.rev!==state.revision)PREVIEW=null;let p=P();if(!PAGES.some(x=>x[0]===page)&&!EXTRA.some(x=>x[0]===page))page='school';
  $('#schoolname').textContent=p.school||'Ωρολόγιο Σχολείου';{let f=state.file||{},n=f.path?f.path.split(/[\\/]/).pop():'';$('#curfile').innerHTML=n?`📄 ${esc(n)}${f.dirty?' <b title="Υπάρχουν αλλαγές που δεν έχουν αποθηκευτεί σε αυτό το αρχείο (Ctrl+S)">•</b>':''}`:'';$('#curfile').title=f.path||'';}$('#schoolyear').textContent=p.year?'Σχολικό έτος '+p.year:'Ορίστε σχολείο και έτος';
  $('.app').classList.toggle('narrow',page==='schedule');
  $('#steps').innerHTML=PAGES.map(([k,t],i)=>{let s=stepStatus(k);return `<li><button data-page="${k}" title="${esc(t)}" class="${k===page?'on':''} ${s.done?'done':''}"><span class="n">${s.done&&k!==page?'✓':i+1}</span><span>${t}</span>${s.badge?`<span class="badge ${s.bad?'bad':''}">${esc(s.badge)}</span>`:''}</button></li>`;}).join('');
- $('#steps2').innerHTML=`<li><button data-page="settings" title="Στοιχεία σχολείου, σχολικό έτος, αντίγραφα ασφαλείας, ενημερώσεις, βοηθός AI" class="${page==='settings'?'on':''}"><span class="n">⚙</span><span>Ρυθμίσεις</span>${!p.school?'<span class="badge bad">!</span>':''}</button></li>`;
+ $('#steps2').innerHTML=`<li><button data-page="tools" title="Στοιχεία και έντυπα για τη Διεύθυνση, Ολοήμερο και Πρωινή Ζώνη, προϋπολογισμός αναγκών σε ώρες και προσωπικό" class="${page==='tools'?'on':''}"><span class="n">🧰</span><span>Βοηθητικά εργαλεία</span></button></li><li><button data-page="settings" title="Στοιχεία σχολείου, σχολικό έτος, αντίγραφα ασφαλείας, ενημερώσεις, βοηθός AI" class="${page==='settings'?'on':''}"><span class="n">⚙</span><span>Ρυθμίσεις</span>${!p.school?'<span class="badge bad">!</span>':''}</button></li>`;
  $$('[data-page]').forEach(b=>b.onclick=()=>go(b.dataset.page));
  $('#title').textContent=[...PAGES,...EXTRA].find(x=>x[0]===page)[1];
  let s=state.summary;$('#chips').innerHTML=p.events.length?`<span class="chip ${s.unplaced?'bad':''}" data-goto="schedule" title="Διδασκαλίες χωρίς θέση">Εκκρεμότητες <b>${s.unplaced}</b></span><span class="chip ${s.errors.length?'bad':'good'}" data-goto="schedule" title="Παραβιάσεις υποχρεωτικών κανόνων">Παραβιάσεις <b>${s.errors.length}</b></span><span class="chip" data-goto="schedule" title="Κενά εκπαιδευτικών συνολικά">Κενά <b>${s.gaps}</b></span>`:'';
@@ -392,7 +392,7 @@ function render(){if($('#menubar')&&!$('#menubar').childElementCount)renderMenub
  $('#undo').disabled=!state.history.undo;$('#undo').title=state.history.undo?'Αναίρεση: '+state.history.undo+' (Ctrl+Z)':'Τίποτα για αναίρεση';
  $('#redo').disabled=!state.history.redo;$('#redo').title=state.history.redo?'Επανάληψη: '+state.history.redo+' (Ctrl+Y)':'Τίποτα για επανάληψη';
  renderNext();renderJob();let c=$('#content');c.className='content'+(page==='schedule'?' board':'');
- ({school:pageSchool,settings:pageSchool,data:pageData,lessons:pageLessons,rules:pageRules,schedule:pageSchedule,print:pagePrint,subs:pageSubs})[page]();}
+ ({school:pageSchool,settings:pageSchool,tools:pageTools,data:pageData,lessons:pageLessons,rules:pageRules,schedule:pageSchedule,print:pagePrint,subs:pageSubs})[page]();}
 function go(k){if(PREVIEW&&k!=='schedule')PREVIEW=null;page=k;ui.sel=null;ui.slots=null;remember();render();$('#content').scrollTop=0;}
 function renderJob(){let j=state.job,el=$('#job');if(!j.running){el.innerHTML='';return;}let el2=Math.round((Date.now()/1000-j.started));
  el.innerHTML=`<span>Παραγωγή… ${el2}″ / ${j.seconds}″</span><span class="bar"><i style="width:${Math.min(100,100*el2/j.seconds)}%"></i></span><button class="btn small" id="cancel">Διακοπή</button>`;$('#cancel').onclick=()=>api('cancel',{}).then(()=>toast('Ζητήθηκε διακοπή'));}
@@ -758,7 +758,7 @@ function pagePrint(){let p=P();
  <div class="row" style="margin-top:6px"><button class="btn primary" id="rpreview">Προεπισκόπηση</button><button class="btn go" id="rprint">Εκτύπωση / PDF</button><button class="btn" id="rxlsx">Excel αυτής της αναφοράς</button><button class="btn" id="rhtml">Λήψη HTML</button><span class="grow"></span><select id="rpreset">${[0,1,2].map(i=>option(i,'Δικές μου ρυθμίσεις '+(i+1)+(p.report_presets?.[i]?'':' (κενή)'),0)).join('')}</select><button class="btn" id="rsave">Αποθήκευση</button><button class="btn" id="rload">Φόρτωση</button></div>
  <iframe class="preview" id="rframe" title="Προεπισκόπηση εκτύπωσης" style="margin-top:12px"></iframe></div>
  <div class="section"><h2>Ένα PDF για τον καθένα</h2><p class="muted small">Ένα αρχείο PDF για κάθε εκπαιδευτικό ή τμήμα, όλα μαζί σε ένα .zip, έτοιμα για email. Χρησιμοποιούνται οι επιλογές εμφάνισης της αναφοράς επάνω.</p><div class="row"><button class="btn primary" data-pdfs="teachers">PDF ανά εκπαιδευτικό (.zip)</button><button class="btn" data-pdfs="classes">PDF ανά τμήμα (.zip)</button></div></div>
- <div class="section"><h2>Εξαγωγή αρχείων</h2><div class="row"><button class="btn" data-out="xlsx">Πλήρες Excel (.xlsx)</button><button class="btn" data-out="asc">Για aSc TimeTables (XML)</button><button class="btn" data-out="xml">Έργο σε XML</button><button class="btn" data-out="json">Αντίγραφο JSON</button></div><p class="muted small">Πλήρες Excel: αφίσες, πίνακας μαθημάτων, αναθέσεις, κατανομή και ωρολόγιο κάθε τμήματος και εκπαιδευτικού σε χωριστά φύλλα. «Για aSc»: στο aSc ανοίξτε Αρχείο → Εισαγωγή → aSc XML. Περνούν ωράριο, μαθήματα, εκπαιδευτικοί, τμήματα, ομάδες, αναθέσεις και θέσεις· οι κανόνες και οι διαθεσιμότητες δεν υπάρχουν σε αυτή τη μορφή. «Έργο σε XML»: πλήρες αντίγραφο της εφαρμογής (μαζί με κανόνες).</p></div>`;
+ <div class="section"><h2>Έντυπα Διεύθυνσης</h2><p class="muted small">«Ω.Π. και διδακτικό ωράριο εκπαιδευτικών» και «Ολοήμερο», σε Excel με τη μορφή της Διεύθυνσης.</p><div class="row"><button class="btn primary" id="toforms">📄 Έντυπα Διεύθυνσης…</button></div></div><div class="section"><h2>Εξαγωγή αρχείων</h2><div class="row"><button class="btn" data-out="xlsx">Πλήρες Excel (.xlsx)</button><button class="btn" data-out="asc">Για aSc TimeTables (XML)</button><button class="btn" data-out="xml">Έργο σε XML</button><button class="btn" data-out="json">Αντίγραφο JSON</button></div><p class="muted small">Πλήρες Excel: αφίσες, πίνακας μαθημάτων, αναθέσεις, κατανομή και ωρολόγιο κάθε τμήματος και εκπαιδευτικού σε χωριστά φύλλα. «Για aSc»: στο aSc ανοίξτε Αρχείο → Εισαγωγή → aSc XML. Περνούν ωράριο, μαθήματα, εκπαιδευτικοί, τμήματα, ομάδες, αναθέσεις και θέσεις· οι κανόνες και οι διαθεσιμότητες δεν υπάρχουν σε αυτή τη μορφή. «Έργο σε XML»: πλήρες αντίγραφο της εφαρμογής (μαζί με κανόνες).</p></div>`;
  let opts=()=>({kind:$('#rkind').value,mode:$('#rmode').value,entity:$('#rentity').value,paper:$('#rpaper').value,orientation:$('#rorientation').value,font:+$('#rfont').value,colors:$('#rcolors').checked,title:$('#rtitle').value,theme:$('#rtheme').value,used:$('#rused').checked});
  let preview=async()=>{try{$('#rframe').srcdoc=await(await api('report',{options:opts()})).text();}catch(e){toast(e.message,true);}};
  $('#rkind').onchange=()=>{ui.rk=$('#rkind').value;remember();$('#rentity').innerHTML=option('','Όλες','')+options(ui.rk,'');preview();};
@@ -771,11 +771,121 @@ function pagePrint(){let p=P();
  $('#rsave').onclick=()=>{let q=clone();q.report_presets??={};q.report_presets[$('#rpreset').value]=opts();save(q,'Ρυθμίσεις εκτύπωσης','Οι ρυθμίσεις αποθηκεύτηκαν');};
  $('#rload').onclick=()=>{let v=p.report_presets?.[$('#rpreset').value];if(!v){toast('Δεν έχουν αποθηκευτεί ρυθμίσεις σε αυτή τη θέση.',true);return;}$('#rkind').value=v.kind;ui.rk=v.kind;$('#rentity').innerHTML=option('','Όλες','')+options(v.kind,'');for(let k of ['mode','entity','paper','orientation','font','title','theme'])if(v[k]!==undefined)$('#r'+k).value=v[k];$('#rcolors').checked=v.colors!==false;$('#rused').checked=v.used!==false;ui.rm=v.mode;preview();};
  $$('[data-pdfs]').forEach(b=>b.onclick=async()=>{let k=b.dataset.pdfs,old=b.textContent;b.disabled=true;b.textContent='Δημιουργία PDF…';try{let r=await fetch('/api/export/pdfs',{method:'POST',headers:{'X-App-Token':token,'Content-Type':'application/json'},body:JSON.stringify({kind:k,options:opts()})});if(!r.ok){let e=await r.json();throw Error(e.error);}download(await r.blob(),k==='teachers'?'orologia_ekpaideftikon.zip':'orologia_tmimaton.zip');toast('Τα PDF δημιουργήθηκαν');}catch(e){toast(e.message,true);}finally{b.disabled=false;b.textContent=old;}});
+ $('#toforms').onclick=()=>{ui.toolTab='forms';go('tools');};
  $$('[data-out]').forEach(b=>b.onclick=async()=>{try{let ext=b.dataset.out;download(await(await api(ext==='json'?'export':'export/'+ext)).blob(),ext==='asc'?'orologio_gia_aSc.xml':'orologio.'+ext);}catch(e){toast(e.message,true);}});
  if(['assignments','distribution','fairness','framework','subs_stats'].includes(ui.rm))$('#rentity').disabled=true;preview();}
 
 
 
+
+/* ================= Βοηθητικά εργαλεία (στοιχεία Διεύθυνσης, ολοήμερο, προϋπολογισμός, έντυπα) ================= */
+let TOOLS={info:null,draft:null,dirty:false,busy:false};
+function admDraft(){if(!TOOLS.draft)TOOLS.draft=structuredClone(P().admin||{});return TOOLS.draft;}
+function admTeacher(tid){let a=admDraft();a.teachers??={};return a.teachers[tid]??={};}
+function admDirty(){TOOLS.dirty=true;let b=$('#admsave');if(b){b.disabled=false;b.textContent='💾 Αποθήκευση αλλαγών';}}
+async function admLoad(){try{TOOLS.info=await(await api('admin/info',{admin:admDraft()})).json();}catch(e){toast(e.message,true);}}
+async function admSave(){let q=clone();q.admin=structuredClone(admDraft());
+ for(let [k,v] of Object.entries(q.admin.teachers||{})){for(let f of Object.keys(v))if(v[f]===''||v[f]===null||(Array.isArray(v[f])&&!v[f].length))delete v[f];if(!Object.keys(v).length)delete q.admin.teachers[k];}
+ if(await save(q,'Βοηθητικά εργαλεία','Αποθηκεύτηκαν τα στοιχεία')){TOOLS.dirty=false;TOOLS.draft=null;}}
+function admNum(v){let n=parseInt(v,10);return isNaN(n)?0:Math.max(0,n);}
+async function pageTools(){let tb=ui.toolTab||'school';
+ if(!TOOLS.dirty)TOOLS.draft=null;
+ $('#content').innerHTML=`<div class="row" style="margin-bottom:12px"><div class="seg">${[['school','Στοιχεία Διεύθυνσης'],['teachers','Εκπαιδευτικοί'],['allday','Ολοήμερο & Πρωινή Ζώνη'],['needs','Προϋπολογισμός αναγκών'],['forms','Έντυπα Διεύθυνσης']].map(([k,t])=>`<button data-tooltab="${k}" class="${k===tb?'on':''}">${t}</button>`).join('')}</div><span class="grow"></span><button class="btn primary" id="admsave" ${TOOLS.dirty?'':'disabled'}>${TOOLS.dirty?'💾 Αποθήκευση αλλαγών':'Όλα αποθηκευμένα'}</button></div><div id="tooltab"><p class="muted">Φόρτωση…</p></div>`;
+ $$('[data-tooltab]').forEach(b=>b.onclick=()=>{ui.toolTab=b.dataset.tooltab;remember();pageTools();});
+ $('#admsave').onclick=admSave;
+ await admLoad();if(!TOOLS.info||page!=='tools')return;
+ ({school:toolsSchool,teachers:toolsTeachers,allday:toolsAllday,needs:toolsNeeds,forms:toolsForms})[tb]();}
+function toolsSchool(){let a=admDraft(),I=TOOLS.info.admin,p=P();
+ let f=(k,t,ph)=>`<label class="field grow" style="min-width:260px"><span>${t}</span><input data-adm="${k}" value="${esc(a[k]??I[k]??'')}" placeholder="${esc(ph||'')}"></label>`;
+ $('#tooltab').innerHTML=`<div class="section"><h2>Επικεφαλίδα και υπογραφές των εντύπων</h2><p class="muted small">Τα κείμενα που μπαίνουν στην κορυφή και στο τέλος των εντύπων της Διεύθυνσης. Αλλάζουν ανά Διεύθυνση· μένουν αποθηκευμένα στο έργο.</p>
+ <div class="row">${f('ministry','Υπουργείο')}${f('region','Περιφερειακή Διεύθυνση','π.χ. ΠΕΡΙΦΕΡΕΙΑΚΗ Δ/ΝΣΗ Α/ΘΜΙΑΣ & Β/ΘΜΙΑΣ ΕΚΠ/ΣΗΣ …')}</div>
+ <div class="row">${f('directorate','Διεύθυνση Εκπαίδευσης','π.χ. ΔΙΕΥΘΥΝΣΗ Α/ΘΜΙΑΣ ΕΚΠΑΙΔΕΥΣΗΣ …')}${f('school_form','Όνομα σχολείου στα έντυπα',(p.school||'').toUpperCase())}</div>
+ <div class="row">${f('city','Πόλη (για την ημερομηνία)','π.χ. ΑΘΗΝΑ')}${f('date','Ημερομηνία υπογραφής','π.χ. 1/10/2026')}</div>
+ <div class="row">${f('approver','Θεώρηση από')}${f('director_title','Υπογραφή διευθυντή')}</div></div>
+ <div class="section"><h2>Ε.Δ.Υ. και σχολική βιβλιοθήκη</h2><p class="muted small">Μετρούν στο ωράριο και εμφανίζονται μόνο στο έντυπο της Διεύθυνσης· <b>δεν</b> πιάνουν θέση στο ωρολόγιο πρόγραμμα.</p>
+ <div class="row"><label class="field"><span>Ε.Δ.Υ. (ώρες, πάντα στον διευθυντή)</span><input type="number" min="0" max="10" id="admedy" value="${a.edy??I.edy??1}" style="width:90px"></label>
+ <label class="field"><span>Βιβλιοθήκη: εκπαιδευτικός</span><select id="admlib">${option('','—',(a.library||I.library||{}).teacher)}${p.teachers.map(t=>option(t.id,t.name,(a.library||I.library||{}).teacher)).join('')}</select></label>
+ <label class="field"><span>Βιβλιοθήκη: ώρες</span><input type="number" min="0" max="20" id="admlibh" value="${(a.library||I.library||{}).hours??3}" style="width:90px"></label></div>
+ ${p.teachers.some(t=>t.role==='director')?'':'<p class="muted small">⚠ Δεν έχει οριστεί διευθυντής (Δεδομένα → Εκπαιδευτικοί → Ρόλος). Χωρίς αυτόν δεν μπαίνει η Ε.Δ.Υ.</p>'}</div>
+ <div class="section"><h2>Ημέρα εφημερίας από την εφαρμογή «Εφημερίες»</h2><p class="muted small">Διαβάζει (χωρίς να αλλάζει τίποτα) την κύρια ημέρα εφημερίας κάθε εκπαιδευτικού από την εφαρμογή «Εφημερίες Εκπαιδευτικών» αυτού του υπολογιστή, ή από αρχείο αντιγράφου της (.efbackup / .db). Τη βλέπετε πριν την εφαρμόσετε.</p>
+ <div class="row"><button class="btn primary" id="efscan">Ανάγνωση από τις «Εφημερίες»</button><label class="btn">Από αρχείο (.efbackup / .db)…<input type="file" id="effile" accept=".efbackup,.zip,.db" hidden></label></div><div id="efres"></div></div>`;
+ $$('[data-adm]').forEach(i=>i.onchange=()=>{a[i.dataset.adm]=i.value.trim();admDirty();});
+ $('#admedy').onchange=()=>{a.edy=Math.min(10,admNum($('#admedy').value));admDirty();};
+ let lib=()=>{a.library={teacher:$('#admlib').value,hours:Math.min(20,admNum($('#admlibh').value))};admDirty();};$('#admlib').onchange=lib;$('#admlibh').onchange=lib;
+ let show=r=>{if(!r.found){$('#efres').innerHTML='<p class="muted small">Δεν βρέθηκε βάση της εφαρμογής «Εφημερίες» στα Έγγραφα. Επιλέξτε αρχείο αντιγράφου της.</p>';return;}
+  let ok=r.rows.filter(x=>x.teacher);$('#efres').innerHTML=`<p class="small muted">${r.file?'Αρχείο: '+esc(r.file):''}</p><table class="tbl"><tr><th>Στις «Εφημερίες»</th><th>Ημέρα</th><th>Πηγή</th><th>Εκπαιδευτικός εδώ</th></tr>${r.rows.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή'][x.day])}</td><td class="muted small">${esc(x.source)}</td><td>${x.teacher?esc(x.teacher_name):'<span class="muted">— δεν βρέθηκε</span>'}</td></tr>`).join('')}</table><div class="row" style="margin-top:8px"><button class="btn primary" id="efapply" ${ok.length?'':'disabled'}>Εφαρμογή σε ${ok.length} εκπαιδευτικούς</button></div>`;
+  if($('#efapply'))$('#efapply').onclick=()=>{for(let x of ok)admTeacher(x.teacher).duty=x.day;admDirty();toast('Οι ημέρες μπήκαν· πατήστε «Αποθήκευση αλλαγών».');};};
+ $('#efscan').onclick=async()=>{try{show(await(await api('efimeries/scan',{})).json());}catch(e){toast(e.message,true);}};
+ $('#effile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{show(await(await api('efimeries/scan',{data:await fileBase64(f)})).json());}catch(er){toast(er.message,true);}};}
+function toolsTeachers(){let I=TOOLS.info,a=admDraft(),D=['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή'];
+ let row=t=>{let d=(a.teachers||{})[t.id]||{},ex=d.extras||[];
+  return `<tr data-tid="${t.id}"><td><b>${esc(t.name)}</b><div class="muted small">${t.homeroom?'Τάξη '+esc(t.homeroom):''}</div></td>
+  <td><input data-tf="klados" value="${esc(d.klados||'')}" placeholder="${esc(t.klados)}" style="width:76px"></td>
+  <td><input data-tf="title" value="${esc(d.title||'')}" placeholder="${esc(t.title)}" style="width:76px"></td>
+  <td><select data-tf="duty">${option('','—',d.duty??'')}${D.map((x,i)=>option(i,x,d.duty??'')).join('')}</select></td>
+  <td><input type="number" min="0" max="40" data-tf="other" value="${d.other||''}" style="width:56px"></td>
+  <td>${ex.map((x,k)=>`<div class="row" style="gap:4px;margin-bottom:2px"><select data-ex="${k}" data-exf="kind">${I.kinds.map(kd=>option(kd,kd,x.kind)).join('')}</select><input type="number" min="0" max="40" data-ex="${k}" data-exf="hours" value="${x.hours}" style="width:52px"><button class="btn small" data-exdel="${k}" title="Αφαίρεση">✕</button></div>`).join('')}<button class="btn small" data-exadd>+ ώρες</button></td>
+  <td><input data-tf="note" value="${esc(d.note||'')}" style="width:160px"></td>
+  <td class="small">${t.required??'<span class="muted">—</span>'} / ${(Object.values(t.by_class).reduce((x,y)=>x+y,0)+t.allday+t.other+t.library+t.edy)}${t.extra?' <span class="muted">+'+t.extra+'</span>':''}</td></tr>`;};
+ $('#tooltab').innerHTML=`<div class="section" style="max-width:none"><h2>Στοιχεία εκπαιδευτικών για τη Διεύθυνση</h2><p class="muted small">Κενό πεδίο = αυτόματη τιμή (φαίνεται αχνά). <b>Πρόσθετες ώρες</b> (ενισχυτική, παράλληλη, γραμματειακή…): μπαίνουν ως αριθμός στη στήλη «Ώρες υπερωριακής απασχόλησης / ενισχυτικής διδασκαλίας» και ως περιγραφή στις παρατηρήσεις· δεν πιάνουν θέση στο πρόγραμμα. Η τελευταία στήλη δείχνει υποχρεωτικό ωράριο / ώρες που καλύπτονται.</p>
+ <div style="overflow:auto"><table class="tbl"><tr><th>Εκπαιδευτικός</th><th>Κλάδος</th><th>Ιδιότητα</th><th>Ημέρα εφημερίας</th><th>Άλλο σχολείο</th><th>Πρόσθετες ώρες</th><th>Παρατήρηση</th><th>Ωράριο / σύνολο</th></tr>${I.teachers.map(row).join('')}</table></div></div>
+ <div class="section"><h2>Αριθμός μαθητών ανά τμήμα</h2><div class="row">${I.classes.map(c=>`<label class="field"><span>${esc(c.short)}</span><input type="number" min="0" max="99" data-stud="${c.id}" value="${(a.students||{})[c.id]??''}" style="width:70px"></label>`).join('')}</div></div>`;
+ $$('[data-tid]').forEach(tr=>{let tid=tr.dataset.tid;
+  [...tr.querySelectorAll('[data-tf]')].forEach(i=>i.onchange=()=>{let d=admTeacher(tid),f=i.dataset.tf;d[f]=f==='duty'?(i.value===''?'':+i.value):f==='other'?Math.min(40,admNum(i.value)):i.value.trim();admDirty();});
+  [...tr.querySelectorAll('[data-exf]')].forEach(i=>i.onchange=()=>{let d=admTeacher(tid),x=d.extras[+i.dataset.ex];x[i.dataset.exf]=i.dataset.exf==='hours'?Math.min(40,admNum(i.value)):i.value;admDirty();});
+  [...tr.querySelectorAll('[data-exdel]')].forEach(b=>b.onclick=()=>{let d=admTeacher(tid);d.extras.splice(+b.dataset.exdel,1);admDirty();toolsTeachers();});
+  tr.querySelector('[data-exadd]').onclick=()=>{let d=admTeacher(tid);(d.extras??=[]).push({kind:'ενισχυτική',hours:1});admDirty();toolsTeachers();};});
+ $$('[data-stud]').forEach(i=>i.onchange=()=>{let a=admDraft();a.students??={};if(i.value==='')delete a.students[i.dataset.stud];else a.students[i.dataset.stud]=Math.min(99,admNum(i.value));admDirty();});}
+function toolsAllday(){let I=TOOLS.info,a=admDraft(),p=P(),ad=a.allday??={},secs=I.sections,per=I.periods_allday,G=['Α','Β','Γ','Δ','Ε','ΣΤ'];
+ let pn=i=>(p.periods[i]?.name||i)+'η ('+p.periods[i]?.start+'-'+p.periods[i]?.end+')';
+ let srows=ad.student_rows||[{label:'1η & 2η ώρα',counts:{}},{label:'3η ώρα',counts:{}}];
+ $('#tooltab').innerHTML=`<div class="section" style="max-width:none"><h2>Τμήματα Ολοήμερου και Πρωινής Ζώνης</h2><p class="muted small">Βρίσκονται από το πρόγραμμα (τμήματα όπως «ΟΛ1», «Πρωινή Ζώνη»). Ποιος διδάσκει κάθε ημέρα, σταθερά ή εναλλάξ, διαβάζεται από τις αναθέσεις και τις θέσεις τους. Εδώ ορίζετε μόνο ό,τι χρειάζεται το έντυπο: όνομα τμήματος, τάξεις (και αν αλλάζουν σε κάποια ώρα) και διδακτικό αντικείμενο.</p>
+ ${secs.length?`<div style="overflow:auto"><table class="tbl"><tr><th>Τμήμα στο πρόγραμμα</th><th>Είδος</th><th>Όνομα στο έντυπο</th><th>Τάξεις</th>${per.map(i=>`<th>Τάξεις στην ${esc(pn(i))}</th>`).join('')}<th>Αντικείμενο</th></tr>
+ ${secs.map((s,k)=>`<tr data-sec="${k}"><td>${esc(s.name)}</td><td><select data-sf="kind">${option('allday','Ολοήμερο',s.kind)}${option('morning','Πρωινή Ζώνη',s.kind)}</select></td><td><input data-sf="label" value="${esc(s.label)}" style="width:140px"></td><td><input data-sf="grades" value="${esc(s.grades)}" placeholder="π.χ. Α - Β" style="width:90px"></td>${per.map(i=>`<td><input data-sp="${i}" value="${esc((s.by_period||{})[i]||'')}" placeholder="${esc(s.grades||'ίδιες')}" style="width:90px" ${s.kind==='allday'?'':'disabled'}></td>`).join('')}<td><input data-sf="subject" value="${esc(s.subject)}" placeholder="ΜΕΛ/ΠΡΟΕΤΟΙΜΑΣΙΑ" style="width:150px" ${s.kind==='allday'?'':'disabled'}></td></tr>`).join('')}</table></div>`:'<p class="muted">Δεν βρέθηκαν τμήματα Ολοήμερου ή Πρωινής Ζώνης. Στο aSc και εδώ καταχωρίζονται ως τμήματα (π.χ. «ΟΛ1 - 16:00», «Πρωινή Ζώνη») με τις αναθέσεις τους.</p>'}
+ <div class="row" style="margin-top:10px"><label class="field"><span>Υπεύθυνος λειτουργίας Ολοήμερου</span><select id="adresp">${option('','—',ad.responsible||'')}${p.teachers.map(t=>option(t.id,t.name,ad.responsible||'')).join('')}</select></label>
+ <label class="field grow"><span>Κείμενο 1ης ώρας (σίτιση)</span><input id="admeal" value="${esc(ad.meal_text||'')}" placeholder="Διατροφική Αγωγή - Όλα τα τμήματα"></label></div></div>
+ <div class="section"><h2>Αριθμός μαθητών Ολοήμερου</h2><table class="tbl" style="width:auto"><tr><th></th>${G.map(g=>`<th>${g}</th>`).join('')}</tr>
+ ${srows.map((r,k)=>`<tr><td><input data-srl="${k}" value="${esc(r.label)}" style="width:120px"></td>${G.map(g=>`<td><input type="number" min="0" max="999" data-src="${k}" data-g="${g}" value="${(r.counts||{})[g]??''}" style="width:60px"></td>`).join('')}</tr>`).join('')}
+ <tr><td>Σύνολο εγγεγραμμένων</td>${G.map(g=>`<td><input type="number" min="0" max="999" data-enr="${g}" value="${(ad.enrolled||{})[g]??''}" style="width:60px"></td>`).join('')}</tr></table></div>
+ <div class="section"><h2>Ώρες ανά εκπαιδευτικό (από το πρόγραμμα)</h2><div id="adhours"></div></div>`;
+ let keep=()=>{ad.sections=secs.map(s=>({class:s.class,kind:s.kind,label:s.label,grades:s.grades,by_period:s.by_period||{},subject:s.subject}));admDirty();};
+ $$('[data-sec]').forEach(tr=>{let s=secs[+tr.dataset.sec];[...tr.querySelectorAll('[data-sf]')].forEach(i=>i.onchange=()=>{s[i.dataset.sf]=i.value.trim();keep();if(i.dataset.sf==='kind')toolsAllday();});
+  [...tr.querySelectorAll('[data-sp]')].forEach(i=>i.onchange=()=>{s.by_period=s.by_period||{};if(i.value.trim())s.by_period[i.dataset.sp]=i.value.trim();else delete s.by_period[i.dataset.sp];keep();});});
+ $('#adresp').onchange=()=>{ad.responsible=$('#adresp').value;admDirty();};$('#admeal').onchange=()=>{ad.meal_text=$('#admeal').value.trim();admDirty();};
+ let sr=()=>{ad.student_rows=srows;admDirty();};
+ $$('[data-srl]').forEach(i=>i.onchange=()=>{srows[+i.dataset.srl].label=i.value;sr();});
+ $$('[data-src]').forEach(i=>i.onchange=()=>{let c=srows[+i.dataset.src].counts??={};if(i.value==='')delete c[i.dataset.g];else c[i.dataset.g]=Math.min(999,admNum(i.value));sr();});
+ $$('[data-enr]').forEach(i=>i.onchange=()=>{ad.enrolled??={};if(i.value==='')delete ad.enrolled[i.dataset.enr];else ad.enrolled[i.dataset.enr]=Math.min(999,admNum(i.value));admDirty();});
+ let T=Object.fromEntries(p.teachers.map(t=>[t.id,t.name])),rows=I.teachers.filter(t=>t.allday);
+ $('#adhours').innerHTML=rows.length?`<table class="tbl" style="width:auto"><tr><th>Εκπαιδευτικός</th><th>Ώρες Ολοήμερου / Πρωινής Ζώνης</th></tr>${rows.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.allday}</td></tr>`).join('')}</table><p class="muted small">Για να αλλάξει ποιος παίρνει ποια ημέρα, αλλάξτε τις αναθέσεις των τμημάτων Ολοήμερου/Πρωινής Ζώνης (Αναθέσεις → επιτρεπτές ημέρες) ή μετακινήστε τις θέσεις στο Πρόγραμμα.</p>`:'<p class="muted small">Καμία ώρα Ολοήμερου ή Πρωινής Ζώνης στις αναθέσεις.</p>';}
+function toolsNeeds(){let I=TOOLS.info,N=I.needs,a=admDraft(),nd=a.needs??={},G=['Α','Β','Γ','Δ','Ε','ΣΤ'];
+ let cls=v=>v<0?'style="color:#B42318;font-weight:600"':v>0?'style="color:#1A7F37;font-weight:600"':'';
+ let EX=[['morning','Πρωινή Ζώνη'],['meal','Σίτιση Ολοήμερου'],['study','Μελέτη Ολοήμερου'],['spec','Ειδικότητες Ολοήμερου'],['library','Βιβλιοθήκη']];
+ $('#tooltab').innerHTML=`<div class="section" style="max-width:none"><h2>Αποτέλεσμα: έλλειμμα (−) ή πλεόνασμα (+) ωρών ανά κλάδο</h2>
+ <table class="tbl" style="width:auto"><tr><th>Κλάδος</th><th>Ειδικότητα</th><th>Απαιτούμενες</th><th>Διαθέσιμες</th><th>Διαφορά</th><th>Εκπαιδευτικοί</th></tr>
+ ${N.rows.map(r=>`<tr><td>${r.code}</td><td>${esc(r.label)}</td><td>${r.required}</td><td>${r.available}</td><td ${cls(r.balance)}>${r.balance>0?'+':''}${r.balance}</td><td class="small muted">${esc(r.staff.join(', '))}</td></tr>`).join('')}
+ ${N.other.map(r=>`<tr><td>${esc(r.code)}</td><td class="muted">άλλος κλάδος</td><td>—</td><td>${r.available}</td><td></td><td class="small muted">${esc(r.staff.join(', '))}</td></tr>`).join('')}
+ <tr><td colspan="2"><b>Γενικό σύνολο</b></td><td><b>${N.total_required}</b></td><td><b>${N.total_available}</b></td><td ${cls(N.total_balance)}><b>${N.total_balance>0?'+':''}${N.total_balance}</b></td><td></td></tr></table>
+ <p class="muted small">Διαθέσιμες = άθροισμα υποχρεωτικού ωραρίου (ή ωρών διάθεσης) των εκπαιδευτικών κάθε κλάδου, μείον τις ώρες σε άλλο σχολείο· ο κλάδος ορίζεται στην καρτέλα «Εκπαιδευτικοί». Απαιτούμενες = ώρες ανά τάξη × τμήματα, και για ΠΕ70 επιπλέον Πρωινή Ζώνη, σίτιση, μελέτη και βιβλιοθήκη. Αλλάξτε τα παρακάτω για να δοκιμάσετε σενάρια (π.χ. «αν η Ε΄ γίνει δύο τμήματα»)· δεν αλλάζει τίποτα στο πρόγραμμα.</p></div>
+ <div class="section" style="max-width:none"><h2>Τμήματα</h2><div class="row">${G.map(g=>`<label class="field"><span>${g}΄</span><input type="number" min="0" max="20" data-nsec="${g}" value="${N.sections[g]}" style="width:60px"></label>`).join('')}
+ ${[['fr5','Γαλλικά Ε΄'],['de5','Γερμανικά Ε΄'],['fr6','Γαλλικά ΣΤ΄'],['de6','Γερμανικά ΣΤ΄']].map(([k,t])=>`<label class="field"><span>${t}</span><input type="number" min="0" max="20" data-nsec="${k}" value="${N.lang[k]}" style="width:70px"></label>`).join('')}</div>
+ <h2 style="margin-top:14px">Πρόσθετες ώρες</h2><div class="row">${EX.map(([k,t])=>`<label class="field"><span>${t}</span><input type="number" min="0" max="400" data-nex="${k}" value="${N.extra[k]}" style="width:80px"></label>`).join('')}</div>
+ <p class="muted small">Οι πρόσθετες ώρες υπολογίζονται από το πρόγραμμα (Ολοήμερο/Πρωινή Ζώνη) και τη βιβλιοθήκη, εκτός αν τις αλλάξετε.</p>
+ <h2 style="margin-top:14px">Ώρες ανά τάξη και κλάδο</h2><table class="tbl" style="width:auto"><tr><th>Κλάδος</th>${G.map(g=>`<th>${g}΄</th>`).join('')}</tr>${N.rows.map(r=>`<tr><td>${r.code} ${esc(r.label)}</td>${G.map((g,i)=>`<td><input type="number" min="0" max="40" data-nh="${r.code}" data-i="${i}" value="${N.hours[r.code][i]}" style="width:52px"></td>`).join('')}</tr>`).join('')}</table>
+ <div class="row" style="margin-top:8px"><button class="btn" id="nreset">Επαναφορά προεπιλογών</button></div></div>`;
+ let upd=async()=>{admDirty();await admLoad();toolsNeeds();};
+ $$('[data-nsec]').forEach(i=>i.onchange=()=>{(nd.sections??={})[i.dataset.nsec]=Math.min(20,admNum(i.value));upd();});
+ $$('[data-nex]').forEach(i=>i.onchange=()=>{(nd.extra??={})[i.dataset.nex]=Math.min(400,admNum(i.value));upd();});
+ $$('[data-nh]').forEach(i=>i.onchange=()=>{let h=(nd.hours??={})[i.dataset.nh]??=[...N.hours[i.dataset.nh]];h[+i.dataset.i]=Math.min(40,admNum(i.value));upd();});
+ $('#nreset').onclick=()=>{a.needs={};upd();};}
+async function toolsForms(){
+ $('#tooltab').innerHTML=`<div class="section"><h2>Έντυπα για τη Διεύθυνση (Excel)</h2><p class="muted small">Στη μορφή των εντύπων που στέλνει το σχολείο στη Διεύθυνση, με τους τύπους του Excel ενεργούς: μπορείτε να διορθώσετε οτιδήποτε και μέσα στο Excel. Τα στοιχεία έρχονται από το πρόγραμμα και από τις καρτέλες αυτής της οθόνης.</p>
+ <div class="row"><button class="btn primary" data-form="op">⬇ Ω.Π. και διδακτικό ωράριο εκπαιδευτικών</button><button class="btn primary" data-form="allday">⬇ Ολοήμερο (πρόγραμμα και ωράριο)</button></div>
+ <ul class="small muted"><li><b>Ω.Π. και διδακτικό ωράριο</b>: φύλλο «ΩΡΑΡΙΟ» (ανά εκπαιδευτικό: ιδιότητα, ημέρα εφημερίας, τάξη, μαθητές, έτη, υποχρεωτικό ωράριο, ώρες ανά τάξη, Ολοήμερο/Πρ. Ζώνη, άλλο σχολείο, βιβλιοθήκη, Ε.Δ.Υ., πρόσθετες ώρες, παρατηρήσεις) και φύλλο «ΩΡΟΛΟΓΙΟ ΤΑΞΕΩΝ» (μάθημα × ημέρα με τις ώρες, ανά τάξη).</li>
+ <li><b>Ολοήμερο</b>: φύλλο «ΠΡΟΓΡΑΜΜΑ» (υπεύθυνος, σίτιση, τμήματα ανά ώρα με τάξεις, διδάσκοντα και αντικείμενο, αριθμός μαθητών) και φύλλο «ΩΡΑΡΙΟ ΕΚΠ» (τμήματα και ώρες κάθε εκπαιδευτικού ανά τμήμα).</li></ul>
+ ${TOOLS.dirty?'<p class="ask" style="display:block">Υπάρχουν αλλαγές που δεν έχουν αποθηκευτεί· τα έντυπα βγαίνουν με τα αποθηκευμένα στοιχεία. Πατήστε πρώτα «Αποθήκευση αλλαγών».</p>':''}<div id="formwarn"></div></div>`;
+ $$('[data-form]').forEach(b=>b.onclick=async()=>{let k=b.dataset.form;try{download(await(await api('forms/'+k,{})).blob(),k==='op'?'Orario_Ekpaideftikon_Diefthynsi.xlsx':'Oloimero_Diefthynsi.xlsx');toast('Το έντυπο δημιουργήθηκε');}catch(e){toast(e.message,true);}});
+ try{let w=[];for(let k of ['op','allday'])w.push(...(await(await api('forms/'+k,{check:true})).json()).warnings);$('#formwarn').innerHTML=w.length?`<h3 style="margin-top:12px">Να ελέγξετε</h3><ul class="small">${w.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p class="small" style="color:#1A7F37">✓ Δεν βρέθηκαν ελλείψεις.</p>';}catch(e){}}
 
 /* ---------- επίσημο ωρολόγιο ---------- */
 const GRADES=['Α','Β','Γ','Δ','Ε','ΣΤ'],LEVELS=['Δημοτικό','Γυμνάσιο','Λύκειο'];
@@ -1072,6 +1182,7 @@ async function subsSave(){let rec=ui.subsRec,q=clone();q.substitutions=(q.substi
 
 /* ---------- βοήθεια και ξενάγηση ---------- */
 const HELP={
+ tools:['Βοηθητικά εργαλεία','Στοιχεία για τη Διεύθυνση (επικεφαλίδα, Ε.Δ.Υ., βιβλιοθήκη, ημέρα εφημερίας από τις «Εφημερίες», κλάδος, πρόσθετες ώρες ενισχυτικής/παράλληλης/γραμματειακής, μαθητές), Ολοήμερο και Πρωινή Ζώνη, προϋπολογισμός αναγκών σε ώρες και προσωπικό, και τα έντυπα της Διεύθυνσης σε Excel.','Ό,τι ορίζεται εδώ δεν πιάνει θέση στο ωρολόγιο πρόγραμμα· μετρά στο ωράριο και εμφανίζεται στα έντυπα. Πατήστε «Αποθήκευση αλλαγών» πριν βγάλετε τα έντυπα.'],
  settings:['Ρυθμίσεις','Στοιχεία σχολείου (εμφανίζονται στις εκτυπώσεις), σχολικό έτος (θεσμικό πλαίσιο ΦΕΚ, νέα σχολική χρονιά, αντίγραφο έργου), ασφάλεια δεδομένων (ημερήσιο αντίγραφο, επαναφορά), ενημερώσεις της εφαρμογής και ρυθμίσεις του βοηθού AI.','Οι Ρυθμίσεις είναι πάντα κάτω αριστερά, κάτω από τα βήματα.'],
  school:['Ωράριο & εισαγωγή','Εδώ ξεκινάτε: η πορεία εργασίας, οι διδακτικές ώρες της ημέρας και η εισαγωγή από aSc (.roz ή XML), Excel ή JSON. Στοιχεία σχολείου, θεσμικό πλαίσιο, νέα χρονιά, αντίγραφα ασφαλείας και ενημερώσεις βρίσκονται στις «⚙ Ρυθμίσεις».','Συμβουλή: σύρετε ένα αρχείο .xml/.json μέσα στο παράθυρο για εισαγωγή, ή ένα αρχείο ενημέρωσης .zip για ενημέρωση.'],
  data:['Δεδομένα','Οι κατάλογοι εκπαιδευτικών, τμημάτων, μαθημάτων και αιθουσών. Κλικ σε γραμμή ανοίγει τους περιορισμούς: διαθεσιμότητα (✔ επιτρεπτό, ? υπό όρους, ✖ απαγορευτικό) και κανόνες. Το (i) δίπλα σε κάθε κανόνα εξηγεί με παράδειγμα τι κάνει.','Στον πίνακα διαθεσιμότητας κάθε κλικ αλλάζει ✔ → ? → ✖· κλικ σε ημέρα ή ώρα αλλάζει όλη τη γραμμή ή στήλη. Στα Μαθήματα, το «Μέγ. φορές/ημέρα» γράφεται κατευθείαν στη λίστα και ισχύει για όλα τα τμήματα.'],

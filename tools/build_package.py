@@ -17,7 +17,8 @@ PY_VERSION = '3.12.10'
 EMBED_URL = 'https://www.python.org/ftp/python/%s/python-%s-embed-amd64.zip' % (PY_VERSION, PY_VERSION)
 APP = 'Orologio_Dimotikou'
 SRC_FILES = ['core.py', 'rules.py', 'outputs.py', 'server.py', 'updater.py', 'preflight.py', 'asc.py', 'pdfs.py', 'versions.py',
-             'backup.py', 'curricula.py', 'assistant.py', 'xlimport.py', 'rozimport.py', 'gymimport.py', 'subs.py', 'index.html', 'manual.html', 'app.ico', 'demo_school.json']
+             'backup.py', 'curricula.py', 'assistant.py', 'xlimport.py', 'rozimport.py', 'gymimport.py', 'subs.py', 'admin.py', 'forms.py', 'index.html', 'manual.html', 'app.ico', 'demo_school.json']
+SRC_DIRS = ['forms', 'vendor']   # πρότυπα εντύπων και βιβλιοθήκες τρίτων (openpyxl)
 TOP_FILES = ['START.cmd', 'START_KONSOLA.cmd', 'SYNTOMEFSI.cmd', 'CHECK.cmd', 'ΕΓΚΑΤΑΣΤΑΣΗ.cmd', 'ΑΠΕΓΚΑΤΑΣΤΑΣΗ.cmd', 'README_EL.txt', 'CHANGELOG.txt']
 
 
@@ -30,6 +31,10 @@ def app_files():
     for n in SRC_FILES:
         if (ROOT / 'src' / n).exists():
             files['src/' + n] = (ROOT / 'src' / n).read_bytes()
+    for d in SRC_DIRS:
+        for p in sorted((ROOT / 'src' / d).rglob('*')):
+            if p.is_file() and '__pycache__' not in p.parts and p.suffix != '.pyc':
+                files[p.relative_to(ROOT).as_posix()] = p.read_bytes()
     for p in sorted((ROOT / 'tests').glob('test_*.py')):
         files['tests/' + p.name] = p.read_bytes()
     for n in TOP_FILES:

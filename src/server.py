@@ -3,7 +3,7 @@ import json, secrets, threading, webbrowser, sys, copy, time, os, subprocess, sh
 from pathlib import Path
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
-import base64
+import base64, io
 import core, outputs, rules, updater, versions, backup, xlimport, rozimport, gymimport, subs
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -300,6 +300,49 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send(200, json.dumps(summary(p), ensure_ascii=False))
                 if action == '/api/slots':
                     return self.send(200, json.dumps(core.slot_status(p, req['id']), ensure_ascii=False))
+                if action == '/api/admin/info':
+                    import admin
+                    q = p
+                    if req.get('admin') is not None:   # προεπισκόπηση με μη αποθηκευμένες αλλαγές
+                        q = dict(p); q['admin'] = req['admin']; core.check_structure(q)
+                    return self.send(200, json.dumps(admin.info(q), ensure_ascii=False, default=str))
+                if action in ('/api/forms/op', '/api/forms/allday'):
+                    import forms
+                    data, warn = (forms.export_op if action == '/api/forms/op' else forms.export_allday)(p)
+                    if req.get('check'):
+                        return self.send(200, json.dumps({'warnings': warn}, ensure_ascii=False))
+                    return self.send(200, data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                     download=('Orario_Ekpaideftikon_Diefthynsi.xlsx' if action == '/api/forms/op' else 'Oloimero_Diefthynsi.xlsx'))
+                if action == '/api/efimeries/scan':
+                    import admin, tempfile, zipfile
+                    paths = []
+                    if req.get('data'):
+                        raw = base64.b64decode(req['data'])
+                        if len(raw) > 50_000_000:
+                            raise ValueError('Πολύ μεγάλο αρχείο.')
+                        tmp = Path(tempfile.mkdtemp(prefix='orologio_ef_'))
+                        dbf = tmp / 'efimeries.db'
+                        if raw[:2] == b'PK':
+                            z = zipfile.ZipFile(io.BytesIO(raw))
+                            names = [n for n in z.namelist() if n.lower().endswith('.db') and '/' not in n.strip('/')]
+                            if not names:
+                                raise ValueError('Το αρχείο αντιγράφου δεν περιέχει βάση «Εφημερίες».')
+                            dbf.write_bytes(z.read(names[0]))
+                        else:
+                            dbf.write_bytes(raw)
+                        paths = [dbf]
+                    else:
+                        paths = admin.efimeries_default_dbs(p.get('year', ''))
+                        if not paths:
+                            return self.send(200, json.dumps({'found': False, 'rows': []}, ensure_ascii=False))
+                    try:
+                        found = admin.efimeries_days(paths[0])
+                    except Exception as ex:
+                        raise ValueError('Δεν διαβάστηκε η βάση «Εφημερίες»: ' + str(ex)[:200])
+                    finally:
+                        if req.get('data'):
+                            shutil.rmtree(paths[0].parent, ignore_errors=True)
+                    return self.send(200, json.dumps({'found': True, 'file': '' if req.get('data') else str(paths[0]), 'rows': admin.match_names(p, found)}, ensure_ascii=False))
                 if action == '/api/export/xlsx':
                     return self.send(200, outputs.export_xlsx(p, req.get('options', {})), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', download='orologio.xlsx')
                 if action == '/api/curricula':
