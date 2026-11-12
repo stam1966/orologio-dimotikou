@@ -241,11 +241,13 @@ def uncompact(rec):
     return rec
 
 
-def replan(p, rec, iterations=40000, seed=1):
+def replan(p, rec, iterations=40000, seed=1, fill=True):
     """Ανασχεδιασμός της ημέρας (Β/θμια): τα μαθήματα όσων είναι παρόντες ξαναμπαίνουν σε ώρες της ίδιας ημέρας,
     ώστε τα τμήματα να μην έχουν κενά και να σχολάνε όσο νωρίτερα γίνεται, και οι εκπαιδευτικοί να φεύγουν νωρίτερα·
     κανένας εκπαιδευτικός δεν φεύγει αργότερα από ό,τι θα έφευγε (υποχρεωτικό)· μπορεί να έρθει νωρίτερα. Κάθε μάθημα μένει στο ίδιο τμήμα με τον ίδιο εκπαιδευτικό· αλλάζει μόνο
-    η ώρα, μόνο γι' αυτή την ημέρα. Αναζήτηση με προσομοιωμένη ανόπτηση, με αφετηρία το κανονικό πρόγραμμα."""
+    η ώρα, μόνο γι' αυτή την ημέρα. Τα κενά των εκπαιδευτικών μαζεύονται (π.χ. έρχεται την 3η αντί για τη 2η).
+    Ό,τι μένει ακάλυπτο συμπληρώνεται αμέσως με αναπλήρωση («Αυτόματη πρόταση»).
+    Αναζήτηση με προσομοιωμένη ανόπτηση, με αφετηρίες τις απλές συμπτύξεις και το κανονικό πρόγραμμα."""
     import random, math
     rnd = random.Random(seed)
     rec = dict(rec, covers=[dict(c) for c in rec.get('covers', [])], moves=[], compact=True, replan=True)
@@ -311,7 +313,7 @@ def replan(p, rec, iterations=40000, seed=1):
             bad += sum(1000 if j in gone_at.get(c, ()) else 20000 for j in hs) + 100 * (max(u) + 1)
         for t, js in ot.items():
             bad += 10000 * (len(js) - len(set(js)))
-            u = set(js); bad += 5 * (max(u) - min(u) + 1 - len(u)) + 20 * (max(u) + 1) + 1 * max(0, of[t] - min(u)) + 10000 * max(0, max(u) - ol[t])   # κανείς δεν φεύγει αργότερα
+            u = set(js); bad += 80 * (max(u) - min(u) + 1 - len(u)) + 20 * (max(u) + 1) + 1 * max(0, of[t] - min(u)) + 10000 * max(0, max(u) - ol[t])   # κανείς δεν φεύγει αργότερα
         return bad
     by_class = {}
     for k, b in enumerate(B):
@@ -351,7 +353,7 @@ def replan(p, rec, iterations=40000, seed=1):
         rec.pop('moves')
     resolved = {(n['event'], n['period']) for n in compacted(p, rec)}
     rec['covers'] = [c for c in rec['covers'] if (c['event'], c['period']) not in resolved]
-    return rec
+    return auto(p, rec) if fill else rec
 
 
 def compacted(p, rec):
@@ -450,6 +452,7 @@ def counts(p, upto=None):
 
 def candidates(p, rec, need, year=None, today=None):
     wd = weekday(rec['date']); dm = day_map(p, wd, rec); j = need['period']
+    sec = ((p.get('framework') or {}).get('level') or 'Δημοτικό') != 'Δημοτικό'
     year = counts(p) if year is None else year
     taken = {x['teacher'] for x in rec.get('covers', []) if x.get('period') == j and x.get('teacher') and x['event'] != need['event']}
     today = today if today is not None else _today(rec, (need['event'], j))
@@ -467,6 +470,8 @@ def candidates(p, rec, need, year=None, today=None):
         else:
             mine = sorted(i for (x, i) in dm if x == tid)
             kind = 3 if not mine else (1 if mine[0] < j < mine[-1] else 2)
+            if sec and (not mine or j > mine[-1]):   # Β/θμια: κανείς δεν μένει αργότερα ούτε έρχεται μόνο γι' αυτό
+                continue
         out.append(dict(teacher=tid, name=t['name'], kind=kind, label=KIND_LABEL[kind], today=today.get(tid, 0),
                         year=year.get(tid, 0), knows=tid in teaches))
     out.sort(key=lambda c: (c['kind'], c['today'], c['year'], not c['knows'], c['name']))
