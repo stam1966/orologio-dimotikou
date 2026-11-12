@@ -12,16 +12,16 @@ import core
 GRADES6 = ['Α', 'Β', 'Γ', 'Δ', 'Ε', 'ΣΤ']
 EXTRA_KINDS = ['ενισχυτική', 'παράλληλη', 'γραμματειακή', 'υπερωριακή', 'άλλο']
 # Κλάδοι του «Προϋπολογισμού αναγκών», με τη σειρά του προτύπου. Ο πρώτος κωδικός είναι αυτός του εντύπου.
-KLADOI = [('ΠΕ70', 'Δασκάλων', ()), ('ΠΕ08', 'Καλλιτεχνικών', ()), ('ΠΕ16', 'Μουσικής', ('ΠΕ79', 'ΠΕ79.01')),
-          ('ΠΕ32', 'Θεατρικών Σπουδών', ('ΠΕ91', 'ΠΕ91.01')), ('ΠΕ11', 'Φυσικής Αγωγής', ()), ('ΠΕ06', 'Αγγλικών', ()),
-          ('ΠΕ05', 'Γαλλικών', ()), ('ΠΕ07', 'Γερμανικών', ()), ('ΠΕ19-20', 'Πληροφορικής', ('ΠΕ86', 'ΠΕ19', 'ΠΕ20'))]
-TITLES = {'ΠΕ70': 'Δασ.', 'ΠΕ11': 'Φ. Αγ.', 'ΠΕ06': 'Αγγ.', 'ΠΕ19-20': 'ΤΠΕ', 'ΠΕ05': 'Γαλ.', 'ΠΕ07': 'Γερ.',
-          'ΠΕ08': 'Εικαστ.', 'ΠΕ16': 'Μουσ.', 'ΠΕ32': 'Θεατρ.', 'ΠΕ60': 'Νηπ.'}
-SPEC_ORDER = ['ΠΕ70', 'ΠΕ11', 'ΠΕ06', 'ΠΕ19-20', 'ΠΕ05', 'ΠΕ07', 'ΠΕ08', 'ΠΕ16', 'ΠΕ32']
+KLADOI = [('ΠΕ70', 'Δασκάλων', ()), ('ΠΕ08', 'Καλλιτεχνικών', ()), ('ΠΕ79.01', 'Μουσικής', ('ΠΕ16', 'ΠΕ79')),
+          ('ΠΕ91.01', 'Θεατρικών Σπουδών', ('ΠΕ32', 'ΠΕ91')), ('ΠΕ11', 'Φυσικής Αγωγής', ()), ('ΠΕ06', 'Αγγλικών', ()),
+          ('ΠΕ05', 'Γαλλικών', ()), ('ΠΕ07', 'Γερμανικών', ()), ('ΠΕ86', 'Πληροφορικής', ('ΠΕ19-20', 'ΠΕ19', 'ΠΕ20'))]
+TITLES = {'ΠΕ70': 'Δασ.', 'ΠΕ11': 'Φ. Αγ.', 'ΠΕ06': 'Αγγ.', 'ΠΕ86': 'ΤΠΕ', 'ΠΕ05': 'Γαλ.', 'ΠΕ07': 'Γερ.',
+          'ΠΕ08': 'Εικαστ.', 'ΠΕ79.01': 'Μουσ.', 'ΠΕ91.01': 'Θεατρ.', 'ΠΕ60': 'Νηπ.'}
+SPEC_ORDER = ['ΠΕ70', 'ΠΕ11', 'ΠΕ06', 'ΠΕ86', 'ΠΕ05', 'ΠΕ07', 'ΠΕ08', 'ΠΕ79.01', 'ΠΕ91.01']
 # Πρότυπο ωρών ανά τάξη και κλάδο (όπως στο κοινό αρχείο «Προϋπολογισμός αναγκών»· επεξεργάσιμο)
-NEEDS_HOURS = {'ΠΕ70': [21, 21, 20, 20, 20, 20], 'ΠΕ08': [2, 2, 1, 1, 1, 1], 'ΠΕ16': [1, 1, 1, 1, 1, 1], 'ΠΕ32': [1, 1, 1, 1, 0, 0],
+NEEDS_HOURS = {'ΠΕ70': [21, 21, 20, 20, 20, 20], 'ΠΕ08': [2, 2, 1, 1, 1, 1], 'ΠΕ79.01': [1, 1, 1, 1, 1, 1], 'ΠΕ91.01': [1, 1, 1, 1, 0, 0],
                'ΠΕ11': [3, 3, 3, 3, 2, 2], 'ΠΕ06': [2, 2, 3, 3, 3, 3], 'ΠΕ05': [0, 0, 0, 0, 2, 2], 'ΠΕ07': [0, 0, 0, 0, 2, 2],
-               'ΠΕ19-20': [1, 1, 1, 1, 1, 1]}
+               'ΠΕ86': [1, 1, 1, 1, 1, 1]}
 DEFAULTS = {'ministry': 'ΥΠΟΥΡΓΕΙΟ ΠΑΙΔΕΙΑΣ, ΘΡΗΣΚΕΥΜΑΤΩΝ & ΑΘΛΗΤΙΣΜΟΥ', 'region': '', 'directorate': '', 'city': '', 'date': '',
             'approver': 'Η Προϊσταμένη Εκπαιδευτικών Θεμάτων', 'director_title': 'Ο ΔΙΕΥΘΥΝΤΗΣ ΤΟΥ ΣΧΟΛΕΙΟΥ', 'school_form': '',
             'edy': 1}
@@ -39,14 +39,15 @@ def upper(s):
 
 
 def klados_code(raw):
-    """Κανονικός κωδικός κλάδου του εντύπου από ό,τι έχει γραφτεί (π.χ. «ΠΕ 86» → «ΠΕ19-20»)."""
+    """Κανονικός κωδικός κλάδου του εντύπου από ό,τι έχει γραφτεί (π.χ. «ΠΕ 86» → «ΠΕ86», «ΠΕ16» → «ΠΕ79.01»)."""
     t = norm(raw).replace(' ', '').replace('PE', 'ΠΕ')
     m = re.match(r'ΠΕ(\d+)(?:[.,](\d+))?(?:-(\d+))?', t)
     if not m:
         return ''
-    code = 'ΠΕ' + m.group(1).zfill(2) + ('-' + m.group(3) if m.group(3) else '')
+    base = 'ΠΕ' + m.group(1).zfill(2)
+    code = base + ('.' + m.group(2) if m.group(2) else '') + ('-' + m.group(3) if m.group(3) else '')
     for main, _, alias in KLADOI:
-        if code == main or code in alias or ('ΠΕ' + m.group(1).zfill(2)) in alias:
+        if code == main or base == main or code in alias or base in alias:
             return main
     return code
 
@@ -79,10 +80,10 @@ def subject_klados(name):
     if 'ΓΑΛΛ' in n: return 'ΠΕ05'
     if 'ΓΕΡΜ' in n: return 'ΠΕ07'
     if 'ΕΙΚΑΣΤ' in n: return 'ΠΕ08'
-    if 'ΜΟΥΣ' in n: return 'ΠΕ16'
-    if 'ΘΕΑΤΡ' in n: return 'ΠΕ32'
+    if 'ΜΟΥΣ' in n: return 'ΠΕ79.01'
+    if 'ΘΕΑΤΡ' in n: return 'ΠΕ91.01'
     if re.search(r'ΦΥΣ\w*\.? ?ΑΓ|^Φ\.? ?ΑΓ|ΓΥΜΝ', n): return 'ΠΕ11'
-    if re.search(r'Τ\.?Π\.?Ε|ΠΛΗΡΟΦ', n): return 'ΠΕ19-20'
+    if re.search(r'Τ\.?Π\.?Ε|ΠΛΗΡΟΦ', n): return 'ΠΕ86'
     return ''
 
 
@@ -161,6 +162,21 @@ def validate(p, ids):
 
 
 # ------------------------------------------------------------------ υπολογισμοί
+def counted_hours(p):
+    """Ώρες εκτός προγράμματος που καλύπτουν ωράριο: {teacher_id: (ώρες, περιγραφή)} — Ε.Δ.Υ. (διευθυντής) και βιβλιοθήκη."""
+    a = p.get('admin') or {}; out = {}
+    edy = a.get('edy', DEFAULTS['edy']) or 0
+    if edy and ((p.get('framework') or {}).get('level') or 'Δημοτικό') == 'Δημοτικό':   # Ε.Δ.Υ. μόνο στο Δημοτικό
+        for t in p['teachers']:
+            if t.get('role') == 'director':
+                out[t['id']] = (edy, str(edy) + ' Ε.Δ.Υ.')
+    lib = a.get('library') or {}
+    if lib.get('teacher') and lib.get('hours'):
+        h, txt = out.get(lib['teacher'], (0, ''))
+        out[lib['teacher']] = (h + lib['hours'], (txt + ' + ' if txt else '') + str(lib['hours']) + ' βιβλιοθήκη')
+    return out
+
+
 def grade_classes(p):
     order = {g: i for i, g in enumerate(core.GRADES)}
     cs = [c for c in p['classes'] if core.grade_of(c)]
@@ -239,7 +255,7 @@ def teacher_rows(p):
                 else: allday += l['hours']
             elif not l['classes']:
                 noclass[sname] += l['hours']
-        kl = d.get('klados') or guess_klados(p, t)
+        kl = klados_code(d['klados']) or d['klados'] if d.get('klados') else guess_klados(p, t)
         title = d.get('title') or ('Δ/ντης' if role == 'director' else 'Υποδ/ντης' if role == 'deputy' else TITLES.get(kl, t.get('spec', '') or ''))
         extras = [x for x in d.get('extras') or [] if x.get('hours')]
         extra_hours = sum(x['hours'] for x in extras) + sum(noclass.values())
@@ -257,7 +273,7 @@ def teacher_rows(p):
         rows.append({'t': t, 'id': t['id'], 'name': t['name'], 'title': title, 'klados': kl, 'duty': core.DAYS[duty] if isinstance(duty, int) and 0 <= duty <= 4 else '',
                      'homeroom': (hr[1].get('short') or hr[1]['name']) if hr else '', 'homeroom_idx': hr[0] if hr else None,
                      'students': a['students'].get(hr[1]['id']) if hr else None, 'years': t.get('years'), 'required': core.required_hours(p, t),
-                     'by_class': dict(by_class), 'allday': allday + morning, 'other': d.get('other') or 0,
+                     'by_class': dict(by_class), 'allday': allday + morning, 'other': 0,
                      'library': (lib.get('hours') or 0) if lib.get('teacher') == t['id'] else 0,
                      'edy': (a.get('edy') or 0) if role == 'director' else 0, 'extra': extra_hours, 'notes': ', '.join(n for n in notes if n)})
     return teacher_order(p, rows)
@@ -295,7 +311,11 @@ def needs(p):
         if g in sec:
             sec[g] += 1
     sec.update({k: v for k, v in (nd.get('sections') or {}).items() if k in sec})
-    hours = {k: list(v) for k, v in NEEDS_HOURS.items()}; hours.update({k: list(v) for k, v in (nd.get('hours') or {}).items() if k in hours})
+    hours = {k: list(v) for k, v in NEEDS_HOURS.items()}
+    for k, v in (nd.get('hours') or {}).items():   # και παλιοί κωδικοί (ΠΕ16, ΠΕ32, ΠΕ19-20)
+        k = klados_code(k) or k
+        if k in hours:
+            hours[k] = list(v)
     # Γαλλικά/Γερμανικά Ε΄ και ΣΤ΄: τμήματα ανά γλώσσα (προεπιλογή από τις αναθέσεις του έργου)
     lang = {'fr5': 0, 'de5': 0, 'fr6': 0, 'de6': 0}
     S = core.mapping(p, 'subjects'); C = core.mapping(p, 'classes')
@@ -335,8 +355,8 @@ def needs(p):
     req['ΠΕ70'] += extra['morning'] + extra['meal'] + extra['study'] + extra['library']
     have = defaultdict(int); staff = defaultdict(list)
     for r in rows.values():
-        if r['klados'] and r['required'] is not None:   # ώρες στο σχολείο: υποχρεωτικό ωράριο μείον συμπλήρωση σε άλλο σχολείο
-            have[r['klados']] += max(0, r['required'] - (r['other'] or 0)); staff[r['klados']].append(r['name'])
+        if r['klados'] and r['required'] is not None:   # το υποχρεωτικό ωράριο είναι ήδη οι ώρες στο σχολείο
+            have[r['klados']] += r['required']; staff[r['klados']].append(r['name'])
     out = [{'code': code, 'label': label, 'required': req[code], 'available': have.get(code, 0), 'balance': have.get(code, 0) - req[code],
             'staff': staff.get(code, [])} for code, label, _ in KLADOI]
     other = sorted(k for k in have if k not in req)

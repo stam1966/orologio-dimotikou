@@ -5,7 +5,7 @@ from pathlib import Path
 from collections import Counter, defaultdict
 import xml.etree.ElementTree as ET
 
-VERSION = '0.26.0-beta'
+VERSION = '0.27.0-beta'
 DAYS = ['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή']
 def uid(): return uuid.uuid4().hex[:16]
 def blank():
@@ -328,13 +328,15 @@ def required_hours(p,t):
 
 def teacher_hours_check(p):
     """{teacher_id: {'required','assigned','text'}} για όσους έχουν δηλωμένα στοιχεία."""
-    out={}
+    import admin
+    out={};extra=admin.counted_hours(p)
     for t in p['teachers']:
         req=required_hours(p,t)
         if req is None:continue
-        got=sum(l['hours'] for l in p['lessons'] if t['id'] in l['teachers'])
-        txt='' if got==req else (str(got)+' ώρες ανάθεση αντί για '+str(req)+' υποχρεωτικές ('+('λείπουν '+str(req-got) if got<req else 'περισσεύουν '+str(got-req))+')')
-        out[t['id']]={'required':req,'assigned':got,'text':txt}
+        eh,etxt=extra.get(t['id'],(0,''))
+        got=sum(l['hours'] for l in p['lessons'] if t['id'] in l['teachers'])+eh
+        txt='' if got==req else (str(got)+' ώρες ανάθεση'+(' (μαζί '+etxt+')' if etxt else '')+' αντί για '+str(req)+' υποχρεωτικές ('+('λείπουν '+str(req-got) if got<req else 'περισσεύουν '+str(got-req))+')')
+        out[t['id']]={'required':req,'assigned':got,'text':txt,'extra':etxt}
     return out
 
 def curriculum_check(p):

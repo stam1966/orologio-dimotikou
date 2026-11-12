@@ -320,8 +320,8 @@ class Framework(unittest.TestCase):
         self.assertEqual(core.required_hours(p, ta), 18)
         core.check_structure(p)
         c = core.teacher_hours_check(p)
-        self.assertEqual(c['tb'], {'required': 4, 'assigned': 2, 'text': c['tb']['text']})
-        self.assertIn('λείπουν 2', c['tb']['text'])
+        self.assertEqual(c['tb'], {'required': 4, 'assigned': 3, 'text': c['tb']['text'], 'extra': '1 Ε.Δ.Υ.'})   # η Ε.Δ.Υ. του διευθυντή μετρά
+        self.assertIn('λείπουν 1', c['tb']['text'])
         for bad in ({'years': -1}, {'role': 'x'}, {'hours_override': 99}):
             q = copy.deepcopy(p); q['teachers'][0].update(bad)
             with self.assertRaises(ValueError): core.check_structure(q)

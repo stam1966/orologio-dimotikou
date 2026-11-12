@@ -10,7 +10,7 @@ SINGULAR = {'teachers': 'εκπαιδευτικού', 'classes': 'τμήματο
 MODES = {'individual': 'Ωρολόγιο για κάθε εγγραφή', 'overview': 'Συνολικό ωρολόγιο', 'poster': 'Αφίσα τοίχου (A3)',
          'withtable': 'Ωρολόγιο με πίνακα αναθέσεων', 'assignments': 'Πίνακας μαθημάτων', 'distribution': 'Επισκόπηση κατανομής',
          'fairness': 'Δικαιοσύνη κατανομής', 'framework': 'Θεσμικό πλαίσιο (ώρες μαθημάτων, ωράριο εκπαιδευτικών)',
-         'subs_day': 'Αναπληρώσεις ημέρας', 'subs_stats': 'Αναπληρώσεις ανά εκπαιδευτικό'}
+         'subs_day': 'Αναπληρώσεις ημέρας', 'subs_stats': 'Αναπληρώσεις ανά εκπαιδευτικό', 'needs': 'Προϋπολογισμός αναγκών'}
 # Χρωματικό θέμα: κεφαλίδα, λωρίδα τίτλου, ημέρες, στήλη ωρών
 THEMES = {
     'color': dict(head='1F3A5F', head_fg='FFFFFF', band='3E7D6E', band_fg='FFFFFF', day='F2B04A', day_fg='1F2A36', per='4B4F8F', per_fg='FFFFFF', grid='3A3F47'),
@@ -137,7 +137,36 @@ def matrix_page(p, kind, ents, opts, poster=False):
                     cells[(d, j)] = dict(top=top, bottom=bottom, color=lesson_color(p, l))
         rows.append(dict(name=ent['name'], color=teacher_color(p, ent['id']) if kind == 'teachers' else None, cells=cells))
     title = ('Αφίσα τοίχου' if poster else 'Συνολικό ωρολόγιο') + ' — ' + LABELS[kind]
-    return dict(type='matrix', heading=opts.get('title') or p.get('title') or 'Ωρολόγιο Πρόγραμμα', name=title, periods=periods, rows=rows, poster=poster)
+    main, extra = split_periods(p, periods)
+    return dict(type='matrix', heading=opts.get('title') or p.get('title') or 'Ωρολόγιο Πρόγραμμα', name=title, periods=main, extra=extra, rows=rows, poster=poster)
+
+
+def split_periods(p, periods):
+    """Χωρίζει τις ώρες σε ώρες του κύριου ωραρίου και ώρες μόνο Πρωινής Ζώνης/Ολοήμερου
+    (ώρες όπου έχουν μάθημα μόνο τμήματα χωρίς τάξη), ώστε να τυπώνονται σε ξεχωριστό πίνακα."""
+    import admin
+    secs = {s['class'] for s in admin.sections(p)}
+    if not secs:
+        return list(periods), []
+    L = {l['id']: l for l in p['lessons']}
+    grade, other = set(), set()
+    for e in p['events']:
+        l = L.get(e['lesson'])
+        if not l or not e.get('place'):
+            continue
+        span = set(range(e['place'][1], e['place'][1] + l['duration']))
+        if any(c not in secs for c in l['classes']):
+            grade |= span
+        elif l['classes']:
+            other |= span
+    extra = [i for i in periods if i in other and i not in grade]
+    return [i for i in periods if i not in extra], extra
+
+
+def extra_title(p):
+    import admin
+    kinds = {s['kind'] for s in admin.sections(p)}
+    return ' / '.join(t for k, t in (('morning', 'Πρωινή Ζώνη'), ('allday', 'Ολοήμερο')) if k in kinds) or 'Πρόσθετες ώρες'
 
 
 def subjects_table(p):
@@ -274,6 +303,28 @@ def distribution_table(p):
     return dict(type='table', heading='', name='Επισκόπηση κατανομής ωρών', header=head, rows=rows, colors=colors, first_color=True)
 
 
+def needs_pages(p):
+    import admin
+    n = admin.needs(p); sg = lambda v: ('+' if v > 0 else '') + str(v)
+    rows = []; flags = []
+    for r in n['rows']:
+        if not (r['required'] or r['available']):
+            continue
+        rows.append([r['code'], r['label'], str(r['required']), str(r['available']), sg(r['balance']), ', '.join(r['staff'])])
+        flags.append([False] * 4 + [r['balance'] < 0, False])
+    for r in n['other']:
+        rows.append([r['code'], '', '0', str(r['available']), sg(r['available']), ', '.join(r['staff'])]); flags.append([False] * 6)
+    if n['extra']['spec']:
+        rows.append(['', 'Ειδικότητες στο Ολοήμερο', str(n['extra']['spec']), '', '', '']); flags.append([False] * 6)
+    rows.append(['Σύνολο', '', str(n['total_required']), str(n['total_available']), sg(n['total_balance']), '']); flags.append([False] * 4 + [n['total_balance'] < 0, False])
+    secs = ', '.join(g + '΄: ' + str(v) for g, v in n['sections'].items() if v)
+    ex = n['extra']
+    note = ('Τμήματα ανά τάξη — ' + secs + '. ' if secs else '') + 'Πρόσθετες ώρες ΠΕ70: Πρωινή Ζώνη ' + str(ex['morning']) + ', Σίτιση ' + str(ex['meal']) + \
+        ', Μελέτη ' + str(ex['study']) + ', Βιβλιοθήκη ' + str(ex['library']) + '. Διαφορά: + πλεόνασμα, − έλλειμμα.'
+    return [dict(type='table', heading='', name='Προϋπολογισμός αναγκών σε εκπαιδευτικό προσωπικό', header=['Κλάδος', 'Ειδικότητα', 'Απαιτούμενες ώρες', 'Διαθέσιμες ώρες', 'Διαφορά', 'Εκπαιδευτικοί'],
+                 rows=rows, flags=flags, note=note)]
+
+
 def pages(p, opts):
     kind = opts.get('kind', 'teachers'); mode = opts.get('mode', 'individual')
     if kind not in LABELS or mode not in MODES:
@@ -287,6 +338,8 @@ def pages(p, opts):
         return [fairness(p)]
     if mode == 'framework':
         return framework_pages(p)
+    if mode == 'needs':
+        return needs_pages(p)
     if mode == 'subs_day':
         import subs
         import datetime as _dt
@@ -307,6 +360,23 @@ def pages(p, opts):
     return out
 
 
+def matrix_html(p, per, rows, poster, colors, esc):
+    head = '<thead><tr><th class="corner" rowspan="2"></th>' + ''.join('<th class="day dsep" colspan="' + str(len(per)) + '">' + esc(d) + '</th>' for d in p['days']) + '</tr><tr>' + ''.join('<th class="pn' + (' dsep' if k == 0 else '') + '">' + esc(p['periods'][i]['name']) + '</th>' for d in range(5) for k, i in enumerate(per)) + '</tr></thead>'
+    body_rows = []
+    for r in rows:
+        nm = '<th class="rn">' + (('<i class="sw" style="background:#' + r['color'] + '"></i>') if colors and r['color'] else '') + esc(r['name']) + '</th>'
+        cells = ''
+        for d in range(5):
+            for k, i in enumerate(per):
+                c = r['cells'].get((d, i)); cls = ' class="dsep"' if k == 0 else ''
+                if not c:
+                    cells += '<td' + cls + '></td>'; continue
+                st = ' style="background:#' + c['color'] + ';color:#' + fg_for(c['color']) + '"' if colors and c['color'] else ''
+                cells += '<td' + cls + st + '><b>' + esc(c['top']) + '</b><i>' + esc(c['bottom']) + '</i></td>'
+        body_rows.append('<tr>' + nm + cells + '</tr>')
+    return '<table class="matrix' + (' poster' if poster else '') + '">' + head + '<tbody>' + ''.join(body_rows) + '</tbody></table>'
+
+
 # ------------------------------------------------------------------ HTML
 def report(p, opts):
     esc = lambda x: html.escape(str(x))
@@ -321,7 +391,7 @@ def report(p, opts):
     pgs = pages(p, opts)
     for pg in pgs:
         top = '' if pg.get('attach') else ('<div class="head"><span>' + esc(school) + '</span><span>' + esc(year) + '</span></div>' if school or year else '')
-        band = '<div class="band">' + esc(((pg['heading'] + ' - ') if pg['heading'] and pg['type'] == 'week' else '') + pg['name']) + '</div>'
+        band = '<div class="band">' + esc(((pg['heading'] + ' - ') if pg['heading'] and pg['type'] in ('week', 'matrix') else '') + pg['name']) + '</div>'
         if pg.get('attach'):
             band = '<h3>' + esc(pg['name']) + '</h3>'
         if pg['type'] == 'week':
@@ -340,21 +410,11 @@ def report(p, opts):
                 rows.append(tr + '</tr>')
             content = '<table class="week"><thead><tr><th class="corner"></th>' + ''.join('<th class="day">' + esc(d) + '</th>' for d in p['days']) + '</tr></thead><tbody>' + ''.join(rows) + '</tbody></table>'
         elif pg['type'] == 'matrix':
-            per = pg['periods']
-            head = '<thead><tr><th class="corner" rowspan="2"></th>' + ''.join('<th class="day dsep" colspan="' + str(len(per)) + '">' + esc(d) + '</th>' for d in p['days']) + '</tr><tr>' + ''.join('<th class="pn' + (' dsep' if k == 0 else '') + '">' + esc(p['periods'][i]['name']) + '</th>' for d in range(5) for k, i in enumerate(per)) + '</tr></thead>'
-            body_rows = []
-            for r in pg['rows']:
-                nm = '<th class="rn">' + (('<i class="sw" style="background:#' + r['color'] + '"></i>') if colors and r['color'] else '') + esc(r['name']) + '</th>'
-                cells = ''
-                for d in range(5):
-                    for k, i in enumerate(per):
-                        c = r['cells'].get((d, i)); cls = ' class="dsep"' if k == 0 else ''
-                        if not c:
-                            cells += '<td' + cls + '></td>'; continue
-                        st = ' style="background:#' + c['color'] + ';color:#' + fg_for(c['color']) + '"' if colors and c['color'] else ''
-                        cells += '<td' + cls + st + '><b>' + esc(c['top']) + '</b><i>' + esc(c['bottom']) + '</i></td>'
-                body_rows.append('<tr>' + nm + cells + '</tr>')
-            content = '<table class="matrix' + (' poster' if pg['poster'] else '') + '">' + head + '<tbody>' + ''.join(body_rows) + '</tbody></table>'
+            content = matrix_html(p, pg['periods'], pg['rows'], pg['poster'], colors, esc)
+            ex = pg.get('extra') or []
+            rows_ex = [r for r in pg['rows'] if any((d, i) in r['cells'] for d in range(5) for i in ex)]
+            if ex and rows_ex:
+                content += '<h3 class="extra">' + esc(extra_title(p)) + '</h3>' + matrix_html(p, ex, rows_ex, pg['poster'], colors, esc)
         else:
             cs = pg.get('colors'); fl = pg.get('flags')
             content = ('<p class="note">' + esc(pg['note']) + '</p>' if pg.get('note') else '') + '<table class="plain' + (' few' if len(pg['header']) <= 3 else '') + '"><thead><tr>' + ''.join('<th>' + esc(h) + '</th>' for h in pg['header']) + '</tr></thead><tbody>' + ''.join(
@@ -376,7 +436,7 @@ def report(p, opts):
     .matrix.poster{font-size:1em}.matrix.poster td{height:3.2em}.matrix.poster td b{font-size:1.15em}.dsep{border-left:2.5px solid #%(grid)s!important}
     .sw{display:inline-block;width:.9em;height:.9em;border-radius:2px;margin-right:.35em;vertical-align:-.1em;border:1px solid #0003}
     .plain th{background:#%(per)s;color:#%(per_fg)s;padding:.4em}.plain th:first-child{width:18%%}.plain.few{table-layout:auto;width:auto;min-width:55%%}.plain.few th:first-child{width:auto}.plain td{padding:.35em;white-space:pre-line}.plain td:first-child{text-align:left;font-weight:600}
-    .hi{background:#FBE1DC!important;color:#8E2A1D;font-weight:700}.note{font-size:.9em;color:#555;margin:.3em 0 .6em}.foot{text-align:right;font-size:.8em;color:#667;margin-top:.4em}h3{margin:.8em 0 .4em}
+    .hi{background:#FBE1DC!important;color:#8E2A1D;font-weight:700}.note{font-size:.9em;color:#555;margin:.3em 0 .6em}.foot{text-align:right;font-size:.8em;color:#667;margin-top:.4em}h3{margin:.8em 0 .4em}h3.extra{margin:1.1em 0 .4em;font-size:1.3em}
     @page{size:%(paper)s %(orient)s;margin:8mm}
     @media print{body{background:#fff}.bar{display:none}section{margin:0;padding:0;width:auto;box-shadow:none}*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
     ''' % dict(f=font, w=('400mm' if paper == 'A3' else '287mm') if landscape else ('287mm' if paper == 'A3' else '200mm'), paper=paper, orient='landscape' if landscape else 'portrait', **th)
@@ -554,38 +614,49 @@ def xlsx_pages(x, p, pgs, opts):
                     sh['merges'].append((rr, d + 2, rr + c['span'] - 1, d + 2))
                     for k in range(1, c['span']): sh['cells'][rr + k, d + 2] = ('', s)
         elif pg['type'] == 'matrix':
-            per = pg['periods']; poster = pg['poster']
+            poster = pg['poster']; ex = pg.get('extra') or []
+            blocks = [(pg['periods'], pg['rows'], '')]
+            rows_ex = [rw for rw in pg['rows'] if any((d, i) in rw['cells'] for d in range(5) for i in ex)]
+            if ex and rows_ex:
+                blocks.append((ex, rows_ex, extra_title(p)))
             sh = x.sheet(pg['name'].replace('Συνολικό ωρολόγιο', 'Συνολικό').replace('Αφίσα τοίχου', 'Αφίσα'), landscape=True, a3=True)
-            ncols = 1 + 5 * len(per)
+            ncols = 1 + 5 * max(len(b[0]) for b in blocks)
             sh['widths'] = {1: 24 if poster else 20, **{c: (7 if poster else 5.5) for c in range(2, ncols + 1)}}
             r = 1
-            title = (school + ' · ' if school else '') + pg['name'] + (' · ' + year if year else '')
+            title = (school + ' · ' if school else '') + ((pg['heading'] + ' - ') if pg.get('heading') else '') + pg['name'] + (' · ' + year if year else '')
             band = dict(size=16, bold=True, fill=th['band'], fg=th['band_fg'], box=True)
             sh['cells'][r, 1] = (title, x.style(band))
             for c in range(2, ncols + 1): sh['cells'][r, c] = ('', x.style(band))
             sh['merges'].append((r, 1, r, ncols)); sh['heights'][r] = 30; r += 1
             day = x.style(dict(size=12, bold=True, fill=th['day'], fg=th['day_fg'], box=True, border='medium'))
-            sh['cells'][r, 1] = ('', x.style(dict(box=True))); sh['cells'][r + 1, 1] = ('', x.style(dict(box=True)))
             pn = x.style(dict(size=9, bold=True, fill=th['per'], fg=th['per_fg'], box=True))
-            for d in range(5):
-                c0 = 2 + d * len(per)
-                sh['cells'][r, c0] = (p['days'][d], day)
-                for k in range(1, len(per)): sh['cells'][r, c0 + k] = ('', day)
-                sh['merges'].append((r, c0, r, c0 + len(per) - 1))
-                for k, i in enumerate(per): sh['cells'][r + 1, c0 + k] = (p['periods'][i]['name'], pn)
-            sh['merges'].append((r, 1, r + 1, 1)); sh['freeze'] = (r + 1, 1); r += 2
             size = 10 if poster else 8
-            for row in pg['rows']:
-                nf = row['color'] if colors and row['color'] else 'F4F6F8'
-                sh['cells'][r, 1] = (row['name'], x.style(dict(size=11 if poster else 10, bold=True, h='left', box=True, fill=nf, fg=fg_for(nf))))
+            for bi, (per, rws, label) in enumerate(blocks):
+                if label:
+                    r += 1
+                    sh['cells'][r, 1] = (label, x.style(dict(size=13, bold=True, h='left')))
+                    sh['heights'][r] = 24; r += 1
+                sh['cells'][r, 1] = ('', x.style(dict(box=True))); sh['cells'][r + 1, 1] = ('', x.style(dict(box=True)))
                 for d in range(5):
-                    for k, i in enumerate(per):
-                        c = row['cells'].get((d, i)); col = 2 + d * len(per) + k
-                        if not c:
-                            sh['cells'][r, col] = ('', x.style(dict(box=True))); continue
-                        fill = c['color'] if colors and c['color'] else None
-                        sh['cells'][r, col] = (c['top'] + ('\n' + c['bottom'] if c['bottom'] else ''), x.style(dict(size=size, bold=True, box=True, fill=fill, fg=fg_for(fill) if fill else '1F2A36')))
-                sh['heights'][r] = 40 if poster else 30; r += 1
+                    c0 = 2 + d * len(per)
+                    sh['cells'][r, c0] = (p['days'][d], day)
+                    for k in range(1, len(per)): sh['cells'][r, c0 + k] = ('', day)
+                    sh['merges'].append((r, c0, r, c0 + len(per) - 1))
+                    for k, i in enumerate(per): sh['cells'][r + 1, c0 + k] = (p['periods'][i]['name'], pn)
+                sh['merges'].append((r, 1, r + 1, 1))
+                if bi == 0: sh['freeze'] = (r + 1, 1)
+                r += 2
+                for row in rws:
+                    nf = row['color'] if colors and row['color'] else 'F4F6F8'
+                    sh['cells'][r, 1] = (row['name'], x.style(dict(size=11 if poster else 10, bold=True, h='left', box=True, fill=nf, fg=fg_for(nf))))
+                    for d in range(5):
+                        for k, i in enumerate(per):
+                            c = row['cells'].get((d, i)); col = 2 + d * len(per) + k
+                            if not c:
+                                sh['cells'][r, col] = ('', x.style(dict(box=True))); continue
+                            fill = c['color'] if colors and c['color'] else None
+                            sh['cells'][r, col] = (c['top'] + ('\n' + c['bottom'] if c['bottom'] else ''), x.style(dict(size=size, bold=True, box=True, fill=fill, fg=fg_for(fill) if fill else '1F2A36')))
+                    sh['heights'][r] = 40 if poster else 30; r += 1
         else:
             sh = x.sheet(pg['name'][:31], landscape=True)
             n = len(pg['header'])

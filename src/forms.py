@@ -171,7 +171,7 @@ SUBJ_ROWS = [  # (γραμμή μέσα στο μπλοκ, κανονικοπο�
 def subject_row(name):
     n = admin.norm(name)
     if admin.subject_klados(name) == 'ΠΕ11': return 13
-    if admin.subject_klados(name) == 'ΠΕ19-20': return 17
+    if admin.subject_klados(name) == 'ΠΕ86': return 17
     if 'ΦΥΣΙΚ' in n or 'ΦΥΣΙΚΗ' in n: return 8
     if 'ΚΟΙΝ' in n or 'ΠΟΛΙΤ' in n: return 9
     for off, key in SUBJ_ROWS:

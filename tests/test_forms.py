@@ -25,7 +25,7 @@ class Admin(unittest.TestCase):
     def test_validate(self):
         p = school()
         p['admin'] = {'edy': 1, 'library': {'teacher': p['teachers'][0]['id'], 'hours': 3}, 'city': 'ΠΟΛΗ',
-                      'teachers': {p['teachers'][1]['id']: {'duty': 2, 'other': 3, 'extras': [{'kind': 'ενισχυτική', 'hours': 2}]}}}
+                      'teachers': {p['teachers'][1]['id']: {'duty': 2, 'extras': [{'kind': 'ενισχυτική', 'hours': 2}]}}}
         core.check_structure(p)
         for bad in ({'edy': 99}, {'library': {'teacher': 'zzz', 'hours': 3}}, {'teachers': {'zzz': {}}},
                     {'teachers': {p['teachers'][0]['id']: {'duty': 7}}}, {'teachers': {p['teachers'][0]['id']: {'extras': [{'kind': 'x', 'hours': 1}]}}},
@@ -35,9 +35,12 @@ class Admin(unittest.TestCase):
                 core.check_structure(q)
 
     def test_klados(self):
-        self.assertEqual(admin.klados_code('ΠΕ 86'), 'ΠΕ19-20')
+        self.assertEqual(admin.klados_code('ΠΕ 86'), 'ΠΕ86')
+        self.assertEqual(admin.klados_code('ΠΕ19-20'), 'ΠΕ86')
         self.assertEqual(admin.klados_code('pe70'), 'ΠΕ70')
-        self.assertEqual(admin.klados_code('ΠΕ79.01'), 'ΠΕ16')
+        self.assertEqual(admin.klados_code('ΠΕ16'), 'ΠΕ79.01')
+        self.assertEqual(admin.klados_code('ΠΕ79.01'), 'ΠΕ79.01')
+        self.assertEqual(admin.klados_code('ΠΕ32'), 'ΠΕ91.01')
         self.assertEqual(admin.subject_klados('Φ ΑΓΩΓΗ'), 'ΠΕ11')
         self.assertEqual(admin.subject_klados('Φυσικά'), '')
 
@@ -73,9 +76,22 @@ class Admin(unittest.TestCase):
         # σενάριο: δύο τμήματα Ε΄
         p['admin'] = {'needs': {'sections': {'Ε': 2}}}
         self.assertEqual({x['code']: x for x in admin.needs(p)['rows']}['ΠΕ70']['required'], r['ΠΕ70']['required'] + 20)
-        # οι ώρες σε άλλο σχολείο δεν είναι διαθέσιμες εδώ
+        # παλιά αρχεία με «ώρες σε άλλο σχολείο»: αγνοούνται (διαθέσιμο = υποχρεωτικό ωράριο στο σχολείο)
         t = by_name(p, 'Ιωάννου Παναγιώτης'); p['admin']['teachers'] = {t['id']: {'other': 5}}
-        self.assertEqual({x['code']: x for x in admin.needs(p)['rows']}['ΠΕ11']['available'], r['ΠΕ11']['available'] - 5)
+        self.assertEqual({x['code']: x for x in admin.needs(p)['rows']}['ΠΕ11']['available'], r['ΠΕ11']['available'])
+
+    def test_counted_hours(self):
+        """Ε.Δ.Υ. και βιβλιοθήκη μετρούν στο ωράριο (δεν βγαίνει «λείπουν ώρες»)."""
+        p = school(); d = by_name(p, 'Παππά Θεοδώρα'); o = p['teachers'][0]
+        p['admin'] = {'edy': 0}; base = core.teacher_hours_check(p)
+        p['admin'] = {'library': {'teacher': o['id'], 'hours': 3}}   # Ε.Δ.Υ. προεπιλογή 1
+        c = core.teacher_hours_check(p)
+        self.assertEqual(c[d['id']]['assigned'], base[d['id']]['assigned'] + 1)
+        self.assertEqual(c[o['id']]['assigned'], base[o['id']]['assigned'] + 3)
+        self.assertIn('βιβλιοθήκη', c[o['id']]['extra'])
+        p['framework'] = dict(p.get('framework') or {}, level='Γυμνάσιο')
+        self.assertEqual(admin.counted_hours(p)[o['id']][0], 3)
+        self.assertNotIn(d['id'], admin.counted_hours(p))
 
     def test_efimeries(self):
         with tempfile.TemporaryDirectory() as td:
@@ -149,6 +165,28 @@ class Forms(unittest.TestCase):
         got = sum(v for r in range(9, 30) for c in range(8, 19) for v in [hrs.cell(r, c).value] if isinstance(v, int))
         self.assertEqual(got, total)
         self.assertFalse([w for w in warn if 'τάξεις' in w])
+
+
+
+class Prints(unittest.TestCase):
+    def test_poster_band_and_extra_table(self):
+        import outputs
+        p = school()
+        pg = outputs.pages(p, {'kind': 'teachers', 'mode': 'poster'})[0]
+        self.assertEqual(pg['periods'], [1, 2, 3, 4, 5, 6]); self.assertEqual(pg['extra'], [0, 7, 8, 9])
+        h = outputs.report(p, {'kind': 'teachers', 'mode': 'poster', 'title': 'ΛΩΡΙΔΑ ΔΟΚΙΜΗΣ'})
+        self.assertIn('ΛΩΡΙΔΑ ΔΟΚΙΜΗΣ - Αφίσα', h); self.assertEqual(h.count('<table class="matrix'), 2)
+        self.assertIn('Πρωινή Ζώνη / Ολοήμερο', h)
+        wb = openpyxl.load_workbook(io.BytesIO(outputs.export_xlsx(p, {'kind': 'classes', 'mode': 'overview', 'title': 'ΛΩΡΙΔΑ'})))
+        vals = [c.value for row in wb.worksheets[0].iter_rows() for c in row]
+        self.assertTrue(any(isinstance(v, str) and 'ΛΩΡΙΔΑ - Συνολικό' in v for v in vals)); self.assertIn('Πρωινή Ζώνη / Ολοήμερο', vals)
+
+    def test_needs_print(self):
+        import outputs
+        p = school(); pg = outputs.pages(p, {'mode': 'needs'})[0]
+        self.assertEqual(pg['rows'][-1][0], 'Σύνολο')
+        self.assertIn('Προϋπολογισμός', outputs.report(p, {'mode': 'needs'}))
+        outputs.export_xlsx(p, {'mode': 'needs'})
 
 
 if __name__ == '__main__':
