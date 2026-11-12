@@ -109,3 +109,33 @@ class DirectorSecondary(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ServiceYears(unittest.TestCase):
+    """Υπηρεσία όπως στο myschool (έτη-μήνες-ημέρες έως 31/12)."""
+    def proj(self, level, classes=8, positions=None):
+        p = {'framework': {'level': level}, 'classes': [{'id': str(i), 'name': str(i)} for i in range(classes)]}
+        if positions: p['positions'] = positions
+        return p
+
+    def test_secondary_bands(self):
+        p = self.proj('Γυμνάσιο'); h = lambda y, m=0, d=0: core.required_hours(p, {'years': y, 'years_m': m, 'years_d': d})
+        self.assertEqual([h(0), h(6), h(6, 0, 1), h(12), h(12, 1), h(20), h(20, 0, 1), h(25)], [23, 23, 21, 21, 20, 20, 18, 18])
+
+    def test_secondary_director_deputy(self):
+        p = self.proj('Γυμνάσιο', 8)   # 6–9 τμήματα: 9 / 7
+        self.assertEqual(core.required_hours(p, {'role': 'director', 'years': 20}), 9)
+        self.assertEqual(core.required_hours(p, {'role': 'director', 'years': 20, 'years_d': 1}), 7)
+        self.assertEqual(core.required_hours(p, {'role': 'deputy', 'years': 20}), 16)
+        self.assertEqual(core.required_hours(p, {'role': 'deputy', 'years': 20, 'years_m': 2}), 14)
+
+    def test_primary_bands(self):
+        p = self.proj('Δημοτικό', positions=12); h = lambda y, m=0: core.required_hours(p, {'years': y, 'years_m': m})
+        self.assertEqual([h(9, 11), h(10), h(15), h(20), h(25)], [24, 23, 22, 21, 21])
+        self.assertEqual(core.required_hours(p, {'role': 'deputy', 'years': 21}), 19)
+
+    def test_validate_and_import(self):
+        q = core.check_structure(copy.deepcopy(DEMO))
+        q['teachers'][0].update(years=12, years_m=3, years_d=5); core.check_structure(q)
+        q['teachers'][0]['years_m'] = 12
+        with self.assertRaises(ValueError): core.check_structure(q)

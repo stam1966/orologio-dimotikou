@@ -293,9 +293,21 @@ def apply(p, raw, mode='merge'):
             if role: x['role'] = role
             else: x.pop('role', None)
         if 'years' in r:
-            y = _int(r['years'], 0, 60, 'Έτη υπηρεσίας')
-            if y is None: x.pop('years', None)
-            else: x['years'] = y
+            import re as _re
+            m = _re.fullmatch(r'\s*(\d{1,2})\s*[-/.\s]\s*(\d{1,2})\s*[-/.\s]\s*(\d{1,2})\s*', str(r['years'] or ''))
+            for k in ('years_m', 'years_d'):
+                x.pop(k, None)
+            if m:   # όπως στο myschool: έτη-μήνες-ημέρες
+                y, mo, d = (int(v) for v in m.groups())
+                if not (0 <= y <= 60 and 0 <= mo <= 11 and 0 <= d <= 30):
+                    raise ValueError('Μη έγκυρη υπηρεσία: ' + str(r['years']))
+                x['years'] = y
+                if mo: x['years_m'] = mo
+                if d: x['years_d'] = d
+            else:
+                y = _int(r['years'], 0, 60, 'Έτη υπηρεσίας')
+                if y is None: x.pop('years', None)
+                else: x['years'] = y
         if 'override' in r:
             o = _int(r['override'], 0, 40, 'Υποχρεωτικό ωράριο')
             if o is None: x.pop('hours_override', None)
@@ -506,7 +518,7 @@ def template(p=None):
         tn = {t['id']: t['name'] for t in p['teachers']}; cn = {c['id']: c['name'] for c in p['classes']}; sn = {s['id']: s['name'] for s in p['subjects']}
         rn = {'': 'Εκπαιδευτικός', 'director': 'Διευθυντής', 'deputy': 'Υποδιευθυντής'}
         yn = lambda b: 'ΝΑΙ' if b else 'ΟΧΙ'
-        data['teachers'] = [[t['name'], t.get('short', ''), rn.get(t.get('role', ''), ''), t.get('years', ''), t.get('hours_override', ''), t.get('spec', ''),
+        data['teachers'] = [[t['name'], t.get('short', ''), rn.get(t.get('role', ''), ''), (str(t['years']) + ('-' + str(t.get('years_m', 0)) + '-' + str(t.get('years_d', 0)) if t.get('years_m') or t.get('years_d') else '') if t.get('years') is not None else ''), t.get('hours_override', ''), t.get('spec', ''),
                              yn(t.get('active') is not False), yn(t.get('special')), yn(t.get('hypothetical'))] for t in p['teachers']]
         gn = {g['id']: g['name'] for g in p.get('groups', []) if g.get('entireclass') != '1'}
         data['classes'] = [[c['name'], c.get('short', ''), c.get('grade', '') or core.grade_of(c), tn.get(c.get('teacher'), '')] for c in p['classes']]

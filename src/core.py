@@ -5,7 +5,7 @@ from pathlib import Path
 from collections import Counter, defaultdict
 import xml.etree.ElementTree as ET
 
-VERSION = '0.31.0-beta'
+VERSION = '0.31.1-beta'
 DAYS = ['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή']
 def uid(): return uuid.uuid4().hex[:16]
 def blank():
@@ -137,6 +137,8 @@ def check_structure(p):
         if c.get('grade') is not None and (type(c['grade'])!=str or len(c['grade'])>10):raise ValueError('Μη έγκυρη τάξη τμήματος.')
     for t in p['teachers']:
         if t.get('years') is not None and (type(t['years'])!=int or not 0<=t['years']<=60):raise ValueError('Μη έγκυρα έτη υπηρεσίας.')
+        if t.get('years_m') is not None and (type(t['years_m'])!=int or not 0<=t['years_m']<=11):raise ValueError('Μη έγκυροι μήνες υπηρεσίας.')
+        if t.get('years_d') is not None and (type(t['years_d'])!=int or not 0<=t['years_d']<=30):raise ValueError('Μη έγκυρες ημέρες υπηρεσίας.')
         for k in ('active','special','hypothetical'):
             if k in t and type(t[k])!=bool:raise ValueError('Μη έγκυρο πεδίο εκπαιδευτικού: '+k)
         if 'spec' in t and (not isinstance(t['spec'],str) or len(t['spec'])>40):raise ValueError('Μη έγκυρη ειδικότητα.')
@@ -151,6 +153,7 @@ def check_structure(p):
         for key in ('bands','director'):
             for row in th.get(key,[]):
                 if not (isinstance(row,list) and len(row) in ((3,4) if key=='director' else (3,)) and all(type(x)==int and 0<=x<=99 for x in row) and row[0]<=row[1]):raise ValueError('Μη έγκυρη γραμμή ωραρίου εκπαιδευτικών.')
+        if 'bands_upto' in th and type(th['bands_upto'])!=bool:raise ValueError('Μη έγκυρο πεδίο ωραρίου.')
         if 'director_years' in th and (type(th['director_years'])!=int or not 0<=th['director_years']<=60):raise ValueError('Μη έγκυρα έτη υπηρεσίας διευθυντή.')
         dh=th.get('deputy_hours')
         if dh is not None and not (isinstance(dh,list) and len(dh) in (0,2) and all(type(x)==int and 0<=x<=40 for x in dh)):raise ValueError('Μη έγκυρο ωράριο υποδιευθυντών.')
@@ -266,7 +269,7 @@ TEACHER_HOURS_DEFAULT={
     'deputy_reduction':2}
 TEACHER_HOURS_SECONDARY={
     'source':'ν. 1566/1985, άρθρο 14, παρ. 13 και ν. 4152/2013, υποπ. Θ1 (δευτεροβάθμια, όπως ισχύει) — ελέγξτε το ισχύον ΦΕΚ',
-    'bands':[[0,6,23],[6,12,21],[12,20,20],[20,99,18]],
+    'bands':[[0,6,23],[6,12,21],[12,20,20],[20,99,18]],'bands_upto':True,   # «έως 6 έτη», «6 έτη και 1 ημέρα έως 12»…
     'small_school_max':0,'small_school_hours':0,
     # διευθυντές Γυμνασίων/Λυκείων: [από τμήματα, έως τμήματα, ώρες, ώρες με υπηρεσία πάνω από director_years έτη]
     'director':[[3,5,10,8],[6,9,9,7],[10,12,7,5],[13,99,5,3]],'director_years':20,'deputy_reduction':0,
@@ -295,6 +298,20 @@ def framework(p):
     if 'deputy_hours' not in st and st.get('deputy_reduction'):th['deputy_hours']=[]   # παλιά έργα με δική τους μείωση υποδιευθυντή
     return {'level':level(p),'curriculum_source':f.get('curriculum_source',''),'teacher_hours':th,'optional':f.get('optional') or {}}
 
+def over(t,n):
+    """Υπηρεσία «άνω των n ετών» με έτη-μήνες-ημέρες όπως στο myschool (υπολογισμένα έως 31/12)."""
+    y=t.get('years') or 0
+    return y>n or (y==n and bool(t.get('years_m') or t.get('years_d')))
+
+def _band(th,t):
+    """Ώρες από τον πίνακα ετών. Δευτεροβάθμια (bands_upto): «έως 6», «6 έτη και 1 ημέρα έως 12»… — το όριο ανήκει στην κάτω κατηγορία.
+    Πρωτοβάθμια: «από 10 έτη» — το όριο ανήκει στην επάνω κατηγορία."""
+    y=t.get('years')
+    if y is None:return None
+    if th.get('bands_upto'):
+        return next((h for a,b,h in th['bands'] if (a==0 or over(t,a)) and not over(t,b)),None)
+    return next((h for a,b,h in th['bands'] if a<=y<b),None)
+
 def required_hours(p,t):
     """Υποχρεωτικό διδακτικό ωράριο εκπαιδευτικού ή None αν δεν αρκούν τα στοιχεία."""
     if t.get('hours_override') is not None:return t['hours_override']
@@ -308,20 +325,22 @@ def required_hours(p,t):
                 if len(r)>3 and r[3]!=r[2]:
                     y=t.get('years')
                     if y is None:return None
-                    return r[3] if y>th.get('director_years',20) else r[2]
-                return r[2]
+                    h=r[3] if over(t,th.get('director_years',20)) else r[2]
+                else:h=r[2]
+                b=_band(th,t)
+                return min(h,b) if b is not None else h   # ευνοϊκότερη ρύθμιση
         return None
     if role=='deputy' and th.get('deputy_hours'):
         a,b=th['deputy_hours']
         if a==b:return a
         y=t.get('years')
         if y is None:return None
-        return b if y>th.get('director_years',20) else a
+        h=b if over(t,th.get('director_years',20)) else a
+        bb=_band(th,t)
+        return min(h,bb) if bb is not None else h
     if pos and pos<=th['small_school_max']:h=th['small_school_hours']
     else:
-        y=t.get('years')
-        if y is None:return None
-        h=next((h for a,b,h in th['bands'] if a<=y<b),None)
+        h=_band(th,t)
         if h is None:return None
     if role=='deputy':h-=th['deputy_reduction']
     return h
