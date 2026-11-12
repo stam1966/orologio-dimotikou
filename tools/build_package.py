@@ -35,7 +35,7 @@ def app_files():
         for p in sorted((ROOT / 'src' / d).rglob('*')):
             if p.is_file() and '__pycache__' not in p.parts and p.suffix != '.pyc':
                 files[p.relative_to(ROOT).as_posix()] = p.read_bytes()
-    for p in sorted((ROOT / 'tests').glob('test_*.py')):
+    for p in sorted((ROOT / 'tests').glob('test_*.py')) + sorted((ROOT / 'tests').glob('*_fixture.json')):
         files['tests/' + p.name] = p.read_bytes()
     for n in TOP_FILES:
         if (ROOT / n).exists():

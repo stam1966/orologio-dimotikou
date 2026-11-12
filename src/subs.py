@@ -243,8 +243,8 @@ def uncompact(rec):
 
 def replan(p, rec, iterations=40000, seed=1):
     """Ανασχεδιασμός της ημέρας (Β/θμια): τα μαθήματα όσων είναι παρόντες ξαναμπαίνουν σε ώρες της ίδιας ημέρας,
-    ώστε τα τμήματα να μην έχουν κενά και να σχολάνε όσο νωρίτερα γίνεται, και οι εκπαιδευτικοί να φεύγουν νωρίτερα
-    χωρίς να χρειάζεται να έρθουν νωρίτερα. Κάθε μάθημα μένει στο ίδιο τμήμα με τον ίδιο εκπαιδευτικό· αλλάζει μόνο
+    ώστε τα τμήματα να μην έχουν κενά και να σχολάνε όσο νωρίτερα γίνεται, και οι εκπαιδευτικοί να φεύγουν νωρίτερα·
+    κανένας εκπαιδευτικός δεν φεύγει αργότερα από ό,τι θα έφευγε (υποχρεωτικό) και όσο γίνεται δεν έρχεται νωρίτερα. Κάθε μάθημα μένει στο ίδιο τμήμα με τον ίδιο εκπαιδευτικό· αλλάζει μόνο
     η ώρα, μόνο γι' αυτή την ημέρα. Αναζήτηση με προσομοιωμένη ανόπτηση, με αφετηρία το κανονικό πρόγραμμα."""
     import random, math
     rnd = random.Random(seed)
@@ -281,10 +281,10 @@ def replan(p, rec, iterations=40000, seed=1):
         B.append((es, d, cls, tch, s0, ok))
     if not B:
         return dict(compact(p, rec), replan=False)
-    of = {}
+    of = {}; ol = {}
     for es, d, cls, tch, s0, ok in B:
         for t in tch:
-            of[t] = min(of.get(t, P), s0)
+            of[t] = min(of.get(t, P), s0); ol[t] = max(ol.get(t, -1), s0 + d - 1)
     def cost(S):
         oc = {}; ot = {}; bad = 0
         for (es, d, cls, tch, s0, ok), s in zip(B, S):
@@ -300,7 +300,7 @@ def replan(p, rec, iterations=40000, seed=1):
             u = set(js); bad += 1000 * (max(u) - min(u) + 1 - len(u)) + 100 * (max(u) + 1)
         for t, js in ot.items():
             bad += 10000 * (len(js) - len(set(js)))
-            u = set(js); bad += 5 * (max(u) - min(u) + 1 - len(u)) + 10 * (max(u) + 1) + 10 * max(0, of[t] - min(u))
+            u = set(js); bad += 5 * (max(u) - min(u) + 1 - len(u)) + 10 * (max(u) + 1) + 10 * max(0, of[t] - min(u)) + 10000 * max(0, max(u) - ol[t])   # κανείς δεν φεύγει αργότερα
         return bad
     by_class = {}
     for k, b in enumerate(B):

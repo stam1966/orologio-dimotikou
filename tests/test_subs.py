@@ -196,3 +196,20 @@ class Replan(unittest.TestCase):
             q = _c.check_structure(_j.loads(_j.dumps(q)))
             self.assertTrue(q['substitutions'][0]['replan'])
             self.assertNotIn('replan', S.uncompact(r))
+
+
+class ReplanNoLater(unittest.TestCase):
+    def test_no_teacher_leaves_later(self):
+        import json as _j, core as _c, subs as S
+        from pathlib import Path as _P
+        p = _c.check_structure(_j.loads((_P(__file__).parent / 'gymnasio_fixture.json').read_text(encoding='utf-8')))
+        for t in p['teachers'][:6]:
+            for day in ('2026-11-09', '2026-11-12'):
+                rec = {'date': day, 'absent': [{'teacher': t['id'], 'periods': None, 'reason': ''}], 'covers': []}
+                wd = S.weekday(day); base = {}; after = {}
+                for (x, j), _ in S.day_map(p, wd, rec).items():
+                    if x != t['id']: base[x] = max(base.get(x, -1), j)
+                r = S.replan(p, rec, iterations=6000)
+                for (x, j), _ in S.day_map(p, wd, r).items():
+                    if x != t['id']: after[x] = max(after.get(x, -1), j)
+                self.assertTrue(all(after[x] <= base[x] for x in after), (t['name'], day))
