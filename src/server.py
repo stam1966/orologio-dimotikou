@@ -352,6 +352,12 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send(200, json.dumps(subs.day(p, req.get('rec') or subs.record(p, req['date'])), ensure_ascii=False))
                 if action == '/api/subs/auto':
                     return self.send(200, json.dumps(subs.auto(p, req['rec']), ensure_ascii=False))
+                if action == '/api/subs/compact':
+                    return self.send(200, json.dumps(subs.compact(p, req['rec']), ensure_ascii=False))
+                if action == '/api/subs/replan':
+                    return self.send(200, json.dumps(subs.replan(p, req['rec']), ensure_ascii=False))
+                if action == '/api/subs/uncompact':
+                    return self.send(200, json.dumps(subs.uncompact(req['rec']), ensure_ascii=False))
                 if action == '/api/import/preview':
                     q, rep = parse_import(req)
                     return self.send(200, json.dumps(rep, ensure_ascii=False))

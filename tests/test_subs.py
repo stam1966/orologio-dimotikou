@@ -114,3 +114,85 @@ class Substitutions(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class Compact(unittest.TestCase):
+    """Συμπτύξεις Β/θμιας: ανεβαίνουν μαθήματα των τελευταίων ωρών του τμήματος."""
+    def setUp(self):
+        import json as _j, core as _c
+        from pathlib import Path as _P
+        self.p = _c.check_structure(_j.loads((_P(__file__).parent / 'gymnasio_fixture.json').read_text(encoding='utf-8')))
+        self.T = {t['name']: t['id'] for t in self.p['teachers']}
+
+    def test_compact_moves_and_needs(self):
+        import subs as S
+        p = self.p
+        rec = {'date': '2026-11-12', 'absent': [{'teacher': self.T['Δημητρίου Παύλος'], 'periods': None, 'reason': ''}], 'covers': []}
+        before, _ = S.needs(p, rec)
+        r = S.compact(p, rec)
+        after, _ = S.needs(p, r)
+        done = S.compacted(p, r)
+        self.assertEqual(len(before), len(after) + len(done))
+        self.assertTrue(r['compact'])
+        L = {l['id']: l for l in p['lessons']}; E = {e['id']: e for e in p['events']}
+        busy = {}
+        for (t, j), (e, l) in S.day_map(p, 3, r).items():
+            busy.setdefault(t, set()).add(j)
+        for m in r.get('moves', []):
+            l = L[E[m['event']]['lesson']]
+            self.assertTrue(all(self.T['Δημητρίου Παύλος'] != t for t in l['teachers']))
+            self.assertLess(m['to'], m['from'])
+        # κανένα τμήμα δεν έχει κενό στη μέση μετά τις συμπτύξεις, εκτός από ώρες που μένουν για αναπλήρωση
+        open_ = {(n['class_ids'][0], n['period']) for n in after}
+        for c, tl in S.class_day(p, r).items():
+            end = S.class_end(r, tl)
+            for j in range(min(tl), end + 1):
+                live = j in tl and not S._gone_at(r, tl[j][1], tl[j][2])
+                self.assertTrue(live or (c, j) in open_, (c, j))
+        g = S.grid(p, r)
+        self.assertTrue(any(c['kind'] == 'moved' for row in g['rows'] for c in row['cells'].values()) == bool(r.get('moves')))
+        # αποθήκευση και εκτύπωση
+        q = dict(p); q['substitutions'] = [S.auto(p, r)]
+        q = core.check_structure(json.loads(json.dumps(q)))
+        self.assertTrue(q['substitutions'][0]['compact'])
+        self.assertIn('Πρόγραμμα ημέρας', outputs.report(q, dict(kind='teachers', mode='subs_day', date='2026-11-12')))
+        self.assertNotIn('compact', S.uncompact(r))
+
+    def test_last_hour_leaves_early(self):
+        import subs as S
+        p = self.p; L = {l['id']: l for l in p['lessons']}
+        # εκπαιδευτικός με μάθημα την τελευταία ώρα ενός τμήματος την Πέμπτη
+        cd = S.class_day(p, {'date': '2026-11-12', 'absent': [], 'covers': []})
+        c, tl = next(iter(sorted(cd.items())))
+        last = max(tl); e, l, _ = tl[last]
+        rec = {'date': '2026-11-12', 'absent': [{'teacher': l['teachers'][0], 'periods': [last], 'reason': ''}], 'covers': []}
+        r = S.compact(p, rec)
+        done = S.compacted(p, r)
+        self.assertTrue(any(n['period'] == last and 'σχολάει' in n['how'] for n in done))
+
+
+class Replan(unittest.TestCase):
+    """Ανασχεδιασμός ημέρας: όλα τα μαθήματα της ημέρας σε νέες ώρες, χωρίς συγκρούσεις."""
+    def test_replan(self):
+        import json as _j, core as _c, subs as S
+        from pathlib import Path as _P
+        p = _c.check_structure(_j.loads((_P(__file__).parent / 'gymnasio_fixture.json').read_text(encoding='utf-8')))
+        T = {t['name']: t['id'] for t in p['teachers']}
+        L = {l['id']: l for l in p['lessons']}
+        for who, day in (('Δημητρίου Παύλος', '2026-11-12'), ('Ιωαννίδου Μαρία', '2026-11-13')):
+            rec = {'date': day, 'absent': [{'teacher': T[who], 'periods': None, 'reason': ''}], 'covers': []}
+            wd = S.weekday(day)
+            c, r = S.compact(p, rec), S.replan(p, rec, iterations=20000)
+            self.assertTrue(r['compact'] and r['replan'])
+            self.assertLessEqual(len(S.needs(p, r)[0]), len(S.needs(p, c)[0]))
+            mv = {m['event']: m['to'] for m in r.get('moves', [])}; seen = set()
+            for e in p['events']:
+                if e['place'] and e['place'][0] == wd and not S._gone_at(r, L[e['lesson']], e['place'][1]):
+                    s = mv.get(e['id'], e['place'][1])
+                    for k in [('t', t, s) for t in L[e['lesson']]['teachers']] + [('c', x, s) for x in L[e['lesson']]['classes']]:
+                        self.assertNotIn(k, seen); seen.add(k)
+                    self.assertNotIn(T[who], L[e['lesson']]['teachers'])
+            q = dict(p); q['substitutions'] = [S.auto(p, r)]
+            q = _c.check_structure(_j.loads(_j.dumps(q)))
+            self.assertTrue(q['substitutions'][0]['replan'])
+            self.assertNotIn('replan', S.uncompact(r))
