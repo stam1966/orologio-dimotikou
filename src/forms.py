@@ -402,9 +402,9 @@ def export_allday(p):
     wb = openpyxl.load_workbook(FORMS / 'oloimero.xlsx'); warn = []
     m = admin.allday_matrix(p)
     if any(s['kind'] == 'allday' and not s.get('grades') for s in m['sections']):
-        warn.append('Δεν έχουν οριστεί οι τάξεις κάθε τμήματος Ολοήμερου (π.χ. «Α - Β»)· ορίστε τες στα «Βοηθητικά εργαλεία».')
+        warn.append('Δεν έχουν οριστεί οι τάξεις κάθε τμήματος Ολοήμερου (π.χ. «Α - Β»)· ορίστε τες στα «Διεύθυνση & έντυπα».')
     if not m['sections']:
-        warn.append('Δεν βρέθηκαν τμήματα Ολοήμερου ή Πρωινής Ζώνης (π.χ. «ΟΛ1», «Πρωινή Ζώνη»). Ορίστε τα στα «Βοηθητικά εργαλεία».')
+        warn.append('Δεν βρέθηκαν τμήματα Ολοήμερου ή Πρωινής Ζώνης (π.χ. «ΟΛ1», «Πρωινή Ζώνη»). Ορίστε τα στα «Διεύθυνση & έντυπα».')
     sheet_allday_program(p, wb['ΠΡΟΓΡΑΜΜΑ'], m, warn)
     sheet_allday_hours(p, wb['ΩΡΑΡΙΟ ΕΚΠ'], m, warn)
     return save(wb), warn
