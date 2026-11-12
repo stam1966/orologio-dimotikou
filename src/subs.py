@@ -251,6 +251,16 @@ def replan(p, rec, iterations=40000, seed=1):
     rec = dict(rec, covers=[dict(c) for c in rec.get('covers', [])], moves=[], compact=True, replan=True)
     wd = weekday(rec['date']); q = R.active_view(p); ls = R.mapping(q, 'lessons'); P = len(p['periods'])
     live = [e for e in q['events'] if e['place'] and e['place'][0] == wd and not _gone_at(rec, ls[e['lesson']], e['place'][1])]
+    # ώρες του απόντα ανά τμήμα: μόνο εκεί επιτρέπεται να μείνει κενό (θα καλυφθεί με αναπλήρωση)
+    gone_at = {}; cfirst = {}
+    for e in q['events']:
+        if e['place'] and e['place'][0] == wd:
+            for c in ls[e['lesson']]['classes']:
+                cfirst[c] = min(cfirst.get(c, P), e['place'][1])
+    for e in q['events']:
+        if e['place'] and e['place'][0] == wd and _gone_at(rec, ls[e['lesson']], e['place'][1]):
+            for c in ls[e['lesson']]['classes']:
+                gone_at.setdefault(c, set()).update(range(e['place'][1], e['place'][1] + ls[e['lesson']]['duration']))
     # δέσμες: διδασκαλίες του ίδιου τμήματος στην ίδια ώρα (π.χ. ομάδες) κινούνται μαζί
     parent = {e['id']: e['id'] for e in live}
     def find(a):
@@ -297,7 +307,8 @@ def replan(p, rec, iterations=40000, seed=1):
                 bad += 15   # όσο λιγότερες αλλαγές
         for c, js in oc.items():
             bad += 10000 * (len(js) - len(set(js)))
-            u = set(js); bad += 1000 * (max(u) - min(u) + 1 - len(u)) + 100 * (max(u) + 1)
+            u = set(js); hs = [j for j in range(min(cfirst.get(c, min(u)), min(u)), max(u)) if j not in u]   # και αργότερη έναρξη
+            bad += sum(1000 if j in gone_at.get(c, ()) else 20000 for j in hs) + 100 * (max(u) + 1)
         for t, js in ot.items():
             bad += 10000 * (len(js) - len(set(js)))
             u = set(js); bad += 5 * (max(u) - min(u) + 1 - len(u)) + 20 * (max(u) + 1) + 1 * max(0, of[t] - min(u)) + 10000 * max(0, max(u) - ol[t])   # κανείς δεν φεύγει αργότερα

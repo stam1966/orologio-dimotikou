@@ -213,3 +213,21 @@ class ReplanNoLater(unittest.TestCase):
                 for (x, j), _ in S.day_map(p, wd, r).items():
                     if x != t['id']: after[x] = max(after.get(x, -1), j)
                 self.assertTrue(all(after[x] <= base[x] for x in after), (t['name'], day))
+
+
+class ReplanHoles(unittest.TestCase):
+    def test_every_hole_has_cover_entry(self):
+        """Κάθε κενό τμήματος μετά τον ανασχεδιασμό είναι ώρα απόντα που φαίνεται στις «Ώρες για κάλυψη»."""
+        import json as _j, core as _c, subs as S
+        from pathlib import Path as _P
+        p = _c.check_structure(_j.loads((_P(__file__).parent / 'gymnasio_fixture.json').read_text(encoding='utf-8')))
+        for t in p['teachers'][::3]:
+            for day in ('2026-11-10', '2026-11-13'):
+                rec = {'date': day, 'absent': [{'teacher': t['id'], 'periods': None, 'reason': ''}], 'covers': []}
+                r = S.replan(p, rec, iterations=6000)
+                need = {(x['class_ids'][0], x['period']) for x in S.needs(p, r)[0]}
+                base = S.class_day(p, rec)
+                for c, tl in S.class_day(p, r).items():
+                    live = [j for j, v in tl.items() if not S._gone_at(r, v[1], v[2])]
+                    for j in range(min(base[c]), max(live + [-1]) + 1):
+                        self.assertTrue(j in live or (c, j) in need, (t['name'], day, c, j))
