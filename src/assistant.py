@@ -663,3 +663,305 @@ def apply(current, proposal_project):
         if key in pr:
             q[key] = copy.deepcopy(pr[key])
     return core.check_structure(q)
+
+
+# ---------------------------------------------------------------- βοηθός για το πρόγραμμα μιας ημέρας (αναπληρώσεις)
+SYSTEM_DAY = """Είσαι ο βοηθός της εφαρμογής «Ωρολόγιο» για τις ΑΝΑΠΛΗΡΩΣΕΙΣ μιας συγκεκριμένης ημέρας. Ο χρήστης (διευθυντής/υποδιευθυντής) ζητά αλλαγές μόνο για εκείνη την ημέρα· το κανονικό εβδομαδιαίο πρόγραμμα ΔΕΝ αλλάζει.
+
+Τι μπορείς να κάνεις στο πρόχειρο της ημέρας:
+- να μετακινήσεις μάθημα σε άλλη ώρα της ίδιας ημέρας (move_lesson) ή να ανταλλάξεις δύο μαθήματα (swap_lessons)· το μάθημα μένει στο ίδιο τμήμα με τον ίδιο εκπαιδευτικό·
+- να ορίσεις ποιος καλύπτει ώρα απόντα (set_cover), ή «συνένωση με άλλο τμήμα»/«άλλη λύση» με σημείωση·
+- να τρέξεις τον αυτόματο ανασχεδιασμό (replan) ή την αυτόματη κάλυψη (auto_cover)·
+- να ελέγξεις το αποτέλεσμα (check_day) και να το αποθηκεύσεις ως πρόταση (save_proposal). Έως 3 προτάσεις· μετά από κάθε save_proposal, reset για την επόμενη.
+
+Κανόνες του σχολείου (Γυμνάσιο/Λύκειο):
+- ΚΑΝΕΝΑΣ εκπαιδευτικός δεν αποχωρεί αργότερα από ό,τι θα έφευγε με το κανονικό πρόγραμμα. Μπορεί να έρθει νωρίτερα.
+- Στόχος: να καλυφθούν όλες οι ώρες, οι μαθητές και οι εκπαιδευτικοί να σχολάνε όσο νωρίτερα γίνεται, και να μαζεύονται τα κενά των εκπαιδευτικών (π.χ. να έρθει την 3η αντί για τη 2η αν είχε κενό).
+- Τμήμα δεν μένει ποτέ χωρίς εκπαιδευτικό σε ώρα ανάμεσα στα μαθήματά του.
+- Πριν από save_proposal κάλεσε check_day.
+
+Οι εκπαιδευτικοί αναφέρονται με κωδικούς (Τ1, Τ2…)· γράφε τους ακριβώς έτσι. Μη δείχνεις κωδικούς μαθημάτων (E…)· γράφε «Μαθηματικά Α1, 3η ώρα».
+Απάντα σύντομα, στα ελληνικά. Ο χρήστης εφαρμόζει μια πρόταση με κουμπί και μετά πατά «Αποθήκευση».
+Ώρες στα εργαλεία: το όνομα της ώρας όπως φαίνεται στη λίστα «Ώρες»."""
+
+
+class DaySession:
+    """Πρόχειρο της εγγραφής αναπληρώσεων μιας ημέρας: μετακινήσεις, καλύψεις, έλεγχος, προτάσεις."""
+
+    def __init__(self, project, view, rec, cx):
+        import subs
+        self.S = subs; self.p = project; self.v = view; self.cx = cx
+        self.base = copy.deepcopy(rec); self.rec = copy.deepcopy(rec); self.proposals = []
+        self.wd = subs.weekday(rec['date']); self.ls = core.mapping(project, 'lessons')
+        self.E = {e['id']: e for e in project['events']}
+
+    def run(self, name, a):
+        try:
+            return getattr(self, 't_' + name)(**(a or {}))
+        except (ValueError, KeyError, TypeError, StopIteration) as ex:
+            return 'ΣΦΑΛΜΑ: ' + (str(ex) or ex.__class__.__name__)
+
+    # ---- βοηθητικά
+    def _per(self, name):
+        names = [str(x['name']) for x in self.p['periods']]
+        if str(name) not in names:
+            raise ValueError('Άγνωστη ώρα: ' + str(name))
+        return names.index(str(name))
+
+    def _ev(self, code):
+        eid = self.cx.eid.get(str(code).strip().upper())
+        if not eid or eid not in self.E or not self.E[eid]['place'] or self.E[eid]['place'][0] != self.wd:
+            raise ValueError('Άγνωστο μάθημα της ημέρας: ' + str(code))
+        return eid
+
+    def _teacher(self, code):
+        for tid, c in self.cx.tcode.items():
+            if c == str(code).strip().replace('T', 'Τ'):
+                return tid
+        raise ValueError('Άγνωστος εκπαιδευτικός: ' + str(code))
+
+    def _tn(self, tid):
+        return self.cx.tcode.get(tid, '?') if self.cx.anon else self.cx.tname.get(tid, '?')
+
+    def _sn(self, l):
+        return next((s.get('short') or s['name'] for s in self.p['subjects'] if s['id'] == l['subject']), '')
+
+    def _start(self, eid):
+        m = next((x for x in self.rec.get('moves', []) if x['event'] == eid), None)
+        return m['to'] if m else self.E[eid]['place'][1]
+
+    def _spans(self, rec):
+        out = {}
+        for (t, j), _ in self.S.day_map(self.p, self.wd, rec).items():
+            if not self.S._absent_at(rec, t, j):
+                out.setdefault(t, set()).add(j)
+        for c in rec.get('covers', []):
+            if c.get('teacher'):
+                out.setdefault(c['teacher'], set()).add(c['period'])
+        return out
+
+    def _occupied(self, skip=()):
+        """(τμήμα|εκπαιδευτικός, ώρα) που είναι πιασμένα στο πρόχειρο, χωρίς τα skip."""
+        occ = set()
+        for e in self.p['events']:
+            if e['id'] in skip or not e['place'] or e['place'][0] != self.wd:
+                continue
+            l = self.ls[e['lesson']]
+            if self.S._gone_at(self.rec, l, e['place'][1]):
+                continue
+            s = self._start(e['id'])
+            for j in range(s, s + l['duration']):
+                occ |= {('c', c, j) for c in l['classes']} | {('t', t, j) for t in l['teachers'] if not self.S._absent_at(self.rec, t, j)}
+        for c in self.rec.get('covers', []):
+            if c.get('teacher'):
+                occ.add(('t', c['teacher'], c['period']))
+        return occ
+
+    def _set_move(self, eid, to):
+        mv = [x for x in self.rec.get('moves', []) if x['event'] != eid]
+        if to != self.E[eid]['place'][1]:
+            mv.append({'event': eid, 'from': self.E[eid]['place'][1], 'to': to})
+        self.rec['moves'] = mv; self.rec['compact'] = True
+        resolved = {(n['event'], n['period']) for n in self.S.compacted(self.p, self.rec)}
+        self.rec['covers'] = [c for c in self.rec.get('covers', []) if (c['event'], c['period']) not in resolved]
+
+    # ---- εργαλεία
+    def t_day_view(self):
+        return self.text()
+
+    def t_move_lesson(self, lesson, period):
+        eid = self._ev(lesson); l = self.ls[self.E[eid]['lesson']]; to = self._per(period)
+        if self.S._gone_at(self.rec, l, self.E[eid]['place'][1]):
+            raise ValueError('Το μάθημα δεν γίνεται σήμερα (λείπει ο εκπαιδευτικός)· ορίστε αναπλήρωση με set_cover.')
+        if to + l['duration'] > len(self.p['periods']):
+            raise ValueError('Δεν χωρά.')
+        occ = self._occupied({eid})
+        for j in range(to, to + l['duration']):
+            for c in l['classes']:
+                if ('c', c, j) in occ:
+                    raise ValueError('Το τμήμα έχει ήδη μάθημα την ' + str(self.p['periods'][j]['name']) + 'η· χρησιμοποίησε swap_lessons.')
+            for t in l['teachers']:
+                if self.S._absent_at(self.rec, t, j):
+                    raise ValueError(self._tn(t) + ' λείπει εκείνη την ώρα.')
+                if ('t', t, j) in occ:
+                    raise ValueError(self._tn(t) + ' έχει ήδη μάθημα/κάλυψη την ' + str(self.p['periods'][j]['name']) + 'η.')
+        self._set_move(eid, to)
+        return 'Έγινε. ' + self.brief()
+
+    def t_swap_lessons(self, lesson_a, lesson_b):
+        a, b = self._ev(lesson_a), self._ev(lesson_b)
+        la, lb = self.ls[self.E[a]['lesson']], self.ls[self.E[b]['lesson']]
+        if la['duration'] != lb['duration']:
+            raise ValueError('Διαφορετική διάρκεια.')
+        sa, sb = self._start(a), self._start(b)
+        occ = self._occupied({a, b})
+        for l, s in ((la, sb), (lb, sa)):
+            for j in range(s, s + l['duration']):
+                for t in l['teachers']:
+                    if self.S._absent_at(self.rec, t, j) or ('t', t, j) in occ:
+                        raise ValueError(self._tn(t) + ' δεν είναι ελεύθερος την ' + str(self.p['periods'][j]['name']) + 'η.')
+                for c in l['classes']:
+                    if ('c', c, j) in occ:
+                        raise ValueError('Σύγκρουση τμήματος.')
+        self._set_move(a, sb); self._set_move(b, sa)
+        return 'Έγινε. ' + self.brief()
+
+    def t_set_cover(self, lesson, period, teacher='', kind='teacher', note=''):
+        eid = self._ev(lesson); j = self._per(period)
+        if kind not in ('teacher', 'merge', 'other', 'none'):
+            raise ValueError('kind: teacher, merge, other ή none.')
+        keys = {(n['event'], n['period']) for n in self.S.needs(self.p, self.rec)[0]}
+        if (eid, j) not in keys:
+            raise ValueError('Αυτή η ώρα δεν χρειάζεται κάλυψη.')
+        covers = [c for c in self.rec.get('covers', []) if (c['event'], c['period']) != (eid, j)]
+        if kind == 'teacher':
+            tid = self._teacher(teacher)
+            if self.S._absent_at(self.rec, tid, j) or ('t', tid, j) in self._occupied():
+                raise ValueError(self._tn(tid) + ' δεν είναι ελεύθερος εκείνη την ώρα.')
+            covers.append({'event': eid, 'period': j, 'teacher': tid, 'kind': 'teacher', 'note': str(note)[:200]})
+        elif kind in ('merge', 'other'):
+            covers.append({'event': eid, 'period': j, 'teacher': '', 'kind': kind, 'note': str(note)[:200]})
+        self.rec['covers'] = covers
+        return 'Έγινε. ' + self.brief()
+
+    def t_replan(self):
+        self.rec = self.S.replan(self.p, self.rec)
+        return 'Ανασχεδιάστηκε. ' + self.brief()
+
+    def t_auto_cover(self):
+        self.rec = self.S.auto(self.p, self.rec)
+        return 'Συμπληρώθηκαν όσες ώρες γινόταν. ' + self.brief()
+
+    def t_check_day(self):
+        return self.brief(True)
+
+    def t_save_proposal(self, title, explanation=''):
+        if len(self.proposals) >= 3:
+            return 'ΣΦΑΛΜΑ: έως 3 προτάσεις.'
+        if self.rec == self.base:
+            return 'ΣΦΑΛΜΑ: το πρόχειρο δεν διαφέρει από το αρχικό.'
+        self.proposals.append({'title': str(title)[:120], 'explanation': str(explanation)[:800], 'rec': copy.deepcopy(self.rec), 'lines': self.changes()})
+        return 'Αποθηκεύτηκε ως πρόταση ' + str(len(self.proposals)) + '.'
+
+    def t_reset(self):
+        self.rec = copy.deepcopy(self.base)
+        return 'Το πρόχειρο επανήλθε.'
+
+    # ---- περιγραφές
+    def changes(self):
+        out = []; P = self.p['periods']
+        for m in self.rec.get('moves', []):
+            l = self.ls[self.E[m['event']]['lesson']]
+            out.append('Μετακίνηση: ' + self._sn(l) + ' ' + ', '.join(R.name_of(self.p, 'classes', c) for c in l['classes']) + ' (' + ', '.join(self._tn(t) for t in l['teachers']) + '): ' + str(P[m['from']]['name']) + 'η → ' + str(P[m['to']]['name']) + 'η')
+        for c in self.rec.get('covers', []):
+            if c['event'] not in self.E:
+                continue
+            l = self.ls[self.E[c['event']]['lesson']]
+            who = self._tn(c['teacher']) if c.get('teacher') else {'merge': 'συνένωση', 'other': 'άλλη λύση'}.get(c.get('kind'), '—')
+            out.append('Κάλυψη: ' + self._sn(l) + ' ' + ', '.join(R.name_of(self.p, 'classes', x) for x in l['classes']) + ', ' + str(P[c['period']]['name']) + 'η → ' + who + (' (' + c['note'] + ')' if c.get('note') else ''))
+        return out
+
+    def brief(self, full=False):
+        S = self.S; ns = S.needs(self.p, self.rec)[0]
+        cov = {(c['event'], c['period']) for c in self.rec.get('covers', []) if c.get('teacher') or c.get('kind') in ('merge', 'other')}
+        open_ = [n for n in ns if (n['event'], n['period']) not in cov]
+        base = self._spans(dict(self.base, covers=[], moves=[], compact=False)); now = self._spans(self.rec)
+        later = [t for t in now if t in base and max(now[t]) > max(base[t])]
+        gaps = sum(max(v) - min(v) + 1 - len(v) for v in now.values())
+        g = S.grid(self.p, self.rec); ends = {r['name']: r['end'] for r in g['rows']}
+        s = ('Ακάλυπτες ώρες: ' + str(len(open_)) + ', μετακινήσεις: ' + str(len(self.rec.get('moves', []))) + ', κενά εκπαιδευτικών: ' + str(gaps) +
+             ', εκπαιδευτικοί που φεύγουν αργότερα από το κανονικό: ' + (', '.join(self._tn(t) for t in later) if later else 'κανένας') + '.')
+        if full:
+            P = self.p['periods']
+            s += '\nΑκάλυπτες: ' + ('; '.join(n['subject'] + ' ' + ', '.join(n['classes']) + ' ' + str(P[n['period']]['name']) + 'η' for n in open_) or '—')
+            s += '\nΣχόλασμα τμημάτων: ' + ', '.join(k + ' μετά την ' + str(P[v]['name']) + 'η' for k, v in ends.items() if v >= 0)
+            s += '\nΑλλαγές:\n' + ('\n'.join(self.changes()) or '—')
+        return s
+
+    def text(self):
+        S = self.S; P = self.p['periods']; L = []
+        L.append('Ημέρα: ' + self.p['days'][self.wd] + ' ' + self.rec['date'] + '. Βαθμίδα: ' + core.level(self.p) + '.')
+        L.append('Ώρες: ' + ', '.join(str(x['name']) + ' (' + x['start'] + '–' + x['end'] + ')' for x in P) + '.')
+        ab = []
+        for a in self.rec.get('absent', []):
+            ab.append(self._tn(a['teacher']) + (' όλη την ημέρα' if a.get('periods') is None else ' τις ώρες ' + ', '.join(str(P[i]['name']) for i in a['periods'])))
+        L.append('Απουσιάζουν: ' + ('; '.join(ab) or '—'))
+        base = self._spans(dict(self.base, covers=[], moves=[], compact=False)); now = self._spans(self.rec)
+        L.append('\n## Εκπαιδευτικοί της ημέρας (ώρες τώρα · κανονική αποχώρηση)')
+        for t in sorted(now, key=lambda x: self.cx.tcode.get(x, '')):
+            L.append('- ' + self._tn(t) + ': ' + ','.join(str(P[j]['name']) for j in sorted(now[t])) + (' · κανονικά φεύγει μετά την ' + str(P[max(base[t])]['name']) + 'η' if t in base else ' · δεν είχε μάθημα σήμερα'))
+        L.append('\n## Πρόγραμμα ημέρας ανά τμήμα (ώρα: μάθημα εκπαιδευτικός [κωδικός]· ✗ = ακάλυπτη ώρα απόντα, ↻ = κάλυψη, ⇡ = άλλαξε ώρα)')
+        cd = S.class_day(self.p, self.rec); cov = {(c['event'], c['period']): c for c in self.rec.get('covers', [])}
+        for c in self.p['classes']:
+            tl = cd.get(c['id'])
+            if not tl:
+                continue
+            cells = []
+            for j in sorted(tl):
+                e, l, j0 = tl[j]
+                code = self.cx.ecode[e['id']]
+                if S._gone_at(self.rec, l, j0):
+                    x = cov.get((e['id'], j0)) or {}
+                    who = self._tn(x['teacher']) if x.get('teacher') else {'merge': 'συνένωση', 'other': 'άλλη λύση'}.get(x.get('kind'), '')
+                    cells.append(str(P[j]['name']) + ': ' + ('↻ ' + who if who else '✗') + ' ' + self._sn(l) + ' [' + code + ']')
+                else:
+                    cells.append(str(P[j]['name']) + ': ' + ('⇡' if j0 != j else '') + self._sn(l) + ' ' + '/'.join(self._tn(t) for t in l['teachers']) + ' [' + code + ']')
+            L.append(c['name'] + ': ' + ' | '.join(cells))
+        L.append('\n## Κατάσταση\n' + self.brief())
+        return '\n'.join(L)
+
+
+def day_tools_spec(p):
+    pn = [str(x['name']) for x in p['periods']]
+    T = [
+        ('day_view', 'Το πρόγραμμα της ημέρας στο πρόχειρο (όλα τα τμήματα και οι εκπαιδευτικοί).', {}, []),
+        ('move_lesson', 'Μετακίνηση μαθήματος σε άλλη ώρα της ίδιας ημέρας (μόνο για σήμερα).', {'lesson': {'type': 'string', 'description': 'κωδικός E…'}, 'period': {'type': 'string', 'enum': pn}}, ['lesson', 'period']),
+        ('swap_lessons', 'Ανταλλαγή ωρών δύο μαθημάτων της ημέρας.', {'lesson_a': {'type': 'string'}, 'lesson_b': {'type': 'string'}}, ['lesson_a', 'lesson_b']),
+        ('set_cover', 'Κάλυψη ώρας απόντα: teacher = κωδικός εκπαιδευτικού (kind=teacher), ή kind=merge (συνένωση με άλλο τμήμα, γράψε ποιο στο note), other (άλλη λύση, στο note), none (αφαίρεση). period = η ώρα του μαθήματος του απόντα.',
+         {'lesson': {'type': 'string'}, 'period': {'type': 'string', 'enum': pn}, 'teacher': {'type': 'string'}, 'kind': {'type': 'string', 'enum': ['teacher', 'merge', 'other', 'none']}, 'note': {'type': 'string'}}, ['lesson', 'period']),
+        ('replan', 'Αυτόματος ανασχεδιασμός της ημέρας (χωρίς κενά τμημάτων, νωρίτερο σχόλασμα, κανείς δεν φεύγει αργότερα, αυτόματη κάλυψη).', {}, []),
+        ('auto_cover', 'Αυτόματη κάλυψη των ακάλυπτων ωρών με διαθέσιμους εκπαιδευτικούς.', {}, []),
+        ('check_day', 'Έλεγχος του προχείρου: ακάλυπτες ώρες, σχόλασμα, κενά, ποιος φεύγει αργότερα, αλλαγές.', {}, []),
+        ('save_proposal', 'Αποθηκεύει το πρόχειρο ως πρόταση για τον χρήστη.', {'title': {'type': 'string'}, 'explanation': {'type': 'string'}}, ['title', 'explanation']),
+        ('reset', 'Το πρόχειρο επιστρέφει στην αρχική κατάσταση της ημέρας.', {}, []),
+    ]
+    return [{'name': n, 'description': d, 'schema': {'type': 'object', 'properties': props, 'required': req}} for n, d, props, req in T]
+
+
+def chat_day(project, rec, history, message, cfg, log=None):
+    """Συνομιλία για το πρόγραμμα μιας ημέρας. Επιστρέφει {'reply', 'proposals': [{title, explanation, lines, rec}], ...}."""
+    pv, base, model, key = endpoint(cfg)
+    cx = Codec(project, cfg.get('anonymize', True))
+    sess = DaySession(project, cx.view(project), rec, cx)
+    tools = day_tools_spec(project)
+    system = SYSTEM_DAY + '\n\n# Η ημέρα (τρέχουσα κατάσταση)\n' + sess.text()
+    user = cx.encode_text(message)
+    msgs = [{'role': h['role'], 'content': h['text']} for h in history] + [{'role': 'user', 'content': user}]
+    tin = tout = 0; steps = []; text = ''
+    for _ in range(MAX_STEPS):
+        try:
+            raw, calls, text, (i, o) = _call(pv, base, model, key, system, msgs, tools)
+        except ServiceError as ex:
+            if ex.code in (400, 404) and not steps:
+                raise ValueError(str(ex) + _suggest(cfg, model))
+            raise
+        tin += i; tout += o
+        if not calls:
+            break
+        if pv == 'anthropic':
+            msgs.append({'role': 'assistant', 'content': raw}); res = []
+            for cid, name, args in calls:
+                out = sess.run(name, args); steps.append(name)
+                res.append({'type': 'tool_result', 'tool_use_id': cid, 'content': out[:12000]})
+            msgs.append({'role': 'user', 'content': res})
+        else:
+            msgs.append({k: v for k, v in raw.items() if k in ('content', 'tool_calls') and v is not None} | {'role': 'assistant'})
+            for cid, name, args in calls:
+                out = sess.run(name, args); steps.append(name)
+                msgs.append({'role': 'tool', 'tool_call_id': cid, 'content': out[:12000]})
+    else:
+        text = (text + '\n' if text else '') + '(Ο βοηθός σταμάτησε μετά από πολλά βήματα· δείτε τις προτάσεις που πρόλαβε να ετοιμάσει.)'
+    props = [{'title': cx.decode_text(pr['title']), 'explanation': cx.decode_text(pr['explanation']),
+              'lines': [cx.decode_text(x) for x in pr['lines']], 'rec': pr['rec']} for pr in sess.proposals]
+    return {'reply': cx.decode_text(text.strip()) or '(Χωρίς απάντηση.)', 'reply_coded': text.strip(), 'user_coded': user,
+            'proposals': props, 'usage': {'input': tin, 'output': tout, 'model': model, 'provider': pv}, 'steps': steps}

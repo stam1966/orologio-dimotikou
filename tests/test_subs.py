@@ -231,3 +231,41 @@ class ReplanHoles(unittest.TestCase):
                     live = [j for j, v in tl.items() if not S._gone_at(r, v[1], v[2])]
                     for j in range(min(base[c]), max(live + [-1]) + 1):
                         self.assertTrue(j in live or (c, j) in need, (t['name'], day, c, j))
+
+
+class DayAssistant(unittest.TestCase):
+    """Βοηθός AI για την ημέρα: εργαλεία στο πρόχειρο και ροή συνομιλίας (με ψεύτικο πάροχο)."""
+    def setUp(self):
+        import json as _j, core as _c
+        from pathlib import Path as _P
+        self.p = _c.check_structure(_j.loads((_P(__file__).parent / 'gymnasio_fixture.json').read_text(encoding='utf-8')))
+        self.T = {t['name']: t['id'] for t in self.p['teachers']}
+        self.rec = {'date': '2026-11-12', 'absent': [{'teacher': self.T['Δημητρίου Παύλος'], 'periods': None, 'reason': ''}], 'covers': []}
+
+    def test_tools(self):
+        import assistant as A, subs as S
+        cx = A.Codec(self.p, True); d = A.DaySession(self.p, cx.view(self.p), self.rec, cx)
+        self.assertIn('Δημητρίου' not in d.text() and 'Τ4', d.text())
+        need = S.needs(self.p, self.rec)[0][0]; code = cx.ecode[need['event']]; per = str(self.p['periods'][need['period']]['name'])
+        self.assertTrue(d.run('set_cover', {'lesson': code, 'period': per, 'kind': 'merge', 'note': 'με Α2'}).startswith('Έγινε'))
+        self.assertTrue(d.run('move_lesson', {'lesson': code, 'period': '1'}).startswith('ΣΦΑΛΜΑ'))   # μάθημα απόντα
+        self.assertIn('ΣΦΑΛΜΑ', d.run('set_cover', {'lesson': code, 'period': per, 'teacher': 'Τ999'}))
+        self.assertTrue(d.run('replan', {}).startswith('Ανασχεδιάστηκε'))
+        self.assertIn('κανένας', d.run('check_day', {}))
+        self.assertTrue(d.run('save_proposal', {'title': 'Α', 'explanation': 'β'}).startswith('Αποθηκεύτηκε'))
+        self.assertEqual(d.run('reset', {}), 'Το πρόχειρο επανήλθε.')
+
+    def test_chat_flow(self):
+        import assistant as A
+        seq = [[('1', 'replan', {})], [('2', 'save_proposal', {'title': 'Ανασχεδιασμός', 'explanation': 'Όλες οι ώρες καλύφθηκαν.'})], []]
+        def fake(pv, base, model, key, system, msgs, tools):
+            calls = seq.pop(0)
+            return ({'content': 'Έτοιμο, Τ4 λείπει.', 'tool_calls': None} if not calls else {'content': ''}), calls, ('Έτοιμο, Τ4 λείπει.' if not calls else ''), (1, 1)
+        old = A._call; A._call = fake
+        try:
+            r = A.chat_day(self.p, self.rec, [], 'Κάλυψε τα κενά του Δημητρίου', {'provider': 'openai', 'bases': {}, 'models': {'openai': 'x'}, 'keys': {'openai': 'k'}, 'anonymize': True})
+        finally:
+            A._call = old
+        self.assertEqual(len(r['proposals']), 1)
+        self.assertIn('Δημητρίου', r['reply'])
+        self.assertTrue(r['proposals'][0]['rec']['replan'])

@@ -229,6 +229,29 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError('Μη έγκυρη επιλογή.')
                 data, n = pdfs.make_zip(snap, kind, req.get('options', {}))
                 return self.send(200, data, 'application/zip', download=('orologia_ekpaideftikon.zip' if kind == 'teachers' else 'orologia_tmimaton.zip'))
+            if action == '/api/ai/day':  # βοηθός για το πρόγραμμα μιας ημέρας (αναπληρώσεις)
+                import assistant
+                msg = str(req.get('message', '')).strip()[:4000]
+                rec = req.get('rec') or {}
+                if not msg:
+                    raise ValueError('Γράψτε τι θέλετε να γίνει.')
+                with LOCK:
+                    if AI['busy']:
+                        raise ValueError('Ο βοηθός απαντά ήδη σε προηγούμενο μήνυμα.')
+                    AI['busy'] = True; snap = copy.deepcopy(STATE['project'])
+                    hist = list(AI.setdefault('day', {}).get(rec.get('date'), [])[-12:]) if not req.get('new') else []
+                try:
+                    q = dict(snap); q['substitutions'] = [r for r in snap.get('substitutions', []) if r['date'] != rec.get('date')] + [rec]
+                    subs.validate(core.check_structure(q), {k: set(core.mapping(q, k)) for k in ('teachers', 'classes', 'subjects', 'rooms', 'groups', 'lessons')})
+                    rec = next(r for r in q['substitutions'] if r['date'] == rec.get('date'))
+                    r = assistant.chat_day(snap, rec, hist, msg, assistant.load_cfg(ROOT))
+                finally:
+                    with LOCK:
+                        AI['busy'] = False
+                with LOCK:
+                    AI['day'][rec['date']] = hist + [{'role': 'user', 'text': r['user_coded']}, {'role': 'assistant', 'text': r['reply_coded'] or '…'}]
+                log('ai-day', r['usage'], r['steps'])
+                return self.send(200, json.dumps({'reply': r['reply'], 'proposals': r['proposals'], 'usage': r['usage'], 'steps': len(r['steps'])}, ensure_ascii=False))
             if action == '/api/ai/chat':  # μακρά εργασία: εκτός κλειδώματος, σε αντίγραφο
                 import assistant
                 msg = str(req.get('message', '')).strip()[:4000]
