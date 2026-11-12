@@ -35,6 +35,8 @@ def teacher_color(p, tid):
 
 
 def lesson_color(p, l):
+    if l.get('special'):   # ειδικό πρόγραμμα (Ένταξη, ΖΕΠ, …): ουδέτερο χρώμα
+        return 'E4E7EC'
     return teacher_color(p, l['teachers'][0]) if l['teachers'] else 'DBE5EC'
 
 
@@ -310,18 +312,21 @@ def needs_pages(p):
     for r in n['rows']:
         if not (r['required'] or r['available']):
             continue
-        rows.append([r['code'], r['label'], str(r['required']), str(r['available']), sg(r['balance']), ', '.join(r['staff'])])
-        flags.append([False] * 4 + [r['balance'] < 0, False])
+        rows.append([r['code'], r['label'], str(r['base']), str(r['addon'] or ''), str(r['required']), str(r['available']), sg(r['balance']), ', '.join(r['staff'])])
+        flags.append([False] * 6 + [r['balance'] < 0, False])
     for r in n['other']:
-        rows.append([r['code'], '', '0', str(r['available']), sg(r['available']), ', '.join(r['staff'])]); flags.append([False] * 6)
-    if n['extra']['spec']:
-        rows.append(['', 'Ειδικότητες στο Ολοήμερο', str(n['extra']['spec']), '', '', '']); flags.append([False] * 6)
-    rows.append(['Σύνολο', '', str(n['total_required']), str(n['total_available']), sg(n['total_balance']), '']); flags.append([False] * 4 + [n['total_balance'] < 0, False])
+        rows.append([r['code'], '', '', '', '0', str(r['available']), sg(r['available']), ', '.join(r['staff'])]); flags.append([False] * 8)
+    rows.append(['Σύνολο', '', str(sum(r['base'] for r in n['rows'])), str(sum(r['addon'] for r in n['rows'])), str(n['total_required']), str(n['total_available']), sg(n['total_balance']), ''])
+    flags.append([False] * 6 + [n['total_balance'] < 0, False])
     secs = ', '.join(g + '΄: ' + str(v) for g, v in n['sections'].items() if v)
     ex = n['extra']
-    note = ('Τμήματα ανά τάξη — ' + secs + '. ' if secs else '') + 'Πρόσθετες ώρες ΠΕ70: Πρωινή Ζώνη ' + str(ex['morning']) + ', Σίτιση ' + str(ex['meal']) + \
-        ', Μελέτη ' + str(ex['study']) + ', Βιβλιοθήκη ' + str(ex['library']) + '. Διαφορά: + πλεόνασμα, − έλλειμμα.'
-    return [dict(type='table', heading='', name='Προϋπολογισμός αναγκών σε εκπαιδευτικό προσωπικό', header=['Κλάδος', 'Ειδικότητα', 'Απαιτούμενες ώρες', 'Διαθέσιμες ώρες', 'Διαφορά', 'Εκπαιδευτικοί'],
+    note = ('Εκτίμηση για το σχολικό έτος ' + n['year_label'] + ' (μαθητές ανεβαίνουν τάξη, έτη υπηρεσίας +1' +
+            (', χωρίς ' + str(len(n['leaving'])) + ' που αποχωρούν' if n['leaving'] else '') + '). ' if n['year'] == 'next' else 'Σχολικό έτος ' + n['year_label'] + '. ') + \
+        ('Τμήματα — ' + secs + '. ' if secs else '') + 'Ολοήμερο: ' + str(n['allday_sections']) + ' τμ., Πρωινή Ζώνη: ' + str(n['morning_sections']) + ' τμ. ' + \
+        'Πρόσθετες ώρες ΠΕ70: Πρωινή Ζώνη ' + str(ex['morning']) + ', Σίτιση ' + str(ex['meal']) + ', Μελέτη ' + str(ex['study']) + ', Βιβλιοθήκη ' + str(ex['library']) + \
+        ('; ειδικότητες στο Ολοήμερο: ' + ', '.join(k + ' ' + str(v) for k, v in n['spec'].items() if v) if any(n['spec'].values()) else '') + '. Διαφορά: + πλεόνασμα, − έλλειμμα.'
+    return [dict(type='table', heading='', name='Προϋπολογισμός αναγκών σε εκπαιδευτικό προσωπικό — ' + n['year_label'],
+                 header=['Κλάδος', 'Ειδικότητα', 'Ώρες τάξεων', 'Ολοήμερο / Πρωινή / Βιβλ.', 'Απαιτούμενες', 'Διαθέσιμες', 'Διαφορά', 'Εκπαιδευτικοί'],
                  rows=rows, flags=flags, note=note)]
 
 
@@ -329,6 +334,9 @@ def pages(p, opts):
     kind = opts.get('kind', 'teachers'); mode = opts.get('mode', 'individual')
     if kind not in LABELS or mode not in MODES:
         raise ValueError('Μη έγκυρη αναφορά.')
+    if kind == 'teachers' and mode in ('individual', 'overview', 'poster', 'withtable'):
+        import admin
+        p = admin.with_specials(p)   # ειδικά προγράμματα στα ωρολόγια/αφίσες εκπαιδευτικών
     ents = [x for x in p[kind] if not opts.get('entity') or x['id'] == opts['entity']]
     if mode == 'assignments':
         return [subjects_table(p), dict(assignments_table(p), heading='')]

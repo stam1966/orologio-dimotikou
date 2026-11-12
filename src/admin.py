@@ -11,6 +11,11 @@ import core
 
 GRADES6 = ['Α', 'Β', 'Γ', 'Δ', 'Ε', 'ΣΤ']
 EXTRA_KINDS = ['ενισχυτική', 'παράλληλη', 'γραμματειακή', 'υπερωριακή', 'άλλο']
+# Ειδικά προγράμματα (0.28): πιάνουν τον εκπαιδευτικό (όχι το τμήμα), μετρούν στο ωράριο του, μπαίνουν με το χέρι
+# σε ώρες του προγράμματος αφού αυτό βγει, χωρίς να μετακινείται τίποτα (ο solver τα αγνοεί).
+SPECIAL_KINDS = {'entaxi': ('Τμήμα Ένταξης', 'ΕΝΤΑΞΗ'), 'zep': ('Τάξη Υποδοχής ΖΕΠ', 'ΖΕΠ'), 'enisx': ('Ενισχυτική διδασκαλία', 'ΕΝΙΣΧΥΤΙΚΗ'),
+                 'parall': ('Παράλληλη στήριξη', 'ΠΑΡΑΛΛΗΛΗ'), 'gramm': ('Γραμματειακή υποστήριξη', 'ΓΡΑΜΜΑΤΕΙΑΚΗ')}
+SPECIAL_LAST = ('entaxi', 'zep', 'parall')   # όσοι έχουν μόνο αυτά πάνε στο τέλος του εντύπου
 # Κλάδοι του «Προϋπολογισμού αναγκών», με τη σειρά του προτύπου. Ο πρώτος κωδικός είναι αυτός του εντύπου.
 KLADOI = [('ΠΕ70', 'Δασκάλων', ()), ('ΠΕ08', 'Καλλιτεχνικών', ()), ('ΠΕ79.01', 'Μουσικής', ('ΠΕ16', 'ΠΕ79')),
           ('ΠΕ91.01', 'Θεατρικών Σπουδών', ('ΠΕ32', 'ΠΕ91')), ('ΠΕ11', 'Φυσικής Αγωγής', ()), ('ΠΕ06', 'Αγγλικών', ()),
@@ -159,6 +164,33 @@ def validate(p, ids):
     for k, v in (nd.get('extra') or {}).items():
         if type(v) != int or not 0 <= v <= 400:
             raise ValueError('Μη έγκυρες πρόσθετες ώρες.')
+    if nd.get('year', 'current') not in ('current', 'next'):
+        raise ValueError('Μη έγκυρο έτος προϋπολογισμού.')
+    for k, lo, hi in (('new_students', 0, 999), ('max_students', 1, 40), ('allday_sections', 0, 30), ('morning_sections', 0, 30)):
+        if k in nd and nd[k] is not None and (type(nd[k]) != int or not lo <= nd[k] <= hi):
+            raise ValueError('Μη έγκυρη τιμή στον προϋπολογισμό (' + k + ').')
+    if not isinstance(nd.get('leaving', []), list) or any(t not in ids['teachers'] for t in nd.get('leaving', [])):
+        raise ValueError('Μη έγκυροι εκπαιδευτικοί που αποχωρούν.')
+    pr = a.get('programs') or {}
+    if not isinstance(pr, dict) or any(k not in SPECIAL_KINDS or type(v) != bool for k, v in pr.items()):
+        raise ValueError('Μη έγκυρες ρυθμίσεις ειδικών προγραμμάτων.')
+    if not isinstance(a.get('specials', []), list):
+        raise ValueError('Μη έγκυρα ειδικά προγράμματα.')
+    seen = set(); n = len(p['periods'])
+    for x in a.get('specials', []):
+        if not isinstance(x, dict) or not isinstance(x.get('id'), str) or not 0 < len(x['id']) <= 40 or x['id'] in seen:
+            raise ValueError('Μη έγκυρο ειδικό πρόγραμμα.')
+        seen.add(x['id'])
+        if x.get('kind') not in SPECIAL_KINDS or x.get('teacher') not in ids['teachers']:
+            raise ValueError('Ειδικό πρόγραμμα χωρίς είδος ή εκπαιδευτικό.')
+        if not isinstance(x.get('classes', []), list) or any(c not in ids['classes'] for c in x.get('classes', [])):
+            raise ValueError('Άγνωστο τμήμα σε ειδικό πρόγραμμα.')
+        if type(x.get('hours')) != int or not 1 <= x['hours'] <= 30 or len(str(x.get('note', ''))) > 80:
+            raise ValueError('Μη έγκυρες ώρες ειδικού προγράμματος.')
+        sl = x.get('slots', [])
+        if not isinstance(sl, list) or len(sl) > x['hours'] or len({tuple(v) for v in sl if isinstance(v, list)}) != len(sl) or \
+                any(not isinstance(v, list) or len(v) != 2 or type(v[0]) != int or type(v[1]) != int or not 0 <= v[0] <= 4 or not 0 <= v[1] < n for v in sl):
+            raise ValueError('Μη έγκυρες θέσεις ειδικού προγράμματος.')
 
 
 # ------------------------------------------------------------------ υπολογισμοί
@@ -174,7 +206,58 @@ def counted_hours(p):
     if lib.get('teacher') and lib.get('hours'):
         h, txt = out.get(lib['teacher'], (0, ''))
         out[lib['teacher']] = (h + lib['hours'], (txt + ' + ' if txt else '') + str(lib['hours']) + ' βιβλιοθήκη')
+    for x in specials(p):
+        h, txt = out.get(x['teacher'], (0, ''))
+        out[x['teacher']] = (h + x['hours'], (txt + ' + ' if txt else '') + str(x['hours']) + ' ' + SPECIAL_KINDS[x['kind']][0].lower())
     return out
+
+
+def specials(p):
+    """Τα ειδικά προγράμματα των ενεργών ειδών (Ναι στις ρυθμίσεις)."""
+    a = p.get('admin') or {}; on = a.get('programs') or {}
+    return [x for x in a.get('specials') or [] if on.get(x.get('kind'))]
+
+
+def special_text(p, x):
+    C = core.mapping(p, 'classes')
+    cls = ', '.join((C[c].get('short') or C[c]['name']) for c in x.get('classes', []) if c in C)
+    return SPECIAL_KINDS[x['kind']][0] + (' (' + cls + ')' if cls else '') + (' — ' + x['note'] if x.get('note') else '')
+
+
+def special_conflicts(p):
+    """Θέσεις ειδικών προγραμμάτων που συμπίπτουν με μάθημα ή άλλο ειδικό πρόγραμμα του ίδιου εκπαιδευτικού."""
+    L = core.mapping(p, 'lessons'); busy = defaultdict(list); out = []
+    for e in p['events']:
+        l = L.get(e['lesson'])
+        if l and e.get('place'):
+            for t in l['teachers']:
+                for j in range(e['place'][1], e['place'][1] + l['duration']):
+                    busy[(t, e['place'][0], j)].append('lesson')
+    for x in specials(p):
+        for d, i in x.get('slots', []):
+            if busy[(x['teacher'], d, i)]:
+                out.append({'id': x['id'], 'teacher': x['teacher'], 'slot': [d, i],
+                            'text': core.mapping(p, 'teachers')[x['teacher']]['name'] + ': ' + p['days'][d] + ' ' + p['periods'][i]['name'] + 'η ώρα — ' + SPECIAL_KINDS[x['kind']][0] + ' συμπίπτει με ' + ('μάθημα' if 'lesson' in busy[(x['teacher'], d, i)] else 'άλλο ειδικό πρόγραμμα')})
+            busy[(x['teacher'], d, i)].append('special')
+    return out
+
+
+def with_specials(p):
+    """Αντίγραφο του έργου με τα τοποθετημένα ειδικά προγράμματα ως κλειδωμένες «διδασκαλίες» (μόνο για εκτυπώσεις
+    εκπαιδευτικών· δεν αποθηκεύεται και δεν το βλέπει ο solver)."""
+    sp = [x for x in specials(p) if x.get('slots')]
+    if not sp:
+        return p
+    q = dict(p); q['subjects'] = list(p['subjects']); q['lessons'] = list(p['lessons']); q['events'] = list(p['events'])
+    for k, (label, short) in SPECIAL_KINDS.items():
+        q['subjects'].append({'id': '__sp_' + k, 'name': short, 'short': short[:5]})
+    for x in sp:
+        lid = '__spl_' + x['id']
+        q['lessons'].append({'id': lid, 'subject': '__sp_' + x['kind'], 'teachers': [x['teacher']], 'classes': list(x.get('classes', [])), 'groups': [],
+                             'room': '', 'hours': len(x['slots']), 'duration': 1, 'days': [0, 1, 2, 3, 4], 'max_daily': 0, 'special': True})
+        for k, (d, i) in enumerate(x['slots']):
+            q['events'].append({'id': lid + '_' + str(k), 'lesson': lid, 'place': [d, i], 'locked': True})
+    return q
 
 
 def grade_classes(p):
@@ -222,6 +305,7 @@ def teacher_order(p, rows):
         if role == 'deputy': return (1, 0, '')
         if r['homeroom_idx'] is not None: return (2, r['homeroom_idx'], '')
         k = r['klados']
+        if r.get('special_only'): return (5, SPEC_ORDER.index(k) if k in SPEC_ORDER else 99, norm(t['name']))
         return (3 if k == 'ΠΕ70' else 4, SPEC_ORDER.index(k) if k in SPEC_ORDER else 99, norm(t['name']))
     return sorted(rows, key=key)
 
@@ -234,7 +318,7 @@ def teacher_rows(p):
     for i, c in enumerate(gcs):
         if c.get('teacher') and c['teacher'] not in homeroom:
             homeroom[c['teacher']] = (i, c)
-    lib = a['library']; rows = []
+    lib = a['library']; rows = []; sps = specials(p)
     for t in p['teachers']:
         if t.get('active') is False or t.get('hypothetical'):
             continue
@@ -266,6 +350,10 @@ def teacher_rows(p):
             notes.append(str(x['hours']) + ' ' + (x.get('text') or x['kind']))
         for sname, h in noclass.items():
             notes.append(str(h) + ' ' + sname.lower())
+        mysp = [x for x in sps if x['teacher'] == t['id']]
+        for x in mysp:
+            notes.append(str(x['hours']) + ' ' + special_text(p, x))
+        extra_hours += sum(x['hours'] for x in mysp)
         if d.get('note'):
             notes.append(d['note'])
         hr = homeroom.get(t['id'])
@@ -275,7 +363,9 @@ def teacher_rows(p):
                      'students': a['students'].get(hr[1]['id']) if hr else None, 'years': t.get('years'), 'required': core.required_hours(p, t),
                      'by_class': dict(by_class), 'allday': allday + morning, 'other': 0,
                      'library': (lib.get('hours') or 0) if lib.get('teacher') == t['id'] else 0,
-                     'edy': (a.get('edy') or 0) if role == 'director' else 0, 'extra': extra_hours, 'notes': ', '.join(n for n in notes if n)})
+                     'edy': (a.get('edy') or 0) if role == 'director' else 0, 'extra': extra_hours, 'notes': ', '.join(n for n in notes if n),
+                     'special_only': bool(not by_class and not allday and not morning and hr is None and role not in ('director', 'deputy')
+                                         and any(x['kind'] in SPECIAL_LAST for x in mysp))})
     return teacher_order(p, rows)
 
 
@@ -302,14 +392,38 @@ def allday_matrix(p):
     return {'sections': secs, 'cells': cells, 'hours': {t: dict(v) for t, v in hours.items()}, 'periods': periods, 'morning_periods': mperiods, 'T': T}
 
 
+def next_year(y):
+    m = re.match(r'\s*(\d{4})\s*[-–/]\s*(\d{2,4})', str(y or ''))
+    if not m:
+        return 'επόμενο σχολικό έτος'
+    a = int(m.group(1)) + 1
+    return str(a) + '-' + str(a + 1)
+
+
 def needs(p):
-    """Προϋπολογισμός αναγκών: απαιτούμενες και διαθέσιμες ώρες ανά κλάδο, έλλειμμα (−) / πλεόνασμα (+)."""
-    a = get(p); nd = a['needs']
-    sec = {g: 0 for g in GRADES6}
+    """Προϋπολογισμός αναγκών: απαιτούμενες και διαθέσιμες ώρες ανά κλάδο, έλλειμμα (−) / πλεόνασμα (+).
+    Με nd['year'] == 'next' γίνεται εκτίμηση για το επόμενο σχολικό έτος: οι μαθητές κάθε τάξης «ανεβαίνουν»
+    (νέα Α΄ = εγγραφές), τα τμήματα βγαίνουν από το όριο μαθητών, τα έτη υπηρεσίας +1 και όσοι αποχωρούν δεν μετρούν."""
+    a = get(p); nd = a['needs']; nxt = nd.get('year') == 'next'
+    cur = {g: 0 for g in GRADES6}; stud = {g: None for g in GRADES6}
     for c in grade_classes(p):
         g = core.grade_of(c)
-        if g in sec:
-            sec[g] += 1
+        if g in cur:
+            cur[g] += 1
+            n = a['students'].get(c['id'])
+            if n is not None:
+                stud[g] = (stud[g] or 0) + n
+    maxs = nd.get('max_students') or 25
+    sec = dict(cur); stud_next = {g: None for g in GRADES6}
+    if nxt:
+        for k, g in enumerate(GRADES6):
+            n = nd.get('new_students') if k == 0 else stud[GRADES6[k - 1]]
+            stud_next[g] = n
+            if n is not None:
+                sec[g] = -(-n // maxs) if n else 0
+            else:
+                sec[g] = cur['Α'] if k == 0 else cur[GRADES6[k - 1]]
+    auto_sec = dict(sec)
     sec.update({k: v for k, v in (nd.get('sections') or {}).items() if k in sec})
     hours = {k: list(v) for k, v in NEEDS_HOURS.items()}
     for k, v in (nd.get('hours') or {}).items():   # και παλιοί κωδικοί (ΠΕ16, ΠΕ32, ΠΕ19-20)
@@ -325,43 +439,73 @@ def needs(p):
             g = core.grade_of(C[c]) if c in C else ''
             if k in ('ΠΕ05', 'ΠΕ07') and g in ('Ε', 'ΣΤ'):
                 lang[('fr' if k == 'ΠΕ05' else 'de') + ('5' if g == 'Ε' else '6')] += 1
+    if nxt:   # η κατανομή γλωσσών της Δ΄/Ε΄ περνά στην επόμενη τάξη· νέα Ε΄ ίδια αναλογία με τα τμήματα
+        lang = {'fr6': lang['fr5'], 'de6': lang['de5'], 'fr5': min(lang['fr5'], sec['Ε']) if lang['fr5'] else 0, 'de5': min(lang['de5'], sec['Ε']) if lang['de5'] else 0}
     lang.update({k: v for k, v in (nd.get('sections') or {}).items() if k in lang})
-    # Πρόσθετες ώρες: από το πρόγραμμα όπου γίνεται
-    m = allday_matrix(p); morning = allday = meal = spec = 0
+    # Ολοήμερο / Πρωινή Ζώνη: από το πρόγραμμα, κλιμακωμένα με τον αριθμό τμημάτων του σεναρίου
+    m = allday_matrix(p); rows = {r['id']: r for r in teacher_rows(p)}
+    ac = sum(1 for s_ in m['sections'] if s_['kind'] == 'allday'); mc = sum(1 for s_ in m['sections'] if s_['kind'] == 'morning')
+    an = nd.get('allday_sections'); an = ac if an is None else an
+    mn = nd.get('morning_sections'); mn = mc if mn is None else mn
+    morning = allday70 = meal = 0; spec = defaultdict(int)
     meal_p = m['periods'][0] if m['periods'] else None
-    rows = {r['id']: r for r in teacher_rows(p)}
     for tid, per in m['hours'].items():
+        kl = rows.get(tid, {}).get('klados') or 'ΠΕ70'
         for si, h in per.items():
-            s = m['sections'][si]
-            if s['kind'] == 'morning':
+            if m['sections'][si]['kind'] == 'morning':
                 morning += h
-            elif rows.get(tid, {}).get('klados', 'ΠΕ70') not in ('ΠΕ70', ''):
-                spec += h
+            elif kl != 'ΠΕ70':
+                spec[kl] += h
             else:
-                allday += h
+                allday70 += h
     if meal_p is not None:
         meal = sum(len(tids) for k, v in m['cells'].items() if k[2] == meal_p and m['sections'][k[0]]['kind'] == 'allday' for tids, _ in v)
-    extra = {'morning': morning, 'meal': min(meal, allday), 'study': max(0, allday - meal), 'spec': spec, 'library': a['library'].get('hours') or 0}
+    meal = min(meal, allday70); study = max(0, allday70 - meal)
+    fa = (an / ac) if ac else None; fm = (mn / mc) if mc else None
+    sc = lambda h, f, per_new: round(h * f) if f is not None else per_new
+    extra = {'morning': sc(morning, fm, 5 * mn), 'meal': sc(meal, fa, 5 * an), 'study': sc(study, fa, 10 * an), 'library': a['library'].get('hours') or 0}
+    spec = {k: (round(v * fa) if fa is not None else 0) for k, v in spec.items()}
     extra.update({k: v for k, v in (nd.get('extra') or {}).items() if k in extra})
-    req = {}
+    req = {}; base = {}; addon = defaultdict(int)
     for code, _, _ in KLADOI:
         h = hours[code]
         if code == 'ΠΕ05':
-            req[code] = h[4] * lang['fr5'] + h[5] * lang['fr6']
+            base[code] = h[4] * lang['fr5'] + h[5] * lang['fr6']
         elif code == 'ΠΕ07':
-            req[code] = h[4] * lang['de5'] + h[5] * lang['de6']
+            base[code] = h[4] * lang['de5'] + h[5] * lang['de6']
         else:
-            req[code] = sum(h[i] * sec[g] for i, g in enumerate(GRADES6))
-    req['ΠΕ70'] += extra['morning'] + extra['meal'] + extra['study'] + extra['library']
+            base[code] = sum(h[i] * sec[g] for i, g in enumerate(GRADES6))
+    addon['ΠΕ70'] = extra['morning'] + extra['meal'] + extra['study'] + extra['library']
+    for k, v in spec.items():
+        addon[k] += v
+    for code in base:
+        req[code] = base[code] + addon[code]
+    # Διαθέσιμες ώρες: υποχρεωτικό ωράριο (στο επόμενο έτος: έτη +1, χωρίς όσους αποχωρούν)
+    leaving = set(nd.get('leaving') or []) if nxt else set()
     have = defaultdict(int); staff = defaultdict(list)
     for r in rows.values():
-        if r['klados'] and r['required'] is not None:   # το υποχρεωτικό ωράριο είναι ήδη οι ώρες στο σχολείο
-            have[r['klados']] += r['required']; staff[r['klados']].append(r['name'])
-    out = [{'code': code, 'label': label, 'required': req[code], 'available': have.get(code, 0), 'balance': have.get(code, 0) - req[code],
-            'staff': staff.get(code, [])} for code, label, _ in KLADOI]
-    other = sorted(k for k in have if k not in req)
-    total_req = sum(req.values()) + extra['spec']
-    return {'sections': sec, 'lang': lang, 'hours': hours, 'extra': extra, 'rows': out, 'other': [{'code': k, 'available': have[k], 'staff': staff[k]} for k in other],
+        if r['id'] in leaving or not r['klados']:
+            continue
+        t = r['t']
+        if nxt and t.get('years') is not None:
+            t = dict(t, years=t['years'] + 1)
+        rq = core.required_hours(p, t)
+        if rq is not None:   # το υποχρεωτικό ωράριο είναι ήδη οι ώρες στο σχολείο
+            have[r['klados']] += rq; staff[r['klados']].append(r['name'])
+    other_addon = sorted(k for k in addon if k not in base)
+    out = [{'code': code, 'label': label, 'base': base[code], 'addon': addon.get(code, 0), 'required': req[code], 'available': have.get(code, 0),
+            'balance': have.get(code, 0) - req[code], 'staff': staff.get(code, [])} for code, label, _ in KLADOI]
+    for k in other_addon:   # κλάδοι εκτός προτύπου που διδάσκουν στο Ολοήμερο
+        out.append({'code': k, 'label': '', 'base': 0, 'addon': addon[k], 'required': addon[k], 'available': have.get(k, 0), 'balance': have.get(k, 0) - addon[k], 'staff': staff.get(k, [])})
+    known = {x['code'] for x in out}
+    other = sorted(k for k in have if k not in known)
+    total_req = sum(x['required'] for x in out)
+    return {'year': 'next' if nxt else 'current', 'year_label': next_year(p.get('year')) if nxt else (p.get('year') or 'τρέχον σχολικό έτος'),
+            'sections': sec, 'auto_sections': auto_sec, 'current_sections': cur, 'students': stud, 'students_next': stud_next,
+            'max_students': maxs, 'new_students': nd.get('new_students'), 'leaving': sorted(leaving),
+            'allday_sections': an, 'morning_sections': mn, 'current_allday': ac, 'current_morning': mc,
+            'lang': lang, 'hours': hours, 'extra': extra, 'spec': spec, 'rows': out,
+            'other': [{'code': k, 'available': have[k], 'staff': staff[k]} for k in other],
             'total_required': total_req, 'total_available': sum(have.values()), 'total_balance': sum(have.values()) - total_req}
 
 
@@ -371,7 +515,8 @@ def info(p):
     pub = [{k: v for k, v in r.items() if k != 't'} for r in rows]
     return {'admin': {k: v for k, v in a.items()}, 'teachers': pub, 'sections': sections(p), 'needs': needs(p),
             'classes': [{'id': c['id'], 'name': c['name'], 'short': c.get('short') or c['name'], 'grade': core.grade_of(c)} for c in grade_classes(p)],
-            'kinds': EXTRA_KINDS, 'kladoi': [k for k, _, _ in KLADOI], 'periods_allday': allday_matrix(p)['periods']}
+            'kinds': EXTRA_KINDS, 'kladoi': [k for k, _, _ in KLADOI], 'periods_allday': allday_matrix(p)['periods'],
+            'special_kinds': [[k, v[0], v[1]] for k, v in SPECIAL_KINDS.items()], 'conflicts': special_conflicts(p)}
 
 
 # ------------------------------------------------------------------ σύνδεση με «Εφημερίες»

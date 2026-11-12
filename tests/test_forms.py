@@ -168,6 +168,73 @@ class Forms(unittest.TestCase):
 
 
 
+class Specials(unittest.TestCase):
+    def setUp(self):
+        self.p = p = school(); T = p['teachers']
+        self.t = T[0]; self.g = T[5]
+        p['admin'] = {'programs': {'entaxi': True, 'gramm': True, 'zep': False},
+                      'specials': [{'id': 's1', 'kind': 'entaxi', 'teacher': T[0]['id'], 'classes': [p['classes'][0]['id']], 'hours': 3, 'slots': [[0, 0]]},
+                                   {'id': 's2', 'kind': 'zep', 'teacher': T[1]['id'], 'classes': [], 'hours': 2, 'slots': []}]}
+
+    def test_validate(self):
+        core.check_structure(self.p)
+        for bad in ({'kind': 'xx'}, {'teacher': 'zzz'}, {'hours': 0}, {'slots': [[0, 0], [0, 0]]}, {'slots': [[9, 0]]}, {'hours': 1, 'slots': [[0, 0], [1, 0]]}):
+            q = copy.deepcopy(self.p); q['admin']['specials'][0].update(bad)
+            with self.assertRaises(ValueError, msg=str(bad)):
+                core.check_structure(q)
+
+    def test_hours_form_and_prints(self):
+        import outputs
+        p = self.p
+        before = sum(l['hours'] for l in p['lessons'] if self.t['id'] in l['teachers'])
+        self.assertEqual(admin.counted_hours(p)[self.t['id']][0], 3)
+        self.assertNotIn(p['teachers'][1]['id'], admin.counted_hours(p))   # ΖΕΠ ανενεργό
+        r = next(x for x in admin.teacher_rows(p) if x['id'] == self.t['id'])
+        self.assertEqual(r['extra'], 3); self.assertIn('Τμήμα Ένταξης', r['notes'])
+        pg = outputs.pages(p, {'kind': 'teachers', 'mode': 'individual', 'entity': self.t['id']})[0]
+        self.assertTrue(any(c != 'covered' and 'ΕΝΤΑΞΗ' in c['top'] + c['bottom'] for c in pg['cells'].values()))
+        cl = outputs.pages(p, {'kind': 'classes', 'mode': 'individual', 'entity': p['classes'][0]['id']})[0]
+        self.assertFalse(any(c != 'covered' and 'ΕΝΤΑΞΗ' in c['top'] + c['bottom'] for c in cl['cells'].values()))
+        self.assertEqual(len(p['lessons']), len(core.check_structure(copy.deepcopy(p))['lessons']))   # δεν αποθηκεύεται
+        self.assertEqual(sum(l['hours'] for l in p['lessons'] if self.t['id'] in l['teachers']), before)
+
+    def test_special_only_last(self):
+        p = self.p; t = p['teachers'][1]
+        p['lessons'] = [l for l in p['lessons'] if t['id'] not in l['teachers']]; p['events'] = [e for e in p['events'] if e['lesson'] in {l['id'] for l in p['lessons']}]
+        for c in p['classes']:
+            if c.get('teacher') == t['id']: c.pop('teacher')
+        p['admin']['programs']['zep'] = True
+        rows = admin.teacher_rows(p)
+        self.assertEqual(rows[-1]['id'], t['id']); self.assertTrue(rows[-1]['special_only'])
+
+    def test_conflicts(self):
+        p = self.p; L = core.mapping(p, 'lessons')
+        e = next(e for e in p['events'] if e['place'] and self.t['id'] in L[e['lesson']]['teachers'])
+        p['admin']['specials'][0]['slots'] = [list(e['place'])]
+        self.assertEqual(len(admin.special_conflicts(p)), 1)
+
+
+class NextYear(unittest.TestCase):
+    def test_projection(self):
+        p = school(); gcs = admin.grade_classes(p)
+        p['admin'] = {'students': {c['id']: 20 + i for i, c in enumerate(gcs)}}
+        cur = admin.needs(p)
+        p['admin']['needs'] = {'year': 'next', 'new_students': 30, 'max_students': 25}
+        n = admin.needs(p)
+        self.assertEqual(n['year_label'], '2027-2028')
+        self.assertEqual(n['students_next']['Β'], 20); self.assertEqual(n['sections']['Α'], 2)
+        self.assertEqual(n['rows'][0]['base'], cur['rows'][0]['base'] + admin.NEEDS_HOURS['ΠΕ70'][0])
+        # Ολοήμερο και Πρωινή Ζώνη μετρούν· διπλάσια τμήματα → περίπου διπλάσιες ώρες
+        self.assertEqual(n['rows'][0]['addon'], cur['rows'][0]['addon'])
+        p['admin']['needs'].update(allday_sections=n['allday_sections'] * 2, morning_sections=0)
+        m = admin.needs(p)
+        self.assertEqual(m['extra']['morning'], 0); self.assertEqual(m['extra']['meal'], 2 * n['extra']['meal'])
+        # όσοι αποχωρούν δεν μετρούν, τα έτη +1
+        t = p['teachers'][0]; p['admin']['needs']['leaving'] = [t['id']]
+        self.assertLess(admin.needs(p)['total_available'], m['total_available'])
+        core.check_structure(p)
+
+
 class Prints(unittest.TestCase):
     def test_poster_band_and_extra_table(self):
         import outputs
