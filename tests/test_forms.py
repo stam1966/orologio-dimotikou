@@ -214,6 +214,20 @@ class Specials(unittest.TestCase):
         self.assertEqual(len(admin.special_conflicts(p)), 1)
 
 
+class Edy(unittest.TestCase):
+    def test_edy_list(self):
+        p = school(); d = by_name(p, 'Παππά Θεοδώρα'); e = p['teachers'][2]
+        self.assertEqual(admin.edy_map(p), {d['id']: 1})                       # προεπιλογή: διευθυντής 1 ώρα
+        p['admin'] = {'edy_list': [{'teacher': d['id'], 'hours': 1}, {'teacher': e['id'], 'hours': 2}, {'teacher': '', 'hours': 1}]}
+        core.check_structure(p)
+        self.assertEqual(admin.edy_map(p), {d['id']: 1, e['id']: 2})
+        self.assertEqual(core.teacher_hours_check(p).get(e['id'], {}).get('extra', '2 Ε.Δ.Υ.'), '2 Ε.Δ.Υ.')
+        r = next(x for x in admin.teacher_rows(p) if x['id'] == e['id']); self.assertEqual(r['edy'], 2)
+        p['admin']['edy_list'] = []; self.assertEqual(admin.edy_map(p), {})
+        q = copy.deepcopy(p); q['admin']['edy_list'] = [{'teacher': 'zzz', 'hours': 1}]
+        with self.assertRaises(ValueError): core.check_structure(q)
+
+
 class NextYear(unittest.TestCase):
     def test_projection(self):
         p = school(); gcs = admin.grade_classes(p)

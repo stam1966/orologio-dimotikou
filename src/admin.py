@@ -116,6 +116,9 @@ def validate(p, ids):
             raise ValueError('Μη έγκυρο κείμενο στα στοιχεία Διεύθυνσης.')
     if 'edy' in a and (type(a['edy']) != int or not 0 <= a['edy'] <= 10):
         raise ValueError('Μη έγκυρες ώρες Ε.Δ.Υ.')
+    el = a.get('edy_list', [])
+    if not isinstance(el, list) or any(not isinstance(x, dict) or (x.get('teacher') and x['teacher'] not in ids['teachers']) or type(x.get('hours', 0)) != int or not 0 <= x.get('hours', 0) <= 10 for x in el):
+        raise ValueError('Μη έγκυρες ώρες Ε.Δ.Υ.')
     lib = a.get('library')
     if lib is not None:
         if not isinstance(lib, dict) or (lib.get('teacher') and lib['teacher'] not in ids['teachers']) or type(lib.get('hours', 0)) != int or not 0 <= lib.get('hours', 0) <= 20:
@@ -197,11 +200,8 @@ def validate(p, ids):
 def counted_hours(p):
     """Ώρες εκτός προγράμματος που καλύπτουν ωράριο: {teacher_id: (ώρες, περιγραφή)} — Ε.Δ.Υ. (διευθυντής) και βιβλιοθήκη."""
     a = p.get('admin') or {}; out = {}
-    edy = a.get('edy', DEFAULTS['edy']) or 0
-    if edy and ((p.get('framework') or {}).get('level') or 'Δημοτικό') == 'Δημοτικό':   # Ε.Δ.Υ. μόνο στο Δημοτικό
-        for t in p['teachers']:
-            if t.get('role') == 'director':
-                out[t['id']] = (edy, str(edy) + ' Ε.Δ.Υ.')
+    for tid, h in edy_map(p).items():
+        out[tid] = (h, str(h) + ' Ε.Δ.Υ.')
     lib = a.get('library') or {}
     if lib.get('teacher') and lib.get('hours'):
         h, txt = out.get(lib['teacher'], (0, ''))
@@ -210,6 +210,24 @@ def counted_hours(p):
         h, txt = out.get(x['teacher'], (0, ''))
         out[x['teacher']] = (h + x['hours'], (txt + ' + ' if txt else '') + str(x['hours']) + ' ' + SPECIAL_KINDS[x['kind']][0].lower())
     return out
+
+
+def edy_map(p):
+    """Ώρες Ε.Δ.Υ. ανά εκπαιδευτικό (μόνο Δημοτικό). Με τη λίστα admin['edy_list'] [{teacher, hours}] μπορούν να
+    είναι περισσότεροι (π.χ. διευθυντής και εκπαιδευτικός Τμήματος Ένταξης)· αλλιώς ο διευθυντής παίρνει admin['edy'] (προεπιλογή 1)."""
+    if ((p.get('framework') or {}).get('level') or 'Δημοτικό') != 'Δημοτικό':
+        return {}
+    a = p.get('admin') or {}; out = defaultdict(int); ids = {t['id'] for t in p['teachers']}
+    if 'edy_list' in a:
+        for x in a['edy_list'] or []:
+            if x.get('teacher') in ids and x.get('hours'):
+                out[x['teacher']] += x['hours']
+    else:
+        edy = a.get('edy', DEFAULTS['edy']) or 0
+        for t in p['teachers']:
+            if edy and t.get('role') == 'director':
+                out[t['id']] += edy
+    return dict(out)
 
 
 def specials(p):
@@ -318,7 +336,7 @@ def teacher_rows(p):
     for i, c in enumerate(gcs):
         if c.get('teacher') and c['teacher'] not in homeroom:
             homeroom[c['teacher']] = (i, c)
-    lib = a['library']; rows = []; sps = specials(p)
+    lib = a['library']; rows = []; sps = specials(p); edys = edy_map(p)
     for t in p['teachers']:
         if t.get('active') is False or t.get('hypothetical'):
             continue
@@ -363,7 +381,7 @@ def teacher_rows(p):
                      'students': a['students'].get(hr[1]['id']) if hr else None, 'years': t.get('years'), 'required': core.required_hours(p, t),
                      'by_class': dict(by_class), 'allday': allday + morning, 'other': 0,
                      'library': (lib.get('hours') or 0) if lib.get('teacher') == t['id'] else 0,
-                     'edy': (a.get('edy') or 0) if role == 'director' else 0, 'extra': extra_hours, 'notes': ', '.join(n for n in notes if n),
+                     'edy': edys.get(t['id'], 0), 'extra': extra_hours, 'notes': ', '.join(n for n in notes if n),
                      'special_only': bool(not by_class and not allday and not morning and hr is None and role not in ('director', 'deputy')
                                          and any(x['kind'] in SPECIAL_LAST for x in mysp))})
     return teacher_order(p, rows)
