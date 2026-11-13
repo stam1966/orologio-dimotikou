@@ -3,7 +3,7 @@
 Τα πρότυπα κρατούν μορφοποίηση, πλάτη, συγχωνεύσεις και σελιδοποίηση των εντύπων. Οι γραμμές
 δεδομένων «σφραγίζονται» από γραμμές-υποδείγματα του προτύπου (ίδια στυλ), όσες χρειάζονται.
 """
-import io, sys
+import io, sys, zipfile
 from copy import copy
 from pathlib import Path
 
@@ -82,6 +82,75 @@ def hhmm(s):
 
 def save(wb):
     b = io.BytesIO(); wb.save(b); return b.getvalue()
+
+
+EMU = 9525   # EMU ανά pixel (96 dpi)
+
+
+def add_image(data, sheet, png, col, col_off, row, row_off, cx, cy):
+    """Προσθέτει εικόνα PNG σε φύλλο ενός ήδη αποθηκευμένου xlsx (το openpyxl χωρίς Pillow δεν γράφει εικόνες).
+    col/row: κελί αγκύρωσης (από 0)· col_off/row_off/cx/cy σε EMU."""
+    import re, posixpath
+    zin = zipfile.ZipFile(io.BytesIO(data)); files = {n: zin.read(n) for n in zin.namelist()}
+    wbx = files['xl/workbook.xml'].decode('utf-8'); rels = files['xl/_rels/workbook.xml.rels'].decode('utf-8')
+    m = re.search(r'<(?:\w+:)?sheet [^>]*name="%s"[^>]*r:id="([^"]+)"' % re.escape(sheet), wbx)
+    if not m:
+        return data
+    tgt = re.search(r'<Relationship [^>]*Id="%s"[^>]*Target="([^"]+)"' % m.group(1), rels) or \
+        re.search(r'<Relationship [^>]*Target="([^"]+)"[^>]*Id="%s"' % m.group(1), rels)
+    spath = posixpath.normpath(posixpath.join('xl', tgt.group(1).lstrip('/').replace('xl/', '', 1)))
+    n = 1
+    while 'xl/drawings/drawing%d.xml' % n in files:
+        n += 1
+    k = 1
+    while 'xl/media/image%d.png' % k in files:
+        k += 1
+    files['xl/media/image%d.png' % k] = png
+    files['xl/drawings/drawing%d.xml' % n] = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" '
+        'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        '<xdr:oneCellAnchor><xdr:from><xdr:col>%d</xdr:col><xdr:colOff>%d</xdr:colOff><xdr:row>%d</xdr:row><xdr:rowOff>%d</xdr:rowOff></xdr:from>'
+        '<xdr:ext cx="%d" cy="%d"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="2" name="Εθνόσημο"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr>'
+        '<xdr:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>'
+        '<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="%d" cy="%d"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>'
+        '</xdr:pic><xdr:clientData/></xdr:oneCellAnchor></xdr:wsDr>' % (col, col_off, row, row_off, cx, cy, cx, cy)).encode('utf-8')
+    files['xl/drawings/_rels/drawing%d.xml.rels' % n] = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image%d.png"/>'
+        '</Relationships>' % k).encode('utf-8')
+    srel = posixpath.join(posixpath.dirname(spath), '_rels', posixpath.basename(spath) + '.rels')
+    sr = files.get(srel, b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>').decode('utf-8')
+    rid = 'rIdImg%d' % n
+    sr = sr.replace('</Relationships>', '<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing%d.xml"/></Relationships>' % (rid, n))
+    files[srel] = sr.encode('utf-8')
+    sx = files[spath].decode('utf-8')
+    root = re.match(r'(?s)(.*?<worksheet\b[^>]*>)', sx).group(1)
+    if 'xmlns:r=' not in root:
+        sx = sx.replace(root, root[:-1] + ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">', 1)
+    tag = '<drawing r:id="%s"/>' % rid
+    after = re.search(r'<(legacyDrawing|legacyDrawingHF|drawingHF|picture|oleObjects|controls|webPublishItems|tableParts|extLst)\b', sx)
+    sx = sx[:after.start()] + tag + sx[after.start():] if after else sx.replace('</worksheet>', tag + '</worksheet>')
+    files[spath] = sx.encode('utf-8')
+    ct = files['[Content_Types].xml'].decode('utf-8')
+    if 'Extension="png"' not in ct:
+        ct = ct.replace('</Types>', '<Default Extension="png" ContentType="image/png"/></Types>')
+    ct = ct.replace('</Types>', '<Override PartName="/xl/drawings/drawing%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/></Types>' % n)
+    files['[Content_Types].xml'] = ct.encode('utf-8')
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
+        for name, b in files.items():
+            z.writestr(name, b)
+    return out.getvalue()
+
+
+def emblem(data, sheet):
+    """Εθνόσημο πάνω από το «ΕΛΛΗΝΙΚΗ ΔΗΜΟΚΡΑΤΙΑ» (θέση του πρωτότυπου εντύπου)."""
+    f = FORMS / 'emblem.png'
+    if not f.exists():
+        return data
+    return add_image(data, sheet, f.read_bytes(), 2, 50 * EMU, 0, 4 * EMU, 52 * EMU, 53 * EMU)
 
 
 def header_texts(p):
@@ -339,8 +408,11 @@ def sheet_allday_hours(p, ws, m, warn):
     pr_first, pr, pr_right = Proto(ws, 9, 24), Proto(ws, 10, 24), Proto(ws, 17, 24)
     pr_tot, pr_sp = Proto(ws, 20, 24), Proto(ws, 21, 24)
     pr_foot = [Proto(ws, r, 24) for r in range(22, 29)]
+    col = lambda si: 8 + min(si, 10)          # 11 στήλες τμημάτων (H…R)· από το 11ο και μετά όλα στην τελευταία
     if len(secs) > 11:
-        warn.append('Το έντυπο Ολοήμερου έχει θέση για 11 τμήματα· τα υπόλοιπα δεν εμφανίζονται.')
+        warn.append('Το έντυπο Ολοήμερου έχει 11 στήλες τμημάτων· τα τμήματα 11–%d αθροίζονται στη στήλη «11–%d».' % (len(secs), len(secs)))
+    for si in range(min(len(secs), 11)):
+        ws.cell(6, 8 + si).value = si + 1 if si < 10 or len(secs) <= 11 else '11–%d' % len(secs)
     rows = []
     kl = {r['id']: r['klados'] for r in admin.teacher_rows(p)}
     for tid, hs in m['hours'].items():
@@ -362,8 +434,7 @@ def sheet_allday_hours(p, ws, m, warn):
             x = rows[i]
             v.update({5: i + 1, 6: x['name'], 7: x['kl'] or None, 20: x['note']})
             for si, h in x['hours'].items():
-                if si < 11:
-                    v[8 + si] = h
+                v[col(si)] = v.get(col(si), 0) + h
         v[19] = '=SUM(H%d:R%d)' % (9 + i, 9 + i)
         stamp(ws, pr_first if i == 0 else (pr if i < nleft else pr_right), 9 + i, v)
         merge(ws, 9 + i, 20, 9 + i, 24)
@@ -407,4 +478,4 @@ def export_allday(p):
         warn.append('Δεν βρέθηκαν τμήματα Ολοήμερου ή Πρωινής Ζώνης (π.χ. «ΟΛ1», «Πρωινή Ζώνη»). Ορίστε τα στα «Διεύθυνση & έντυπα».')
     sheet_allday_program(p, wb['ΠΡΟΓΡΑΜΜΑ'], m, warn)
     sheet_allday_hours(p, wb['ΩΡΑΡΙΟ ΕΚΠ'], m, warn)
-    return save(wb), warn
+    return emblem(save(wb), 'ΠΡΟΓΡΑΜΜΑ'), warn

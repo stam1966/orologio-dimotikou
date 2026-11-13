@@ -165,6 +165,35 @@ class Forms(unittest.TestCase):
         got = sum(v for r in range(9, 30) for c in range(8, 19) for v in [hrs.cell(r, c).value] if isinstance(v, int))
         self.assertEqual(got, total)
         self.assertFalse([w for w in warn if 'τάξεις' in w])
+        z = zipfile.ZipFile(io.BytesIO(data))                       # εθνόσημο στο ΠΡΟΓΡΑΜΜΑ
+        self.assertIn('xl/media/image1.png', z.namelist()); self.assertIn('xl/drawings/drawing1.xml', z.namelist())
+        self.assertIn(b'<drawing r:id=', z.read('xl/worksheets/sheet1.xml'))
+        self.assertNotIn(b'<drawing', z.read('xl/worksheets/sheet2.xml'))
+
+    def test_allday_many_sections(self):
+        p = school(); T = {t['id']: t for t in p['teachers']}; t0, t1 = p['teachers'][0]['id'], p['teachers'][1]['id']
+        m = {'T': T, 'sections': [{'label': 'ΟΛ%d' % (i + 1), 'kind': 'allday', 'grades': 'Α'} for i in range(13)],
+             'hours': {t0: {0: 2, 11: 3, 12: 4}, t1: {10: 1}}}
+        wb = openpyxl.load_workbook(forms.FORMS / 'oloimero.xlsx'); ws = wb['ΩΡΑΡΙΟ ΕΚΠ']; warn = []
+        forms.sheet_allday_hours(p, ws, m, warn)
+        self.assertEqual(ws.cell(6, 18).value, '11–13'); self.assertTrue(any('11–13' in w for w in warn))
+        got = {ws.cell(r, 6).value: ws.cell(r, 18).value for r in range(9, 22) if ws.cell(r, 6).value}
+        self.assertEqual(got[admin.upper(T[t0]['name'])], 7); self.assertEqual(got[admin.upper(T[t1]['name'])], 1)
+        self.assertEqual([ws.cell(9 + i, 2).value for i in range(13)][-1], 'ΟΛ13')
+
+    def test_library_list(self):
+        p = school(); a, b = p['teachers'][1]['id'], p['teachers'][2]['id']
+        p['admin'] = {'library_list': [{'teacher': a, 'hours': 2}, {'teacher': b, 'hours': 1}, {'teacher': a, 'hours': 1}]}
+        core.check_structure(p)
+        self.assertEqual(admin.lib_map(p), {a: 3, b: 1}); self.assertEqual(admin.lib_hours(p), 4)
+        rows = {r['id']: r for r in admin.teacher_rows(p)}
+        self.assertEqual((rows[a]['library'], rows[b]['library']), (3, 1))
+        self.assertIn('3 βιβλιοθήκη', admin.counted_hours(p)[a][1])
+        p['admin'] = {'library': {'teacher': a, 'hours': 3}}          # παλιά μορφή
+        self.assertEqual(admin.lib_map(p), {a: 3})
+        p['admin'] = {'library_list': [{'teacher': 'zzz', 'hours': 1}]}
+        with self.assertRaises(ValueError):
+            core.check_structure(p)
 
 
 

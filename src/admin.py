@@ -119,6 +119,9 @@ def validate(p, ids):
     el = a.get('edy_list', [])
     if not isinstance(el, list) or any(not isinstance(x, dict) or (x.get('teacher') and x['teacher'] not in ids['teachers']) or type(x.get('hours', 0)) != int or not 0 <= x.get('hours', 0) <= 10 for x in el):
         raise ValueError('Μη έγκυρες ώρες Ε.Δ.Υ.')
+    ll = a.get('library_list', [])
+    if not isinstance(ll, list) or len(ll) > 50 or any(not isinstance(x, dict) or (x.get('teacher') and x['teacher'] not in ids['teachers']) or type(x.get('hours', 0)) != int or not 0 <= x.get('hours', 0) <= 20 for x in ll):
+        raise ValueError('Μη έγκυρα στοιχεία βιβλιοθήκης.')
     lib = a.get('library')
     if lib is not None:
         if not isinstance(lib, dict) or (lib.get('teacher') and lib['teacher'] not in ids['teachers']) or type(lib.get('hours', 0)) != int or not 0 <= lib.get('hours', 0) <= 20:
@@ -202,14 +205,35 @@ def counted_hours(p):
     a = p.get('admin') or {}; out = {}
     for tid, h in edy_map(p).items():
         out[tid] = (h, str(h) + ' Ε.Δ.Υ.')
-    lib = a.get('library') or {}
-    if lib.get('teacher') and lib.get('hours'):
-        h, txt = out.get(lib['teacher'], (0, ''))
-        out[lib['teacher']] = (h + lib['hours'], (txt + ' + ' if txt else '') + str(lib['hours']) + ' βιβλιοθήκη')
+    for tid, lh in lib_map(p).items():
+        h, txt = out.get(tid, (0, ''))
+        out[tid] = (h + lh, (txt + ' + ' if txt else '') + str(lh) + ' βιβλιοθήκη')
     for x in specials(p):
         h, txt = out.get(x['teacher'], (0, ''))
         out[x['teacher']] = (h + x['hours'], (txt + ' + ' if txt else '') + str(x['hours']) + ' ' + SPECIAL_KINDS[x['kind']][0].lower())
     return out
+
+
+def lib_map(p):
+    """Ώρες σχολικής βιβλιοθήκης ανά εκπαιδευτικό. Λίστα admin['library_list'] [{teacher, hours}] (ένας ή περισσότεροι)·
+    αλλιώς το παλιό admin['library'] {teacher, hours} (ένας)."""
+    a = p.get('admin') or {}; out = defaultdict(int); ids = {t['id'] for t in p['teachers']}
+    if 'library_list' in a:
+        L = a['library_list'] or []
+    else:
+        L = [a['library']] if isinstance(a.get('library'), dict) else []
+    for x in L:
+        if x.get('teacher') in ids and x.get('hours'):
+            out[x['teacher']] += x['hours']
+    return dict(out)
+
+
+def lib_hours(p):
+    """Σύνολο ωρών βιβλιοθήκης (για τον προϋπολογισμό· χωρίς λίστα: οι ώρες της ρύθμισης, προεπιλογή 3)."""
+    a = p.get('admin') or {}
+    if 'library_list' in a:
+        return sum(x.get('hours') or 0 for x in a['library_list'] or [])
+    return get(p)['library'].get('hours') or 0
 
 
 def edy_map(p):
@@ -336,7 +360,7 @@ def teacher_rows(p):
     for i, c in enumerate(gcs):
         if c.get('teacher') and c['teacher'] not in homeroom:
             homeroom[c['teacher']] = (i, c)
-    lib = a['library']; rows = []; sps = specials(p); edys = edy_map(p)
+    libs = lib_map(p); rows = []; sps = specials(p); edys = edy_map(p)
     for t in p['teachers']:
         if t.get('active') is False or t.get('hypothetical'):
             continue
@@ -380,7 +404,7 @@ def teacher_rows(p):
                      'homeroom': (hr[1].get('short') or hr[1]['name']) if hr else '', 'homeroom_idx': hr[0] if hr else None,
                      'students': a['students'].get(hr[1]['id']) if hr else None, 'years': t.get('years'), 'required': core.required_hours(p, t),
                      'by_class': dict(by_class), 'allday': allday + morning, 'other': 0,
-                     'library': (lib.get('hours') or 0) if lib.get('teacher') == t['id'] else 0,
+                     'library': libs.get(t['id'], 0),
                      'edy': edys.get(t['id'], 0), 'extra': extra_hours, 'notes': ', '.join(n for n in notes if n),
                      'special_only': bool(not by_class and not allday and not morning and hr is None and role not in ('director', 'deputy')
                                          and any(x['kind'] in SPECIAL_LAST for x in mysp))})
@@ -481,7 +505,7 @@ def needs(p):
     meal = min(meal, allday70); study = max(0, allday70 - meal)
     fa = (an / ac) if ac else None; fm = (mn / mc) if mc else None
     sc = lambda h, f, per_new: round(h * f) if f is not None else per_new
-    extra = {'morning': sc(morning, fm, 5 * mn), 'meal': sc(meal, fa, 5 * an), 'study': sc(study, fa, 10 * an), 'library': a['library'].get('hours') or 0}
+    extra = {'morning': sc(morning, fm, 5 * mn), 'meal': sc(meal, fa, 5 * an), 'study': sc(study, fa, 10 * an), 'library': lib_hours(p)}
     spec = {k: (round(v * fa) if fa is not None else 0) for k, v in spec.items()}
     extra.update({k: v for k, v in (nd.get('extra') or {}).items() if k in extra})
     req = {}; base = {}; addon = defaultdict(int)
