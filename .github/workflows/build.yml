@@ -75,6 +75,24 @@ jobs:
           & "$app\runtime\python.exe" -X utf8 "$app\src\preflight.py"
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
+      - name: Setup σουίτας «Σχολικές Εφαρμογές» (Ωρολόγιο + Εφημερίες)
+        run: |
+          $v = (Get-Content dist/VERSION.txt).Split('-')[0]
+          $oro = (Get-ChildItem dist\Orologio_Dimotikou_Setup_*.exe | Select-Object -First 1).FullName
+          Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/stam1966/efimeries-ekpaideftikon/releases/latest/download/Efimeries_Setup_x64.exe' -OutFile dist\Efimeries_Setup_x64.exe
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          $out = & $iscc "/DAppVersion=$v" "/DOroSetup=$oro" "/DEfSetup=$((Resolve-Path dist\Efimeries_Setup_x64.exe).Path)" installer\suite.iss 2>&1 | Out-String
+          Write-Host $out
+          if ($LASTEXITCODE -ne 0) { Write-Host ("::error title=Inno Setup σουίτας::" + ((($out -split "`n") | Select-Object -Last 25) -join '%0A')); exit 1 }
+          $suite = Get-ChildItem dist\Sxolikes_Efarmoges_Setup_*.exe | Select-Object -First 1
+          Start-Process $suite.FullName -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=' -Wait
+          if (-not (Test-Path "$env:LOCALAPPDATA\Programs\EfimeriesEkpaideftikon\EfimeriesPortable_x64.exe")) { throw "Η σουίτα δεν εγκατέστησε τις Εφημερίες" }
+          if (-not (Test-Path "$env:LOCALAPPDATA\Programs\OrologioDimotikou\runtime\pythonw.exe")) { throw "Η σουίτα δεν εγκατέστησε το Ωρολόγιο" }
+          if (-not (Test-Path "$env:APPDATA\SchoolApps\suite.json")) { throw "Η σουίτα δεν έγραψε το suite.json" }
+          Get-Content "$env:APPDATA\SchoolApps\suite.json"
+          Copy-Item $suite.FullName dist\Sxolikes_Efarmoges_Setup.exe
+          Remove-Item dist\Efimeries_Setup_x64.exe
+
       - name: Αντίγραφο με σταθερό όνομα (για τον μόνιμο σύνδεσμο λήψης)
         run: |
           $setup = Get-ChildItem dist\Orologio_Dimotikou_Setup_*.exe | Select-Object -First 1
@@ -112,6 +130,8 @@ jobs:
           files: |
             dist/Orologio_Dimotikou_Setup_*.exe
             dist/Orologio_Dimotikou_Setup.exe
+            dist/Sxolikes_Efarmoges_Setup_*.exe
+            dist/Sxolikes_Efarmoges_Setup.exe
             dist/Orologio_Enimerosi.zip
             dist/Orologio_Dimotikou_*_Egkatastasi.zip
             dist/Orologio_Enimerosi_*.zip

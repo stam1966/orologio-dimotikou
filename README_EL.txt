@@ -5,6 +5,8 @@
 Ο απλούστερος τρόπος: κατεβάστε το Setup (πάντα η τελευταία έκδοση) από
 https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Orologio_Dimotikou_Setup.exe
 και ανοίξτε το.
+Σουίτα Ωρολόγιο + Εφημερίες (ένας ή δύο υπολογιστές, κοινός φάκελος, ρόλος):
+https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Sxolikes_Efarmoges_Setup.exe
 Εναλλακτικά, από το πλήρες πακέτο ZIP:
 1. Δεξί κλικ στο ZIP του πλήρους πακέτου → «Εξαγωγή όλων…» → «Εξαγωγή».
 2. Στον φάκελο που δημιουργείται, διπλό κλικ στο ΕΓΚΑΤΑΣΤΑΣΗ.cmd.

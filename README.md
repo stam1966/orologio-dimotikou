@@ -6,6 +6,8 @@
 
 **[⬇ Λήψη της τελευταίας έκδοσης (Setup.exe)](https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Orologio_Dimotikou_Setup.exe)** και ανοίξτε το αρχείο. (Όλες οι εκδόσεις: [Releases](https://github.com/stam1966/orologio-dimotikou/releases).) Αρχείο ενημέρωσης για υπολογιστή χωρίς Internet (πάντα η τελευταία έκδοση): [Orologio_Enimerosi.zip](https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Orologio_Enimerosi.zip). Δεν χρειάζονται δικαιώματα διαχειριστή. Αν τα Windows δείξουν «Τα Windows προστάτευσαν τον υπολογιστή σας», πατήστε «Περισσότερες πληροφορίες» → «Εκτέλεση οπωσδήποτε».
 
+**Σουίτα Ωρολόγιο + Εφημερίες (ένας ή δύο υπολογιστές):** [Sxolikes_Efarmoges_Setup.exe](https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Sxolikes_Efarmoges_Setup.exe) — εγκαθιστά και τις δύο εφαρμογές και ρυθμίζει τον κοινό φάκελο και τον ρόλο κάθε υπολογιστή.
+
 ## Τι κάνει
 
 - Εισαγωγή από aSc TimeTables (XML) και εξαγωγή πίσω προς το aSc.

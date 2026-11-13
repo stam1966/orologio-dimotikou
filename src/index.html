@@ -523,6 +523,12 @@ function shareWizard(w){let isNew=w.mode==='new';
  let pins=()=>{let r=$('#shrole').value;w.role=r;$('#shpins').innerHTML=r!=='director'?'<p class="muted small">Ο Υποδιευθυντής δεν χρειάζεται PIN.</p>':isNew?`<div class="row"><label class="field"><span>Νέο PIN της Διεύθυνσης (4–12 ψηφία)</span><input id="shp1" type="password" inputmode="numeric" maxlength="12"></label><label class="field"><span>Ξανά το PIN</span><input id="shp2" type="password" inputmode="numeric" maxlength="12"></label></div><p class="muted small">Το PIN ζητείται μόνο για αλλαγή ρόλου υπολογιστή, όχι στην καθημερινή χρήση. Αν υπάρχει ήδη PIN στον φάκελο, γράψτε εκείνο.</p>`:`<label class="field"><span>PIN της Διεύθυνσης</span><input id="shp1" type="password" inputmode="numeric" maxlength="12"></label>`;};
  $('#shrole').onchange=pins;pins();
  $('#shbrowse').onclick=()=>{w.root=$('#shroot').value;w.role=$('#shrole').value;filePicker({title:'Επιλογή φακέλου',folder:true,start:w.root,onPick:(folder)=>{w.root=folder;shareWizard(w);}});};}
+function pinPrompt(){let s=SUI();if(!s.shared||s.wanted_role!=='director'||s.role==='director'||$('#dialog').open)return;
+ modal(s.has_pin?'PIN της Διεύθυνσης':'Ορισμός PIN της Διεύθυνσης',`<div style="max-width:520px"><p class="small" style="margin-top:0">Ο υπολογιστής ορίστηκε ως <b>Διεύθυνση</b> στον κοινό φάκελο <b>${esc(s.root)}</b>. ${s.has_pin?'Πληκτρολογήστε το PIN της Διεύθυνσης για να επιβεβαιωθεί.':'Ορίστε ένα PIN (4–12 ψηφία). Θα ζητείται μόνο για αλλαγή ρόλου υπολογιστή.'}</p>
+  <div class="row"><label class="field"><span>PIN</span><input id="pp1" type="password" inputmode="numeric" maxlength="12"></label>${s.has_pin?'':'<label class="field"><span>Ξανά το PIN</span><input id="pp2" type="password" inputmode="numeric" maxlength="12"></label>'}</div>
+  <p class="muted small">Μέχρι να δοθεί το PIN ο υπολογιστής δουλεύει ως Υποδιευθυντής (προβολή και αναπληρώσεις).</p></div>`,
+  {ok:'Επιβεβαίωση',cancel:'Αργότερα',onOk:async()=>{if(!s.has_pin&&$('#pp1').value!==$('#pp2').value){toast('Τα δύο PIN διαφέρουν.',true);return false;}
+   state=await(await api('suite/role',{role:'director',pin:$('#pp1').value})).json();render();toast('Ο υπολογιστής είναι πλέον της Διεύθυνσης');}});}
 let SYNC=null;function startSync(){if(SYNC||!SUI().shared)return;SYNC=setInterval(async()=>{if(!SUI().shared||document.hidden)return;try{let r=await(await api('sync',{})).json();if(r.revision!==state.revision)await refresh();}catch(e){}},15000);}
 
 /* ---------- Αρχική οθόνη ---------- */
@@ -1511,5 +1517,5 @@ function tour(k){let [t,x]=TOUR[k],last=k===TOUR.length-1;
 /* ---------- εκκίνηση ---------- */
 setInterval(()=>{if(state)api('ping',{}).catch(()=>{});},15000);
 addEventListener('pagehide',()=>{try{navigator.sendBeacon('/api/bye?t='+encodeURIComponent(token),'{}');}catch(e){}});
-refresh().then(()=>{if(state.job.running)startPoll();startSync();if(!state.settings.tour_done)tour(0);try{let v=sessionStorage.getItem('orologio.updated');if(v){sessionStorage.removeItem('orologio.updated');toast('Η εφαρμογή ενημερώθηκε στην έκδοση '+v);}}catch(e){}}).catch(e=>{$('#content').innerHTML='<div class="empty">Η εφαρμογή δεν απαντά: '+esc(e.message)+'</div>';});
+refresh().then(()=>{if(state.job.running)startPoll();startSync();{let u=SUI();if(u.shared&&u.wanted_role==='director'&&u.role!=='director')pinPrompt();else if(!state.settings.tour_done)tour(0);}try{let v=sessionStorage.getItem('orologio.updated');if(v){sessionStorage.removeItem('orologio.updated');toast('Η εφαρμογή ενημερώθηκε στην έκδοση '+v);}}catch(e){}}).catch(e=>{$('#content').innerHTML='<div class="empty">Η εφαρμογή δεν απαντά: '+esc(e.message)+'</div>';});
 </script></html>
