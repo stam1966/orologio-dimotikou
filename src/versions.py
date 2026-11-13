@@ -6,7 +6,8 @@ import core, outputs
 
 
 def folder(root):
-    f = Path(root) / 'data' / 'versions'; f.mkdir(parents=True, exist_ok=True); return f
+    import suite
+    f = suite.data_dir(root) / 'versions'; f.mkdir(parents=True, exist_ok=True); return f
 
 
 def save(root, p, name):

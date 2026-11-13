@@ -107,7 +107,8 @@ STAMP = re.compile(r'project_(\d{8})_(\d{6})')
 def points(root):
     """Σημεία επαναφοράς από data/backups (τα αντίγραφα πριν από κάθε αποθήκευση)."""
     out = []
-    for f in sorted((Path(root) / 'data' / 'backups').glob('project_*.json'), reverse=True):
+    import suite
+    for f in sorted((suite.data_dir(root) / 'backups').glob('project_*.json'), reverse=True):
         m = STAMP.search(f.name)
         if not m:
             continue
@@ -122,7 +123,8 @@ def points(root):
 def prune(root, keep_recent=150, days_daily=180):
     """Κρατά τα 150 πιο πρόσφατα και, για τα παλαιότερα, ένα ανά ημέρα (έως 180 ημέρες)."""
     files = []
-    for f in (Path(root) / 'data' / 'backups').glob('project_*.json'):
+    import suite
+    for f in (suite.data_dir(root) / 'backups').glob('project_*.json'):
         m = STAMP.search(f.name)
         if m:
             files.append((m.group(1) + m.group(2), f))

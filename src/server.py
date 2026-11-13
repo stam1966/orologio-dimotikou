@@ -4,14 +4,16 @@ from pathlib import Path
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 import base64, io
-import core, outputs, rules, updater, versions, backup, xlimport, rozimport, gymimport, subs
+import core, outputs, rules, updater, versions, backup, xlimport, rozimport, gymimport, subs, suite, exchange
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA = ROOT / 'data' / 'project.json'
+DDIR = suite.data_dir(ROOT)                  # φάκελος του έργου (τοπικός ή της σουίτας)
+DATA = DDIR / 'project.json'
 LOG = ROOT / 'data' / 'app.log'
 TOKEN = secrets.token_urlsafe(32)
 LOCK = threading.RLock()
-STATE = {'project': None, 'revision': 0, 'job': {'running': False, 'message': ''}, 'update': None}
+STATE = {'project': None, 'revision': 0, 'job': {'running': False, 'message': ''}, 'update': None, 'suite': {}}
+SEEN = {'project': 0.0, 'subs': 0.0}   # χρόνοι αρχείων που φόρτωσε/έγραψε αυτή η διεργασία (κοινή χρήση)
 UNDO, REDO = [], []          # (ετικέτα, έργο)
 AI = {'history': [], 'proposals': {}, 'busy': False}  # συνομιλία βοηθού (μόνο στη μνήμη)
 HISTORY_MAX = 60
@@ -34,8 +36,130 @@ def log(*a):
         pass
 
 
+def suite_state(readonly='', holder=None):
+    m = suite.machine(); role = suite.effective_role()
+    STATE['suite'] = {'shared': bool(m['root']), 'root': m['root'], 'role': role, 'role_label': suite.ROLES[role], 'wanted_role': m['role'],
+                      'has_pin': suite.has_pin() if m['root'] else False, 'readonly': readonly, 'holder': holder, 'folder': str(DDIR),
+                      'cloud': suite.cloud_folder(m['root']) if m['root'] else '', 'pc': suite.me()['pc']}
+
+
+def take_lock(force=False):
+    """Σε κοινή χρήση: η Διεύθυνση παίρνει το κλείδωμα του προγράμματος· αλλιώς «μόνο προβολή»."""
+    if not suite.shared():
+        suite_state(); return
+    if suite.effective_role() != 'director':
+        suite_state('deputy'); return
+    ok, holder = suite.acquire(DDIR, force)
+    suite_state('' if ok else 'locked', None if ok else {k: holder.get(k) for k in ('pc', 'user', 'since')})
+
+
 def boot():
+    global DDIR, DATA
+    DDIR = suite.data_dir(ROOT); DATA = DDIR / 'project.json'
+    if suite.shared():
+        DDIR.mkdir(parents=True, exist_ok=True)
+        old = ROOT / 'data' / 'project.json'
+        if not DATA.exists() and old.exists():          # πρώτη φορά στον κοινό φάκελο: μεταφέρεται το τρέχον έργο
+            core.save(core.load(old), DATA)
     STATE['project'] = core.load(DATA) if DATA.exists() else core.blank()
+    SEEN['project'] = suite.mtime(DATA)
+    if suite.shared():
+        recs = suite.load_subs(DDIR)
+        if recs is not None:
+            STATE['project']['substitutions'] = recs
+        SEEN['subs'] = suite.mtime(DDIR / suite.SUBS_FILE)
+    take_lock()
+
+
+def suite_action(kind, req):
+    """Ρυθμίσεις κοινής χρήσης (Ρυθμίσεις εφαρμογής → Κοινή χρήση)."""
+    if kind == 'info':
+        pass
+    elif kind == 'connect':      # φάκελος σουίτας: νέος (δημιουργείται) ή υπάρχων (σύνδεση 2ου υπολογιστή)
+        root = Path(str(req.get('root', '')).strip()).expanduser()
+        if not str(root) or not root.is_dir():
+            raise ValueError('Διαλέξτε υπάρχοντα φάκελο.')
+        if not (root / suite.COMMON).exists() and (root / 'Σχολικές Εφαρμογές' / suite.COMMON).exists():
+            root = root / 'Σχολικές Εφαρμογές'          # δείξατε τον γονικό φάκελο μιας υπάρχουσας σουίτας
+        elif root.name != 'Σχολικές Εφαρμογές' and not (root / suite.COMMON).exists():
+            if not req.get('create'):
+                raise ValueError('Ο φάκελος δεν περιέχει δεδομένα της σουίτας. Για πρώτη εγκατάσταση διαλέξτε «Νέος κοινός φάκελος».')
+            root = root / 'Σχολικές Εφαρμογές'
+        for sub in (suite.APP_DIR, suite.EF_DIR, suite.COMMON):
+            (root / sub).mkdir(parents=True, exist_ok=True)
+        backup.check_folder(str(root / suite.COMMON))
+        role = req.get('role') if req.get('role') in suite.ROLES else 'director'
+        target = root / suite.APP_DIR / 'project.json'
+        old_dir = DDIR
+        prev = suite.machine()
+        suite.save_machine({'root': str(root), 'role': role, 'confirmed': False})
+        try:
+            if role == 'director':
+                if suite.has_pin():
+                    if not suite.check_pin(req.get('pin')):
+                        raise ValueError('Λάθος PIN της Διεύθυνσης.')
+                else:
+                    suite.set_pin(req.get('pin'))
+            suite.save_machine({'confirmed': True})
+        except ValueError:
+            suite.save_machine(prev); raise
+        if not target.exists() and STATE['project'] is not None:   # νέος κοινός φάκελος: μεταφέρεται το τρέχον έργο
+            core.save(STATE['project'], target)
+        suite.release(old_dir)
+        boot(); UNDO.clear(); REDO.clear(); STATE['revision'] += 1
+        exchange.write(STATE['project'])
+        log('suite connect', str(root), role)
+    elif kind == 'disconnect':   # επιστροφή σε έναν υπολογιστή: αντίγραφο του έργου στον τοπικό φάκελο
+        if suite.shared():
+            if suite.machine()['role'] == 'director' and suite.has_pin() and not suite.check_pin(req.get('pin')):
+                raise ValueError('Χρειάζεται το PIN της Διεύθυνσης.')
+            p = STATE['project']; suite.release(DDIR)
+            suite.save_machine({'root': '', 'role': 'director', 'confirmed': True})
+            core.save(p, ROOT / 'data' / 'project.json')
+            boot(); UNDO.clear(); REDO.clear(); STATE['revision'] += 1
+            log('suite disconnect')
+    elif kind == 'role':
+        suite.set_role(req.get('role'), req.get('pin'))
+        take_lock(); STATE['revision'] += 1
+    elif kind == 'pin':
+        suite.set_pin(req.get('new'), req.get('old')); suite_state(STATE['suite'].get('readonly', ''), STATE['suite'].get('holder'))
+    elif kind == 'takeover':
+        if suite.effective_role() != 'director':
+            raise ValueError('Μόνο ο υπολογιστής της Διεύθυνσης αλλάζει το πρόγραμμα.')
+        take_lock(force=True)
+        if DATA.exists() and suite.mtime(DATA) != SEEN['project']:
+            q = core.load(DATA); q['substitutions'] = STATE['project'].get('substitutions', []); STATE['project'] = q; SEEN['project'] = suite.mtime(DATA)
+        UNDO.clear(); REDO.clear(); STATE['revision'] += 1
+    else:
+        raise ValueError('Άγνωστη ενέργεια.')
+    return state_json()
+
+
+def strip_subs(p):
+    return project_hash({k: v for k, v in p.items() if k != 'substitutions'})
+
+
+def sync():
+    """Φέρνει αλλαγές που έκανε άλλος υπολογιστής στον κοινό φάκελο. Επιστρέφει True αν άλλαξε κάτι."""
+    if not suite.shared() or STATE['project'] is None:
+        return False
+    changed = False; p = STATE['project']
+    if STATE['suite'].get('readonly') and suite.mtime(DATA) != SEEN['project'] and DATA.exists():
+        q = core.load(DATA); q['substitutions'] = p.get('substitutions', []); p = q; SEEN['project'] = suite.mtime(DATA); changed = True
+    if suite.mtime(DDIR / suite.SUBS_FILE) != SEEN['subs']:
+        recs = suite.load_subs(DDIR)
+        if recs is not None and recs != p.get('substitutions'):
+            p = dict(p); p['substitutions'] = recs; changed = True
+        SEEN['subs'] = suite.mtime(DDIR / suite.SUBS_FILE)
+    was = (STATE['suite'].get('readonly'), STATE['suite'].get('holder'))
+    take_lock()
+    if was != (STATE['suite'].get('readonly'), STATE['suite'].get('holder')):
+        changed = True
+        if not STATE['suite'].get('readonly') and DATA.exists() and suite.mtime(DATA) != SEEN['project']:
+            q = core.load(DATA); q['substitutions'] = p.get('substitutions', []); p = q; SEEN['project'] = suite.mtime(DATA)
+    if changed:
+        STATE['project'] = p; STATE['revision'] += 1; UNDO.clear(); REDO.clear()
+    return changed
 
 
 def project_hash(p):
@@ -86,12 +210,34 @@ def parse_import(req):
                    notes=['Μορφή: ' + what + '.'])
 
 
+READONLY_MSG = {'deputy': 'Ο υπολογιστής αυτός είναι του Υποδιευθυντή: βλέπει το πρόγραμμα και κάνει αναπληρώσεις, αλλά δεν αλλάζει το βασικό πρόγραμμα.',
+                'locked': 'Μόνο προβολή: το πρόγραμμα το επεξεργάζεται άλλος υπολογιστής. Οι αναπληρώσεις επιτρέπονται.'}
+
+
 def commit(p, label='Αλλαγή', history=True):
-    if history and STATE['project'] is not None:
-        UNDO.append((label, STATE['project']))
+    old = STATE['project']
+    sched_changed = old is None or strip_subs(p) != strip_subs(old)
+    ro = STATE['suite'].get('readonly')
+    if ro and sched_changed:
+        raise ValueError(READONLY_MSG.get(ro, 'Μόνο προβολή.'))
+    if suite.shared() and DDIR.is_dir():
+        if old is None or p.get('substitutions') != old.get('substitutions'):
+            p['substitutions'] = suite.merge_subs(DDIR, (old or {}).get('substitutions'), p.get('substitutions'))
+            SEEN['subs'] = suite.mtime(DDIR / suite.SUBS_FILE)
+        if not ro:
+            core.save(p, DATA); SEEN['project'] = suite.mtime(DATA)
+        else:
+            core.check_structure(p)
+    else:
+        core.save(p, DATA)
+    if history and old is not None:
+        UNDO.append((label, old))
         del UNDO[:-HISTORY_MAX]
         REDO.clear()
-    core.save(p, DATA); STATE['project'] = p; STATE['revision'] += 1
+    STATE['project'] = p; STATE['revision'] += 1
+    err = exchange.write(p, schedule=sched_changed and not ro)
+    if err:
+        log('exchange write failed', err)
 
 
 def summary(p, cache=True):
@@ -226,6 +372,13 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < length <= 15_000_000:
                 raise ValueError('Μη αποδεκτό μέγεθος αιτήματος.')
             req = json.loads(self.rfile.read(length)); action = u.path
+            if action == '/api/sync':  # κοινή χρήση: αλλαγές από άλλο υπολογιστή
+                with LOCK:
+                    sync()
+                    return self.send(200, json.dumps({'revision': STATE['revision']}))
+            if action.startswith('/api/suite/'):
+                with LOCK:
+                    return self.send(200, suite_action(action[11:], req))
             if action == '/api/export/pdfs':  # μακρά εργασία: εκτός κλειδώματος, σε αντίγραφο
                 import pdfs
                 with LOCK:
@@ -475,7 +628,7 @@ class Handler(BaseHTTPRequestHandler):
                         name = req['name']
                         if not any(b['name'] == name for b in updater.list_backups(ROOT)):
                             raise ValueError('Άγνωστο αντίγραφο έκδοσης.')
-                        raw = (ROOT / 'data' / 'backups' / name).read_bytes()
+                        raw = (DDIR / 'backups' / name).read_bytes()
                     man, files = updater.read(raw)
                     updater.verify(files)
                     saved = updater.backup(ROOT, core.VERSION)
@@ -521,7 +674,7 @@ class Handler(BaseHTTPRequestHandler):
                     name = req['name']
                     if not any(x['name'] == name for x in backup.points(ROOT)):
                         raise ValueError('Άγνωστο σημείο επαναφοράς.')
-                    q = core.load(ROOT / 'data' / 'backups' / name)
+                    q = core.load(DDIR / 'backups' / name)
                     commit(q, 'Επαναφορά από ' + name)
                 elif action == '/api/versions/restore':
                     d = versions.load(ROOT, req['id']); commit(d['project'], 'Επαναφορά εκδοχής «' + d['name'] + '»')
@@ -566,6 +719,8 @@ class Handler(BaseHTTPRequestHandler):
                     label, q = src.pop(); dst.append((label, p))
                     commit(q, history=False)
                 elif action == '/api/generate':
+                    if STATE['suite'].get('readonly'):
+                        raise ValueError(READONLY_MSG.get(STATE['suite']['readonly'], 'Μόνο προβολή.'))
                     q = STATE['project']; seconds = max(5, min(600, int(req.get('seconds', 30))))
                     mode = req.get('mode', 'improve')
                     if mode not in ('fill', 'improve', 'scratch', 'entity'):
@@ -719,6 +874,20 @@ def main():
                 log('daily backup error', repr(ex))
             time.sleep(3600)
     threading.Thread(target=housekeeping, daemon=True).start()
+
+    def heartbeat():     # κοινή χρήση: ανανέωση του κλειδώματος, εντοπισμός αλλαγών ρόλου/κατόχου
+        while True:
+            time.sleep(30)
+            try:
+                with LOCK:
+                    if suite.shared():
+                        was = (STATE['suite'].get('readonly'), STATE['suite'].get('holder'))
+                        take_lock()
+                        if was != (STATE['suite'].get('readonly'), STATE['suite'].get('holder')):
+                            STATE['revision'] += 1
+            except Exception as ex:
+                log('heartbeat', repr(ex)[:200])
+    threading.Thread(target=heartbeat, daemon=True).start()
     if '--stay' not in sys.argv and '--no-browser' not in sys.argv:
         threading.Thread(target=watchdog, args=(server,), daemon=True).start()
     try:
@@ -727,6 +896,11 @@ def main():
         pass
     finally:
         CANCEL.set(); server.server_close()
+        try:
+            if suite.shared():
+                suite.release(DDIR)
+        except Exception:
+            pass
         try:  # πριν απελευθερωθεί το κλείδωμα, ώστε να μη σβηστεί το αρχείο της νέας διεργασίας
             urlfile.unlink()
         except OSError:
