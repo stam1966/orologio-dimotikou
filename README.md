@@ -8,7 +8,7 @@
 
 ## Λήψη
 
-**Code signing policy:** βλ. [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md). Απεγκατάσταση: Ρυθμίσεις των Windows → Εφαρμογές (τα δεδομένα του σχολείου δεν σβήνονται).
+**Code signing policy:** free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org) (η αίτηση έχει υποβληθεί) — βλ. [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md), όπου και η πολιτική ιδιωτικότητας. Απεγκατάσταση: Ρυθμίσεις των Windows → Εφαρμογές (τα δεδομένα του σχολείου δεν σβήνονται).
 
 
 **[⬇ Λήψη της τελευταίας έκδοσης (Setup.exe)](https://github.com/stam1966/orologio-sxoleiou/releases/latest/download/Orologio_Sxoleiou_Setup.exe)** και ανοίξτε το αρχείο. (Όλες οι εκδόσεις: [Releases](https://github.com/stam1966/orologio-sxoleiou/releases).) Αρχείο ενημέρωσης για υπολογιστή χωρίς Internet (πάντα η τελευταία έκδοση): [Orologio_Enimerosi.zip](https://github.com/stam1966/orologio-sxoleiou/releases/latest/download/Orologio_Enimerosi.zip). Δεν χρειάζονται δικαιώματα διαχειριστή. Αν τα Windows δείξουν «Τα Windows προστάτευσαν τον υπολογιστή σας», πατήστε «Περισσότερες πληροφορίες» → «Εκτέλεση οπωσδήποτε».
