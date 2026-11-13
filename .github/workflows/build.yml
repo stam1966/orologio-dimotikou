@@ -89,6 +89,10 @@ jobs:
           if (-not (Test-Path "$env:LOCALAPPDATA\Programs\EfimeriesEkpaideftikon\EfimeriesPortable_x64.exe")) { throw "Η σουίτα δεν εγκατέστησε τις Εφημερίες" }
           if (-not (Test-Path "$env:LOCALAPPDATA\Programs\OrologioDimotikou\runtime\pythonw.exe")) { throw "Η σουίτα δεν εγκατέστησε το Ωρολόγιο" }
           if (-not (Test-Path "$env:APPDATA\SchoolApps\suite.json")) { throw "Η σουίτα δεν έγραψε το suite.json" }
+          $lp = "$env:LOCALAPPDATA\Programs\SchoolApps\launcher.ps1"
+          if (-not (Test-Path $lp)) { throw "Η σουίτα δεν εγκατέστησε το παράθυρο επιλογής" }
+          $errs = $null; [void][System.Management.Automation.Language.Parser]::ParseFile($lp, [ref]$null, [ref]$errs)
+          if ($errs) { throw ("Σφάλμα σύνταξης στο launcher.ps1: " + ($errs | Out-String)) }
           Get-Content "$env:APPDATA\SchoolApps\suite.json"
           Copy-Item $suite.FullName dist\Sxolikes_Efarmoges_Setup.exe
           Remove-Item dist\Efimeries_Setup_x64.exe

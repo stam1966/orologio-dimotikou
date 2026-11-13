@@ -19,8 +19,12 @@ AppVersion={#AppVersion}
 AppVerName=Σχολικές Εφαρμογές {#AppVersion}
 AppPublisher=Σχολικές Εφαρμογές
 AppPublisherURL=https://github.com/stam1966/orologio-dimotikou
-CreateAppDir=no
-Uninstallable=no
+; Εγκαθιστά μόνο το μικρό παράθυρο επιλογής «Σχολικές Εφαρμογές» (launcher.ps1)· οι δύο εφαρμογές έχουν δικές τους εγκαταστάσεις.
+DefaultDirName={localappdata}\Programs\SchoolApps
+DisableDirPage=yes
+Uninstallable=yes
+UninstallDisplayName=Σχολικές Εφαρμογές (παράθυρο επιλογής)
+UninstallDisplayIcon={app}\app.ico
 DisableProgramGroupPage=yes
 DisableReadyPage=no
 PrivilegesRequired=lowest
@@ -42,17 +46,23 @@ Name: "el"; MessagesFile: "compiler:Default.isl"
 #endif
 
 [Tasks]
-Name: "desktopicon"; Description: "Εικονίδια στην επιφάνεια εργασίας"; GroupDescription: "Εικονίδια:"
+Name: "desktopicon"; Description: "Εικονίδιο «Σχολικές Εφαρμογές» (επιλογή εφαρμογής) στην επιφάνεια εργασίας"; GroupDescription: "Εικονίδια:"
+Name: "appicons"; Description: "Και χωριστά εικονίδια για το Ωρολόγιο και τις Εφημερίες"; GroupDescription: "Εικονίδια:"
 
 [Files]
+Source: "launcher.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\src\app.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#OroSetup}"; DestDir: "{tmp}"; DestName: "orologio_setup.exe"; Flags: deleteafterinstall
 Source: "{#EfSetup}"; DestDir: "{tmp}"; DestName: "efimeries_setup.exe"; Flags: deleteafterinstall
+
+[Icons]
+Name: "{autoprograms}\Σχολικές Εφαρμογές"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\launcher.ps1"""; WorkingDir: "{app}"; IconFilename: "{app}\app.ico"
+Name: "{autodesktop}\Σχολικές Εφαρμογές"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\launcher.ps1"""; WorkingDir: "{app}"; IconFilename: "{app}\app.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{tmp}\orologio_setup.exe"; Parameters: "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART {code:TasksArg}"; StatusMsg: "Εγκατάσταση: Ωρολόγιο Σχολείου…"; Check: WantOrologio
 Filename: "{tmp}\efimeries_setup.exe"; Parameters: "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART {code:TasksArg}"; StatusMsg: "Εγκατάσταση: Εφημερίες Εκπαιδευτικών…"; Check: WantEfimeries
-Filename: "{localappdata}\Programs\OrologioDimotikou\runtime\pythonw.exe"; Parameters: "-X utf8 ""{localappdata}\Programs\OrologioDimotikou\src\server.py"""; WorkingDir: "{localappdata}\Programs\OrologioDimotikou"; Description: "Άνοιγμα: Ωρολόγιο Σχολείου"; Flags: nowait postinstall skipifsilent; Check: WantOrologio
-Filename: "{localappdata}\Programs\EfimeriesEkpaideftikon\EfimeriesPortable_x64.exe"; WorkingDir: "{localappdata}\Programs\EfimeriesEkpaideftikon"; Description: "Άνοιγμα: Εφημερίες Εκπαιδευτικών"; Flags: nowait postinstall skipifsilent unchecked; Check: WantEfimeries
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\launcher.ps1"""; Description: "Άνοιγμα: Σχολικές Εφαρμογές"; Flags: nowait postinstall skipifsilent runhidden
 
 [Messages]
 el.FinishedLabel=Η εγκατάσταση ολοκληρώθηκε. Οι εφαρμογές ανοίγουν από τα εικονίδιά τους. Στην πρώτη εκκίνηση του υπολογιστή της Διεύθυνσης το Ωρολόγιο ζητά να ορίσετε (ή να πληκτρολογήσετε) το PIN της Διεύθυνσης.
@@ -104,7 +114,7 @@ end;
 
 function TasksArg(Param: String): String;
 begin
-  if WizardIsTaskSelected('desktopicon') then
+  if WizardIsTaskSelected('appicons') then
     Result := '/TASKS="desktopicon"'
   else
     Result := '/TASKS=""';

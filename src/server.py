@@ -40,7 +40,7 @@ def suite_state(readonly='', holder=None):
     m = suite.machine(); role = suite.effective_role()
     STATE['suite'] = {'shared': bool(m['root']), 'root': m['root'], 'role': role, 'role_label': suite.ROLES[role], 'wanted_role': m['role'],
                       'has_pin': suite.has_pin() if m['root'] else False, 'readonly': readonly, 'holder': holder, 'folder': str(DDIR),
-                      'cloud': suite.cloud_folder(m['root']) if m['root'] else '', 'pc': suite.me()['pc']}
+                      'cloud': suite.cloud_folder(m['root']) if m['root'] else '', 'pc': suite.me()['pc'], 'sibling': bool(suite.efimeries_exe())}
 
 
 def take_lock(force=False):
@@ -123,6 +123,12 @@ def suite_action(kind, req):
         take_lock(); STATE['revision'] += 1
     elif kind == 'pin':
         suite.set_pin(req.get('new'), req.get('old')); suite_state(STATE['suite'].get('readonly', ''), STATE['suite'].get('holder'))
+    elif kind == 'launch':        # μετάβαση στις «Εφημερίες Εκπαιδευτικών»
+        exe = suite.efimeries_exe()
+        if not exe:
+            raise ValueError('Οι «Εφημερίες Εκπαιδευτικών» δεν είναι εγκατεστημένες σε αυτόν τον υπολογιστή.')
+        subprocess.Popen([str(exe)], cwd=str(exe.parent), close_fds=True)
+        return json.dumps({'ok': True})
     elif kind == 'takeover':
         if suite.effective_role() != 'director':
             raise ValueError('Μόνο ο υπολογιστής της Διεύθυνσης αλλάζει το πρόγραμμα.')

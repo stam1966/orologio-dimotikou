@@ -231,3 +231,12 @@ def cloud_folder(path):
         if v and s.startswith(v.lower()):
             return 'onedrive'
     return ''
+
+
+def efimeries_exe():
+    """Το «Εφημερίες Εκπαιδευτικών» αν είναι εγκατεστημένο σε αυτόν τον υπολογιστή (για μετάβαση από τη μία εφαρμογή στην άλλη)."""
+    base = Path(os.environ.get('LOCALAPPDATA') or (Path.home() / 'AppData' / 'Local')) / 'Programs' / 'EfimeriesEkpaideftikon'
+    for n in ('EfimeriesPortable_x64.exe', 'EfimeriesPortable_x86.exe'):
+        if (base / n).exists():
+            return base / n
+    return None

@@ -146,6 +146,8 @@ td.inactive b{text-decoration:line-through;opacity:.6}
 .home{max-width:1100px}.home h2{margin:18px 0 8px;font-size:16px}.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
 .htile{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;text-align:left;font:inherit;color:var(--ink);transition:border-color .12s,box-shadow .12s,transform .12s}
 .htile:hover{border-color:var(--slate);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px)}.htile i{font-style:normal;font-size:38px;line-height:44px}.htile b{font-size:15px}.htile span{font-size:12.5px;color:var(--muted);line-height:1.35}.htile em{font-style:normal;font-size:12px;color:var(--slate);font-weight:600}
+/* τα κουμπιά Αναζήτηση, Βοηθός AI, Αναίρεση/Επανάληψη είναι στη γραμμή εργαλείων· τα στοιχεία μένουν (κρυφά) για τις συντομεύσεις */
+.top #qsearch,.top #aibtn,.top #undo,.top #redo{display:none}
 .robanner{flex:none;padding:7px 16px;background:var(--pencil-soft);border-bottom:1px solid var(--line2);font-size:13px}
 .htile.main{border-color:var(--slate);background:var(--chalk)}.homehead{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.homehead .big{font-size:22px;font-weight:700}.homerecent{list-style:none;padding:0;margin:0}.homerecent button{background:none;border:0;padding:5px 0;font:inherit;color:var(--focus);cursor:pointer;text-align:left}
 </style>
@@ -273,7 +275,7 @@ const MENUS=()=>{let f=state.file||{},nm=x=>x.split(/[\\/]/).pop(),ev=P().events
    ['Εκδοχές…','',versionsDialog],['Δικαιοσύνη κατανομής','',()=>{ui.rk='teachers';ui.rm='fairness';remember();go('print');}],
    ['-'],['🗑 Διαγραφή προγράμματος…','',clearSchedule,placed]]],
  ['Εργαλεία',[['✨ Βοηθός AI','',()=>$('#aibtn').click()],['Θεσμικό πλαίσιο (ΦΕΚ)','',openFramework],['Νέα σχολική χρονιά…','',newYearDialog],
-   ['Αναπληρώσεις','',()=>go('subs')],['-'],['⚙ Ρυθμίσεις εφαρμογής','Alt+0',()=>go('settings')]]],
+   ['Αναπληρώσεις','',()=>go('subs')],...((state.suite||{}).sibling?[['-'],['🛡 Εφημερίες Εκπαιδευτικών ↗','',launchEfimeries]]:[]),['-'],['⚙ Ρυθμίσεις εφαρμογής','Alt+0',()=>go('settings')]]],
  ['Διεύθυνση',[['📄 Διεύθυνση & έντυπα','Alt+8',()=>go('tools')],['-'],['Έντυπα Διεύθυνσης (Excel)','',()=>{ui.toolTab='forms';go('tools');}],['Ειδικά προγράμματα (Ένταξη, ΖΕΠ, …)','',()=>{ui.toolTab='special';go('tools');}],['Ολοήμερο & Πρωινή Ζώνη','',()=>{ui.toolTab='allday';go('tools');}],['Προϋπολογισμός αναγκών','',()=>{ui.toolTab='needs';go('tools');}]]],
  ['Βοήθεια',[['Βοήθεια για αυτή την οθόνη','F1',()=>$('#help').click()],['📖 Οδηγός χρήσης','',()=>$('#manualbtn').click()],['Ξενάγηση','',()=>tour(0)],
    ['Συντομεύσεις πλήκτρων','',keysDialog],['-'],['Σχετικά με την εφαρμογή','',aboutDialog]]]];};
@@ -290,10 +292,10 @@ const RIB_ICON=[['Αναίρεση','↶'],['Επανάληψη','↷'],['Ρυθ
 function setRib(k){ui.rib=k;remember();renderRibbon();}
 function ribItems(){let menus=MENUS(),find=(m,lab)=>{let M=menus.find(x=>x[0]===m);return M&&M[1].find(it=>it[0]&&it[0].includes(lab));};
  if((ui.rib||'home')==='home'){let L=[['Αρχείο','Αποθήκευση'],['Επεξεργασία','Αναίρεση'],['Επεξεργασία','Επανάληψη'],'-',['Προβολή','Αρχική'],'-',
-  ['Πρόγραμμα','Δημιουργία'],['Πρόγραμμα','Έλεγχος'],['Προβολή','Πρόγραμμα'],'-',['Προβολή','Αναπληρώσεις'],['Προβολή','Εκτυπώσεις'],['Διεύθυνση','Έντυπα Διεύθυνσης'],'-',['Εργαλεία','Βοηθός AI'],['Επεξεργασία','Αναζήτηση'],['Βοήθεια','Βοήθεια για']];
+  ['Πρόγραμμα','Δημιουργία'],['Πρόγραμμα','Έλεγχος'],['Προβολή','Πρόγραμμα'],'-',['Προβολή','Αναπληρώσεις'],['Προβολή','Εκτυπώσεις'],['Διεύθυνση','Έντυπα Διεύθυνσης'],'-',['Εργαλεία','Βοηθός AI'],['Επεξεργασία','Αναζήτηση'],['Εργαλεία','Εφημερίες Εκπαιδευτικών']];
   return L.map(x=>x==='-'?['-']:find(...x)).filter(Boolean);}
  let M=menus.find(x=>x[0]===ui.rib);return M?M[1].filter(it=>it[0]&&it[0][0]!=='#'&&!it[4]):[];}
-function ribLabel(lab){let on=false;if(lab.includes('|')){let [c,l]=lab.split('|');on=c==='✓';lab=l;}lab=lab.replace(/^\d+\.\s*/,'').replace(/…$/,'').replace(/ στο «.*»$/,'').replace(/ \((Excel|ΦΕΚ)\)$/,'');
+function ribLabel(lab){let on=false;if(lab.includes('|')){let [c,l]=lab.split('|');on=c==='✓';lab=l;}lab=lab.replace(/^\d+\.\s*/,'').replace(/…$/,'').replace(/ στο «.*»$/,'').replace(/ ↗$/,'').replace(/ \((Excel|ΦΕΚ)\)$/,'');
  let m=lab.match(/^(\p{Extended_Pictographic}\uFE0F?|[↶↷⬇📥])\s*/u),ic='';if(m){ic=m[1];lab=lab.slice(m[0].length);}
  if(!ic){let f=RIB_ICON.find(([k])=>lab.startsWith(k));ic=f?f[1]:'▫';}return {ic,lab,on};}
 function renderRibbon(){let r=$('#ribbon');if(!r)return;r.classList.toggle('off',!!ui.ribOff);let sh=$('#rshow');if(sh)sh.textContent=ui.ribOff?'▾ Εργαλεία':'▴ Απόκρυψη';
@@ -417,7 +419,7 @@ function render(){if($('#menubar')&&!$('#menubar').childElementCount)renderMenub
  $('.app').classList.toggle('narrow',page==='schedule');
  $('#steps').innerHTML=PAGES.map(([k,t],i)=>{let s=stepStatus(k);return (GROUPS[k]?`<li class="grp">${GROUPS[k]}</li>`:'')+`<li><button data-page="${k}" title="${esc(t)}" class="${k===page?'on':''} ${s.done?'done':''}"><span class="n">${s.done&&k!==page?'✓':i+1}</span><span>${t}</span>${s.badge?`<span class="badge ${s.bad?'bad':''}">${esc(s.badge)}</span>`:''}</button></li>`;}).join('');
  $('#steps').insertAdjacentHTML('afterbegin',`<li><button data-page="home" title="Αρχική οθόνη: από πού ξεκινάτε" class="${page==='home'?'on':''}"><span class="n">🏠</span><span>Αρχική</span></button></li>`);
- $('#steps2').innerHTML=`<li><button data-page="settings" title="Αντίγραφα ασφαλείας, ενημερώσεις, βοηθός AI" class="${page==='settings'?'on':''}"><span class="n">⚙</span><span>Ρυθμίσεις εφαρμογής</span></button></li>`;
+ $('#steps2').innerHTML=`<li><button data-page="settings" title="Αντίγραφα ασφαλείας, κοινή χρήση, ενημερώσεις, βοηθός AI" class="${page==='settings'?'on':''}"><span class="n">⚙</span><span>Ρυθμίσεις εφαρμογής</span></button></li>`+(SUI().sibling?`<li><button id="sibling" title="Άνοιγμα της άλλης εφαρμογής της σουίτας"><span class="n">🛡</span><span>Εφημερίες ↗</span></button></li>`:'');if($('#sibling'))$('#sibling').onclick=launchEfimeries;
  $$('[data-page]').forEach(b=>b.onclick=()=>go(b.dataset.page));
  $('#title').textContent=[...PAGES,...EXTRA].find(x=>x[0]===page)[1];
  let s=state.summary;$('#chips').innerHTML=p.events.length?`<span class="chip ${s.unplaced?'bad':''}" data-goto="schedule" title="Διδασκαλίες χωρίς θέση">Εκκρεμότητες <b>${s.unplaced}</b></span><span class="chip ${s.errors.length?'bad':'good'}" data-goto="schedule" title="Παραβιάσεις υποχρεωτικών κανόνων">Παραβιάσεις <b>${s.errors.length}</b></span><span class="chip" data-goto="schedule" title="Κενά εκπαιδευτικών συνολικά">Κενά <b>${s.gaps}</b></span>`:'';
@@ -488,6 +490,7 @@ function pageSchool(){let p=P(),s=state.summary,h=p.lessons.reduce((a,l)=>a+l.ho
 
 /* ---------- Κοινή χρήση από δύο υπολογιστές (σουίτα) ---------- */
 const SUI=()=>state.suite||{};
+async function launchEfimeries(){try{await api('suite/launch',{});toast('Ανοίγουν οι «Εφημερίες Εκπαιδευτικών»…');}catch(e){toast(e.message,true);}}
 function roText(){let s=SUI();if(!s.readonly)return '';if(s.readonly==='deputy')return '👁 Υπολογιστής Υποδιευθυντή: βλέπετε το πρόγραμμα και κάνετε αναπληρώσεις (απουσίες, καλύψεις). Το βασικό πρόγραμμα αλλάζει μόνο από τη Διεύθυνση.';
  let h=s.holder||{};return '👁 Μόνο προβολή: το πρόγραμμα το επεξεργάζεται ο υπολογιστής «'+esc(h.pc||'?')+'»'+(h.user?' ('+esc(h.user)+')':'')+'. Οι αναπληρώσεις επιτρέπονται.';}
 function shareHtml(){let s=SUI(),pinf=`<label class="field"><span>PIN της Διεύθυνσης</span><input id="shpin" type="password" inputmode="numeric" maxlength="12" style="width:140px"></label>`;
@@ -541,7 +544,8 @@ function pageHome(){let p=P(),s=state.summary,has=p.teachers.length||p.classes.l
   ${tile('print','🖨','Εκτυπώσεις','Προγράμματα τμημάτων και εκπαιδευτικών, αφίσες, Excel.')}
   ${tile('forms','📑','Έντυπα Διεύθυνσης','Ω.Π. και Ολοήμερο για τη Διεύθυνση Εκπαίδευσης.')}
   ${tile('lessons','📋','Αναθέσεις','Ποιος διδάσκει τι και πόσες ώρες.',p.lessons.length+' αναθέσεις')}
-  ${tile('ai','✨','Βοηθός AI','Ζητήστε αλλαγές με απλά λόγια.')}</div>`:'';
+  ${tile('ai','✨','Βοηθός AI','Ζητήστε αλλαγές με απλά λόγια.')}
+  ${SUI().sibling?tile('ef','🛡','Εφημερίες Εκπαιδευτικών','Άνοιγμα της άλλης εφαρμογής της σουίτας.','↗'):''}</div>`:'';
  let start=`<h2>${has?'Νέα αρχή':'Από πού θέλετε να ξεκινήσετε;'}</h2><div class="tiles">
   ${tile('new','🏫','Νέο σχολείο από την αρχή','Βήμα-βήμα: στοιχεία σχολείου, ωράριο, τμήματα, εκπαιδευτικοί.','',!has)}
   ${tile('asc','🗓','Εισαγωγή από aSc','Το αρχείο .roz ή XML του aSc TimeTables, μαζί με το πρόγραμμα.')}
@@ -554,7 +558,7 @@ function pageHome(){let p=P(),s=state.summary,has=p.teachers.length||p.classes.l
  $('#content').innerHTML=`<div class="home"><div class="homehead"><div><div class="big">${esc(p.school||'Ωρολόγιο Σχολείου')}</div><div class="muted">${p.year?'Σχολικό έτος '+esc(p.year)+' · ':''}${has?p.classes.length+' τμήματα · '+p.teachers.length+' εκπαιδευτικοί · '+p.lessons.length+' αναθέσεις':'Δεν υπάρχουν ακόμη δεδομένα'}</div></div></div>${cont}${start}${rec}</div>`;
  let A={schedule:()=>go('schedule'),subs:()=>go('subs'),print:()=>go('print'),lessons:()=>go('lessons'),forms:()=>{ui.toolTab='forms';go('tools');},ai:()=>$('#aibtn').click(),
   new:()=>{ui.schoolTab='start';go('school');},asc:()=>{ui.schoolTab='import';ui.impSrc='asc';ui.impStep=2;go('school');},excel:()=>{ui.schoolTab='import';ui.impSrc='excel';ui.impStep=2;go('school');},
-  open:fileOpen,demo:()=>{ui.schoolTab='import';ui.impSrc='demo';ui.impStep=2;go('school');},manual:()=>$('#manualbtn').click()};
+  open:fileOpen,demo:()=>{ui.schoolTab='import';ui.impSrc='demo';ui.impStep=2;go('school');},manual:()=>$('#manualbtn').click(),ef:launchEfimeries};
  $$('[data-home]').forEach(b=>b.onclick=()=>A[b.dataset.home]());$$('[data-hrec]').forEach(b=>b.onclick=()=>openPath(f.recent[+b.dataset.hrec]));}
 
 /* ---------- Ρυθμίσεις σχολείου: οδηγός εισαγωγής ---------- */
