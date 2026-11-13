@@ -26,11 +26,12 @@ def grid(cells):
     return out
 
 
-def build_roz(lock_first=True):
+def build_roz(lock_first=True, base=0):
+    """base: αριθμός της 1ης ώρας (0 = υπάρχει «0η», 1 = αρίθμηση από 1 όπως σε Γυμνάσιο)· οι κάρτες γράφουν τον αριθμό της ώρας."""
     d = bytearray(b'Z\x02\x00\x00\x05ASCTT' + b'\x00' * 40)
     n = 1
     for i in range(NP):                                     # ώρες 08:00…
-        rec = b'\x02\x00\x01\x00' + rid(n) + b'\x00' * 4 + b'\x00\x00\x00\x02' + struct.pack('<i', i) + b'\x00' * 5 + struct.pack('<4i', 8 + i, 0, 8 + i, 45)
+        rec = b'\x02\x00\x01\x00' + rid(n) + b'\x00' * 4 + b'\x00\x00\x00\x02' + struct.pack('<i', i + base) + b'\x00' * 5 + struct.pack('<4i', 8 + i, 0, 8 + i, 45)
         d += rec + b'\xff' * 40; n += 1
     subj = [('ΓΛΩΣΣΑ', 'ΓΛ', None), ('ΠΡΩΙΝΗ', 'ΠΖ', {(dd, 0) for dd in range(5)})]
     for name, short, cells in subj:
@@ -52,7 +53,7 @@ def build_roz(lock_first=True):
     cards = [(0, 1, 1, 0), (0, 2, 2, 0)] + [(1, 0, 1 << k, 1 if lock_first else 0) for k in range(5)]
     for les, per, mask, lock in cards:
         c = bytearray(75); c[10] = lock
-        struct.pack_into('<i', c, 14, les); struct.pack_into('<i', c, 26, per); struct.pack_into('<i', c, 38, mask)
+        struct.pack_into('<i', c, 14, les); struct.pack_into('<i', c, 26, per + base); struct.pack_into('<i', c, 38, mask)
         d += c
     d += hdr(n, 'Master') + b'\x00' * 100
     return bytes(d)
@@ -75,6 +76,14 @@ class Roz(unittest.TestCase):
         self.assertEqual(len(p['subject_rules'][p['subjects'][1]['id']]['allowed']), 5)
         self.assertEqual(p['teachers'][0]['id'], rid(1 + NP + 2)[::-1].hex().upper())    # ίδιο id με το XML του aSc
         self.assertEqual(p['groups'][0]['entireclass'], '1')
+
+    def test_periods_numbered_from_one(self):
+        p, rep = rozimport.parse(build_roz(base=1))
+        self.assertEqual([x['name'] for x in p['periods']], ['1', '2', '3', '4'])
+        self.assertEqual(rep['counts']['placed'], 7)
+        locked = [e for e in p['events'] if e['locked']]
+        self.assertTrue(all(e['place'][1] == 0 for e in locked))     # 1η ώρα → θέση 0
+        self.assertEqual(sorted(e['place'][1] for e in p['events'] if not e['locked']), [1, 2])
 
     def test_bad_files(self):
         for raw in (b'not roz' * 10, build_roz()[:400]):

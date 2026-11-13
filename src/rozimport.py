@@ -89,14 +89,15 @@ def parse(raw):
         if h + 45 > len(d):
             continue
         idx = _i32(d, h + 20); h1, m1, h2, m2 = struct.unpack_from('<4i', d, h + 29)
-        ok = idx == len(periods) and 0 <= h1 < 24 and 0 <= m1 < 60 and 0 <= h2 < 24 and 0 <= m2 < 60 and h1 * 60 + m1 < h2 * 60 + m2
+        ok = idx == len(periods) + (periods[0][3] if periods else idx if idx in (0, 1) else -1) and 0 <= h1 < 24 and 0 <= m1 < 60 and 0 <= h2 < 24 and 0 <= m2 < 60 and h1 * 60 + m1 < h2 * 60 + m2
         if ok and periods and periods[-1][1] * 60 > 0 and periods[-1][2] > h1 * 60 + m1:
             ok = False
         if ok:
-            periods.append((r, h1 * 60 + m1, h2 * 60 + m2))
+            periods.append((r, h1 * 60 + m1, h2 * 60 + m2, idx if not periods else periods[0][3]))
         elif periods:
             break
     nper = len(periods)
+    p0 = periods[0][3] if periods else 0   # αριθμός της πρώτης ώρας (0 αν υπάρχει «0η» π.χ. Πρωινή Ζώνη, αλλιώς 1)
     if not 1 <= nper <= 20:
         raise RozError('Δεν αναγνωρίστηκαν οι διδακτικές ώρες στο αρχείο .roz. Δοκιμάστε την εξαγωγή XML.')
     hm = lambda x: '%d:%02d' % divmod(x, 60)
@@ -133,6 +134,8 @@ def parse(raw):
         raise RozError('Δεν βρέθηκαν μαθήματα στο αρχείο .roz.')
     subj_recs = [middle[k] for k in subj_pos]
     teach_recs = [r for r in middle[subj_pos[-1] + 1:] if _i32(d, r['after'] + 21) == nper or _i32(d, r['after'] + 22) == nper]
+    if not teach_recs:   # άλλες εκδόσεις aSc: όλες οι επώνυμες εγγραφές ανάμεσα στα μαθήματα και στις ομάδες
+        teach_recs = [r for r in middle[subj_pos[-1] + 1:] if r['name'].strip(' \x00')]
 
     # ---- αναθέσεις
     lessons = []
@@ -161,9 +164,9 @@ def parse(raw):
 
     # ---- κάρτες (τοποθετήσεις)
     total = sum(l['cards'] for l in lessons)
-    def card(o):
+    def card(o):   # η ώρα της κάρτας είναι ο αριθμός της ώρας (όχι η θέση της): αφαιρείται ο αριθμός της πρώτης
         les, per, mask = _i32(d, o + 14), _i32(d, o + 26), _i32(d, o + 38)
-        return les, per, mask, d[o + 10]
+        return les, (per - p0 if per >= 0 else per), mask, d[o + 10]
     def valid(c):
         les, per, mask, lock = c
         return 0 <= les < len(lessons) and lock in (0, 1) and ((0 <= per < nper and mask in DAYBIT) or (per < 0 or mask == 0))
@@ -198,7 +201,7 @@ def parse(raw):
     m = re.search(rb'(20\d\d) - (20\d\d)', d)
     if m:
         p['year'] = m.group(0).decode()
-    p['periods'] = [dict(id=str(i), name=str(i), start=hm(a), end=hm(b)) for i, (r, a, b) in enumerate(periods)]
+    p['periods'] = [dict(id=str(i), name=str(p0 + i), start=hm(a), end=hm(b)) for i, (r, a, b, _) in enumerate(periods)]
     ent = lambda r: dict(id=r['id'], name=r['name'], short=r['short'] or r['name'])
     p['subjects'] = [ent(r) for r in subj_recs]
     p['teachers'] = [ent(r) for r in teach_recs]
