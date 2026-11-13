@@ -40,6 +40,8 @@ def app_files():
     for n in TOP_FILES:
         if (ROOT / n).exists():
             files[n] = (ROOT / n).read_bytes()
+    if (ROOT / 'LICENSE').exists():   # ως .txt: το αρχείο ενημέρωσης δέχεται στη ρίζα μόνο .cmd/.txt/.json
+        files['LICENSE.txt'] = (ROOT / 'LICENSE').read_bytes()
     for p in sorted(ROOT.glob('UPDATE_*.txt')):
         files[p.name] = p.read_bytes()
     return files
@@ -117,4 +119,6 @@ if __name__ == '__main__':
         '**Ενημέρωση υπάρχουσας εγκατάστασης:** μέσα στην εφαρμογή «Σχολείο & ωράριο → Ενημέρωση» '
         '(ή σύρετε το `Orologio_Enimerosi_….zip` στο παράθυρο).\n\n'
         'Μόνιμος σύνδεσμος αρχείου ενημέρωσης (πάντα η τελευταία έκδοση): '
-        'https://github.com/stam1966/orologio-sxoleiou/releases/latest/download/Orologio_Enimerosi.zip\n\n```\n' + notes(v) + '\n```\n', encoding='utf-8')
+        'https://github.com/stam1966/orologio-sxoleiou/releases/latest/download/Orologio_Enimerosi.zip\n\n'
+        '[Code signing policy](https://github.com/stam1966/orologio-sxoleiou/blob/main/CODE_SIGNING_POLICY.md) · '
+        'Άδεια: GPL-3.0 · Ιδέα και σχεδιασμός: Σταμάτης Κοκολόγος, εκπαιδευτικός ΠΕ70, 22ο Δημοτικό Σχολείο Λαμίας\n\n```\n' + notes(v) + '\n```\n', encoding='utf-8')

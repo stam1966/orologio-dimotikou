@@ -2,9 +2,14 @@
 
 *Ιδέα και σχεδιασμός: Σταμάτης Κοκολόγος, εκπαιδευτικός ΠΕ70, 22ο Δημοτικό Σχολείο Λαμίας.*
 
+[Code signing policy](CODE_SIGNING_POLICY.md) · Άδεια χρήσης: [GPL-3.0](LICENSE)
+
 Εφαρμογή για Windows που φτιάχνει και διορθώνει το ωρολόγιο πρόγραμμα ενός δημοτικού σχολείου, με λειτουργίες ανάλογες του aSc TimeTables. Λειτουργεί τοπικά στον υπολογιστή, χωρίς Internet· τα δεδομένα του σχολείου δεν φεύγουν ποτέ από αυτόν.
 
 ## Λήψη
+
+**Code signing policy:** βλ. [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md). Απεγκατάσταση: Ρυθμίσεις των Windows → Εφαρμογές (τα δεδομένα του σχολείου δεν σβήνονται).
+
 
 **[⬇ Λήψη της τελευταίας έκδοσης (Setup.exe)](https://github.com/stam1966/orologio-sxoleiou/releases/latest/download/Orologio_Sxoleiou_Setup.exe)** και ανοίξτε το αρχείο. (Όλες οι εκδόσεις: [Releases](https://github.com/stam1966/orologio-sxoleiou/releases).) Αρχείο ενημέρωσης για υπολογιστή χωρίς Internet (πάντα η τελευταία έκδοση): [Orologio_Enimerosi.zip](https://github.com/stam1966/orologio-sxoleiou/releases/latest/download/Orologio_Enimerosi.zip). Δεν χρειάζονται δικαιώματα διαχειριστή. Αν τα Windows δείξουν «Τα Windows προστάτευσαν τον υπολογιστή σας», πατήστε «Περισσότερες πληροφορίες» → «Εκτέλεση οπωσδήποτε».
 
