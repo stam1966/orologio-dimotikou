@@ -1,12 +1,13 @@
 ﻿ΩΡΟΛΟΓΙΟ ΔΗΜΟΤΙΚΟΥ — 0.5.0-beta
 Δοκιμαστική έκδοση · 22/10/2026 · Τα νέα κάθε έκδοσης: UPDATE_x.y.z.txt
+Ιδέα και σχεδιασμός: Σταμάτης Κοκολόγος, εκπαιδευτικός ΠΕ70, 22ο Δημοτικό Σχολείο Λαμίας
 
 ΠΡΩΤΗ ΕΓΚΑΤΑΣΤΑΣΗ (Windows 10/11, 64-bit)
 Ο απλούστερος τρόπος: κατεβάστε το Setup (πάντα η τελευταία έκδοση) από
-https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Orologio_Dimotikou_Setup.exe
+https://github.com/stam1966/orologio-sxoleiou/releases/latest/download/Orologio_Sxoleiou_Setup.exe
 και ανοίξτε το.
 Σουίτα Ωρολόγιο + Εφημερίες (ένας ή δύο υπολογιστές, κοινός φάκελος, ρόλος):
-https://github.com/stam1966/orologio-dimotikou/releases/latest/download/Sxolikes_Efarmoges_Setup.exe
+https://github.com/stam1966/orologio-sxoleiou/releases/latest/download/Sxolikes_Efarmoges_Setup.exe
 Εναλλακτικά, από το πλήρες πακέτο ZIP:
 1. Δεξί κλικ στο ZIP του πλήρους πακέτου → «Εξαγωγή όλων…» → «Εξαγωγή».
 2. Στον φάκελο που δημιουργείται, διπλό κλικ στο ΕΓΚΑΤΑΣΤΑΣΗ.cmd.

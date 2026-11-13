@@ -17,8 +17,8 @@ AppId={{2F8C6A41-7B3E-4D1A-9E55-6C0B2A9D7F13}
 AppName=Σχολικές Εφαρμογές
 AppVersion={#AppVersion}
 AppVerName=Σχολικές Εφαρμογές {#AppVersion}
-AppPublisher=Σχολικές Εφαρμογές
-AppPublisherURL=https://github.com/stam1966/orologio-dimotikou
+AppPublisher=Σταμάτης Κοκολόγος (22ο Δημ. Σχ. Λαμίας)
+AppPublisherURL=https://github.com/stam1966/orologio-sxoleiou
 ; Εγκαθιστά μόνο το μικρό παράθυρο επιλογής «Σχολικές Εφαρμογές» (launcher.ps1)· οι δύο εφαρμογές έχουν δικές τους εγκαταστάσεις.
 DefaultDirName={localappdata}\Programs\SchoolApps
 DisableDirPage=yes

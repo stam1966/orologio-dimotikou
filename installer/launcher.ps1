@@ -97,7 +97,7 @@ $bEf.Add_Click({
 $form.Controls.Add($bEf)
 
 $hint = New-Object System.Windows.Forms.Label
-$hint.Text = 'Κοινή χρήση από δύο υπολογιστές: Ωρολόγιο → Ρυθμίσεις εφαρμογής → Κοινή χρήση.'
+$hint.Text = 'Ιδέα και σχεδιασμός: Σταμάτης Κοκολόγος, εκπαιδευτικός ΠΕ70, 22ο Δημοτικό Σχολείο Λαμίας'
 $hint.ForeColor = [System.Drawing.Color]::FromArgb(138, 149, 155)
 $hint.Font = New-Object System.Drawing.Font('Segoe UI', 8.5)
 $hint.AutoSize = $true

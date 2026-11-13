@@ -11,7 +11,7 @@ import io, json, os, re, shutil, subprocess, sys, tempfile, time, zipfile, py_co
 from pathlib import Path
 
 APP_ID = 'orologio-dimotikou'
-REPO = 'stam1966/orologio-dimotikou'
+REPO = 'stam1966/orologio-sxoleiou'   # (πρώην orologio-dimotikou· το GitHub ανακατευθύνει το παλιό όνομα)
 ALLOWED_HOSTS = ('github.com', 'api.github.com', 'objects.githubusercontent.com', 'release-assets.githubusercontent.com', 'raw.githubusercontent.com')
 # Εφεδρική πηγή: κλάδος «updates» με latest.json + Orologio_Enimerosi.zip, μέσω raw.githubusercontent.com (CDN).
 # Χρησιμοποιείται όταν το github.com / api.github.com δεν απαντά (π.χ. HTTP 503/504).

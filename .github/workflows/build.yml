@@ -101,6 +101,7 @@ jobs:
         run: |
           $setup = Get-ChildItem dist\Orologio_Dimotikou_Setup_*.exe | Select-Object -First 1
           Copy-Item $setup.FullName dist\Orologio_Dimotikou_Setup.exe
+          Copy-Item $setup.FullName dist\Orologio_Sxoleiou_Setup.exe
           Copy-Item (Get-ChildItem dist\Orologio_Enimerosi_*.zip | Select-Object -First 1).FullName dist\Orologio_Enimerosi.zip
 
       - name: Είναι νέα έκδοση;
@@ -134,6 +135,7 @@ jobs:
           files: |
             dist/Orologio_Dimotikou_Setup_*.exe
             dist/Orologio_Dimotikou_Setup.exe
+            dist/Orologio_Sxoleiou_Setup.exe
             dist/Sxolikes_Efarmoges_Setup_*.exe
             dist/Sxolikes_Efarmoges_Setup.exe
             dist/Orologio_Enimerosi.zip
