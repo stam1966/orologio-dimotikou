@@ -5,7 +5,7 @@ from pathlib import Path
 from collections import Counter, defaultdict
 import xml.etree.ElementTree as ET
 
-VERSION = '0.32.0-beta'
+VERSION = '0.32.1-beta'
 DAYS = ['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή']
 def uid(): return uuid.uuid4().hex[:16]
 def blank():
@@ -278,6 +278,22 @@ TEACHER_HOURS_SECONDARY={
 LEVELS=('Δημοτικό','Γυμνάσιο','Λύκειο')
 LEVEL_GRADES={'Δημοτικό':['Α','Β','Γ','Δ','Ε','ΣΤ'],'Γυμνάσιο':['Α','Β','Γ'],'Λύκειο':['Α','Β','Γ']}
 ROLES={'':'Εκπαιδευτικός','director':'Διευθυντής/ντρια','deputy':'Υποδιευθυντής/ντρια'}
+
+def guess_level(p):
+    """Βαθμίδα από τα δεδομένα μιας εισαγωγής aSc (που δεν τη γράφει): τάξεις Δ–ΣΤ → Δημοτικό· μαθήματα
+    Γυμνασίου/Λυκείου (Αρχαία, Χημεία, Βιολογία, Άλγεβρα…) → Γυμνάσιο ή Λύκειο."""
+    import unicodedata
+    up = lambda x: ''.join(ch for ch in unicodedata.normalize('NFD', (x or '').upper()) if unicodedata.category(ch) != 'Mn')
+    gs = {grade_of(c) for c in p.get('classes', [])}
+    if gs & {'Δ', 'Ε', 'ΣΤ'}:
+        return 'Δημοτικό'
+    txt = ' '.join(up(s.get('name')) for s in p.get('subjects', [])); sch = up(p.get('school')) + ' ' + up(p.get('title'))
+    if 'ΛΥΚΕΙ' in sch or 'ΓΕΛ' in sch.split() or 'ΕΠΑΛ' in sch or 'ΠΡΟΣΑΝΑΤΟΛ' in txt or 'ΑΛΓΕΒΡ' in txt:
+        return 'Λύκειο'
+    if 'ΓΥΜΝΑΣ' in sch or any(k in txt for k in ('ΑΡΧΑΙ', 'ΧΗΜΕΙ', 'ΒΙΟΛΟΓ', 'ΚΟΙΝ. ΠΟΛ', 'ΟΙΚΙΑΚΗ ΟΙΚ')):
+        return 'Γυμνάσιο'
+    return 'Δημοτικό'
+
 
 def level(p):
     l=(p.get('framework') or {}).get('level','Δημοτικό')

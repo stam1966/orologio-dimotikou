@@ -60,9 +60,15 @@ def parse_import(req):
             raise ValueError('Ανοίγουν αρχεία .json (έργο της εφαρμογής), .roz και .xml (aSc). Για Excel: «Εισαγωγή από Excel».')
     kind = req.get('kind')
     if kind == 'roz':
-        return rozimport.parse(base64.b64decode(req['data']))
+        q, rep = rozimport.parse(base64.b64decode(req['data']))
+        if not (q.get('framework') or {}).get('level'):
+            lv = core.guess_level(q); q['framework'] = dict(q.get('framework') or {}, level=lv)
+            rep.setdefault('notes', []).append('Βαθμίδα: ' + lv + ' (από τάξεις και μαθήματα· αλλάζει στο «Σχολείο»).')
+        return q, rep
     if kind == 'xml':
         q = core.import_xml(req['text']); what = 'XML aSc' if q.get('title') == 'Πρόγραμμα από XML' else 'XML της εφαρμογής'
+        if what == 'XML aSc' and not (q.get('framework') or {}).get('level'):
+            q['framework'] = dict(q.get('framework') or {}, level=core.guess_level(q))
     elif kind == 'json':
         try:
             d = json.loads(req['text'])

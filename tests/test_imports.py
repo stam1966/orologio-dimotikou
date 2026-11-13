@@ -85,6 +85,17 @@ class Roz(unittest.TestCase):
         self.assertTrue(all(e['place'][1] == 0 for e in locked))     # 1η ώρα → θέση 0
         self.assertEqual(sorted(e['place'][1] for e in p['events'] if not e['locked']), [1, 2])
 
+    def test_guess_level(self):
+        p, _ = rozimport.parse(build_roz())
+        self.assertEqual(core.guess_level(p), 'Δημοτικό')
+        p['classes'] = [dict(p['classes'][0], name='Β1', short='Β1')]
+        p['subjects'] = [{'id': 'a', 'name': 'Αρχαία Ελληνικά'}, {'id': 'b', 'name': 'ΧΗΜΕΙΑ'}]
+        self.assertEqual(core.guess_level(p), 'Γυμνάσιο')
+        p['subjects'].append({'id': 'c', 'name': 'Μαθηματικά Προσανατολισμού'})
+        self.assertEqual(core.guess_level(p), 'Λύκειο')
+        p['classes'].append(dict(p['classes'][0], name='Ε1', short='Ε1'))
+        self.assertEqual(core.guess_level(p), 'Δημοτικό')
+
     def test_bad_files(self):
         for raw in (b'not roz' * 10, build_roz()[:400]):
             with self.assertRaises(ValueError):
