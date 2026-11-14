@@ -1,0 +1,7 @@
+{
+  "app": "orologio-dimotikou",
+  "version": "0.36.3-beta",
+  "file": "Orologio_Enimerosi.zip",
+  "sha256": "59c9c07c91ffef5dd017d5aafe35428a69905d6f7844f63ac1df0904d692094d",
+  "notes": "**Νέα εγκατάσταση:** κατεβάστε το `Orologio_Sxoleiou_Setup.exe` και ανοίξτε το.\r\n\r\nΜόνιμος σύνδεσμος λήψης (πάντα η τελευταία έκδοση): https://github.com/stam1966/orologio-sxoleiou/releases/latest/download/Orologio_Sxoleiou_Setup.exe\r\n\r\n**Ενημέρωση υπάρχουσας εγκατάστασης:** μέσα στην εφαρμογή «Σχολείο & ωράριο → Ενημέρωση» (ή σύρετε το `Orologio_Enimerosi_….zip` στο παράθυρο).\r\n\r\nΜόνιμος σύνδεσμος αρχείου ενημέρωσης (πάντα η τελευταία έκδοση): https://github.com/stam1966/orologio-sxoleiou/releases/latest/download/Orologio_Enimerosi.zip\r\n\r\n[Code signing policy](https://github.com/stam1966/orologio-sxoleiou/blob/main/CODE_SIGNING_POLICY.md) · Άδεια: GPL-3.0 · Ιδέα και σχεδιασμός: Σταμάτης Κοκολόγος, εκπαιδευτικός ΠΕ70, 22ο Δημοτικό Σχολείο Λαμίας\r\n\r\n```\r\n﻿ΩΡΟΛΟΓΙΟ ΣΧΟΛΕΙΟΥ — 0.36.3 beta\r\n\r\n• Παράθυρο «Σχολικές Εφαρμογές»: εμφανίζονται σωστά τα εικονίδια\r\n  των δύο εφαρμογών στις κάρτες (πριν έβγαινε κενό ή «θόρυβος»).\r\n• Το παράθυρο «Σχολικές Εφαρμογές» ενημερώνεται πλέον και με την\r\n  ενημέρωση μέσα από το Ωρολόγιο: στην επόμενη εκκίνηση του Ωρολογίου\r\n  περνά αυτόματα η νέα εμφάνιση. Δεν χρειάζεται να ξανατρέξετε το\r\n  Setup της σουίτας.\r\n\r\n```\r\n"
+}
