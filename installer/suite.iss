@@ -51,6 +51,7 @@ Name: "appicons"; Description: "Και χωριστά εικονίδια για 
 
 [Files]
 Source: "launcher.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "school.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\src\app.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#OroSetup}"; DestDir: "{tmp}"; DestName: "orologio_setup.exe"; Flags: deleteafterinstall
 Source: "{#EfSetup}"; DestDir: "{tmp}"; DestName: "efimeries_setup.exe"; Flags: deleteafterinstall

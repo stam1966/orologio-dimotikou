@@ -93,6 +93,15 @@ jobs:
           if (-not (Test-Path $lp)) { throw "Η σουίτα δεν εγκατέστησε το παράθυρο επιλογής" }
           $errs = $null; [void][System.Management.Automation.Language.Parser]::ParseFile($lp, [ref]$null, [ref]$errs)
           if ($errs) { throw ("Σφάλμα σύνταξης στο launcher.ps1: " + ($errs | Out-String)) }
+          # Εικόνα του παραθύρου επιλογής (Windows PowerShell 5.1, όπως στους χρήστες) για οπτικό έλεγχο
+          $snap = Join-Path $PWD 'dist\launcher_snapshot.png'
+          $env:SCHOOLAPPS_LAUNCHER_SNAPSHOT = $snap
+          $pr = Start-Process powershell.exe -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',$lp -PassThru -RedirectStandardError dist\launcher_err.txt
+          if (-not $pr.WaitForExit(90000)) { $pr.Kill(); Write-Host "::warning title=Παράθυρο επιλογής::Δεν έκλεισε μέσα σε 90″" }
+          Remove-Item Env:SCHOOLAPPS_LAUNCHER_SNAPSHOT
+          Get-Content dist\launcher_err.txt -ErrorAction SilentlyContinue
+          if ((Get-Item dist\launcher_err.txt -ErrorAction SilentlyContinue).Length -gt 0) { throw "Σφάλματα κατά την εκτέλεση του launcher.ps1" }
+          if (-not (Test-Path $snap)) { Write-Host "::warning title=Παράθυρο επιλογής::Δεν δημιουργήθηκε εικόνα" }
           Get-Content "$env:APPDATA\SchoolApps\suite.json"
           Copy-Item $suite.FullName dist\Sxolikes_Efarmoges_Setup.exe
           Remove-Item dist\Efimeries_Setup_x64.exe
@@ -114,6 +123,14 @@ jobs:
           gh release view "v$v" -R ${{ github.repository }} *> $null
           if ($LASTEXITCODE -eq 0) { "new=false" >> $env:GITHUB_OUTPUT; Write-Host "Η v$v υπάρχει ήδη." } else { "new=true" >> $env:GITHUB_OUTPUT; Write-Host "Νέα έκδοση v$v" }
           exit 0
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: launcher-snapshot-${{ github.sha }}
+          path: dist/launcher_snapshot.png
+          if-no-files-found: ignore
+          retention-days: 7
 
       - uses: actions/upload-artifact@v4
         with:
