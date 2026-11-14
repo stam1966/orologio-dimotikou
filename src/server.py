@@ -69,6 +69,7 @@ def boot():
             STATE['project']['substitutions'] = recs
         SEEN['subs'] = suite.mtime(DDIR / suite.SUBS_FILE)
     take_lock()
+    suite.refresh_launcher(ROOT)
 
 
 def suite_action(kind, req):

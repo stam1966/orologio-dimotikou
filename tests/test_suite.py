@@ -63,6 +63,17 @@ class Machine(SuiteBase):
         out = suite.merge_subs(d, a, [])                              # διαγραφή μόνο της δικής μας ημέρας
         self.assertEqual([r['date'] for r in out], ['2026-11-17']); self.assertEqual(suite.load_subs(d), out)
 
+    def test_refresh_launcher(self):
+        app = self.tmp / 'app'; (app / 'src').mkdir(parents=True)
+        (app / 'src' / 'launcher.ps1').write_bytes(b'new')
+        progs = self.tmp / 'Programs'
+        self.assertFalse(suite.refresh_launcher(app, progs))          # η σουίτα δεν είναι εγκατεστημένη: τίποτα
+        (progs / 'SchoolApps').mkdir(parents=True)
+        (progs / 'SchoolApps' / 'launcher.ps1').write_bytes(b'old')
+        self.assertTrue(suite.refresh_launcher(app, progs))
+        self.assertEqual((progs / 'SchoolApps' / 'launcher.ps1').read_bytes(), b'new')
+        self.assertFalse(suite.refresh_launcher(app, progs))          # ίδιο περιεχόμενο: δεν ξαναγράφεται
+
     def test_cloud(self):
         self.assertTrue(suite.cloud_folder(r'C:\Users\x\OneDrive\Σχολείο')); self.assertFalse(suite.cloud_folder(r'\\server\koina'))
 

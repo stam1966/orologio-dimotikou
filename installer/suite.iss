@@ -50,7 +50,7 @@ Name: "desktopicon"; Description: "Εικονίδιο «Σχολικές Εφα�
 Name: "appicons"; Description: "Και χωριστά εικονίδια για το Ωρολόγιο και τις Εφημερίες"; GroupDescription: "Εικονίδια:"
 
 [Files]
-Source: "launcher.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\src\launcher.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "school.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\src\app.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#OroSetup}"; DestDir: "{tmp}"; DestName: "orologio_setup.exe"; Flags: deleteafterinstall

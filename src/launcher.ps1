@@ -45,6 +45,38 @@ try {
 } catch { }
 $subText = $(if ($school) { $school + '  —  Επιλέξτε εφαρμογή' } else { 'Επιλέξτε εφαρμογή' })
 
+# Εικονίδιο .ico → εικόνα: τα .ico των εφαρμογών έχουν καρέ PNG, που το Icon.ToBitmap() δεν διαβάζει σωστά
+# (κενό ή «θόρυβος»). Διαβάζουμε μόνοι μας το κατάλληλο καρέ.
+function Get-IcoBitmap([string]$path, [int]$size) {
+    try {
+        if (-not (Test-Path -LiteralPath $path)) { return $null }
+        $bytes = [System.IO.File]::ReadAllBytes($path)
+        $n = [BitConverter]::ToUInt16($bytes, 4)
+        $pick = -1; $pickW = 0
+        for ($i = 0; $i -lt $n; $i++) {
+            $o = 6 + 16 * $i
+            $w = [int]$bytes[$o]; if ($w -eq 0) { $w = 256 }
+            if ($pick -lt 0 -or ($w -ge $size -and ($pickW -lt $size -or $w -lt $pickW)) -or ($pickW -lt $size -and $w -gt $pickW)) { $pick = $i; $pickW = $w }
+        }
+        if ($pick -lt 0) { return $null }
+        $o = 6 + 16 * $pick
+        $len = [BitConverter]::ToUInt32($bytes, $o + 8)
+        $off = [BitConverter]::ToUInt32($bytes, $o + 12)
+        if ($bytes[$off] -eq 0x89 -and $bytes[$off + 1] -eq 0x50) {
+            $ms = New-Object System.IO.MemoryStream($bytes, [int]$off, [int]$len)
+            $src = [System.Drawing.Image]::FromStream($ms)
+        } else {
+            $src = (New-Object System.Drawing.Icon($path, $pickW, $pickW)).ToBitmap()
+        }
+        $bmp = New-Object System.Drawing.Bitmap($size, $size)
+        $g = [System.Drawing.Graphics]::FromImage($bmp)
+        $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+        $g.DrawImage($src, 0, 0, $size, $size)
+        $g.Dispose()
+        return $bmp
+    } catch { return $null }
+}
+
 $C = @{
     navy1 = [System.Drawing.Color]::FromArgb(31, 53, 80)
     navy2 = [System.Drawing.Color]::FromArgb(45, 86, 130)
@@ -151,9 +183,9 @@ function New-AppCard($x, $name, $desc, $icoPath, $installed, $accent, $tint, $on
     $pic.Size = New-Object System.Drawing.Size(68, 68)
     $pic.BackColor = $tint
     $pic.SizeMode = 'CenterImage'
-    if (Test-Path -LiteralPath $icoPath) {
-        try { $pic.Image = (New-Object System.Drawing.Icon($icoPath, 48, 48)).ToBitmap() } catch { }
-    }
+    $img = Get-IcoBitmap $icoPath 48
+    if ($img) { $pic.Image = $img }
+    elseif ($env:SCHOOLAPPS_LAUNCHER_SNAPSHOT -and (Test-Path -LiteralPath $icoPath)) { [Console]::Error.WriteLine('Δεν φορτώθηκε το εικονίδιο: ' + $icoPath) }
     $card.Controls.Add($pic)
 
     $ln = New-Object System.Windows.Forms.Label

@@ -240,3 +240,23 @@ def efimeries_exe():
         if (base / n).exists():
             return base / n
     return None
+
+
+def refresh_launcher(app_root, programs=None):
+    """Ενημερώνει το παράθυρο επιλογής «Σχολικές Εφαρμογές» (αν είναι εγκατεστημένο) με το launcher.ps1
+    της τρέχουσας έκδοσης, ώστε να ενημερώνεται και με την ενημέρωση μέσα από την εφαρμογή. → True αν άλλαξε."""
+    try:
+        src = Path(app_root) / 'src' / 'launcher.ps1'
+        base = Path(programs) if programs else Path(os.environ.get('LOCALAPPDATA') or (Path.home() / 'AppData' / 'Local')) / 'Programs'
+        dst = base / 'SchoolApps' / 'launcher.ps1'
+        if not src.exists() or not dst.parent.is_dir():
+            return False
+        new = src.read_bytes()
+        if dst.exists() and dst.read_bytes() == new:
+            return False
+        tmp = dst.with_name('launcher.ps1.tmp')
+        tmp.write_bytes(new)
+        os.replace(tmp, dst)
+        return True
+    except OSError:
+        return False
